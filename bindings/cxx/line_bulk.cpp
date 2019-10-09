@@ -14,6 +14,8 @@ namespace gpiod {
 const ::std::bitset<32> line_request::FLAG_ACTIVE_LOW("001");
 const ::std::bitset<32> line_request::FLAG_OPEN_SOURCE("010");
 const ::std::bitset<32> line_request::FLAG_OPEN_DRAIN("100");
+const ::std::bitset<32> line_request::FLAG_PULL_UP("101");
+const ::std::bitset<32> line_request::FLAG_PULL_DOWN("111");
 
 namespace {
 
@@ -38,6 +40,8 @@ const ::std::map<::std::bitset<32>, int, bitset_cmp> reqflag_mapping = {
 	{ line_request::FLAG_ACTIVE_LOW,	GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW, },
 	{ line_request::FLAG_OPEN_DRAIN,	GPIOD_LINE_REQUEST_FLAG_OPEN_DRAIN, },
 	{ line_request::FLAG_OPEN_SOURCE,	GPIOD_LINE_REQUEST_FLAG_OPEN_SOURCE, },
+	{ line_request::FLAG_PULL_UP,	GPIOD_LINE_REQUEST_FLAG_PULL_UP, },
+	{ line_request::FLAG_PULL_DOWN,	GPIOD_LINE_REQUEST_FLAG_PULL_DOWN, },
 };
 
 } /* namespace */

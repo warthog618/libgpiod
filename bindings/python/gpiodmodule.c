@@ -60,6 +60,8 @@ enum {
 	gpiod_LINE_REQ_FLAG_OPEN_DRAIN		= GPIOD_BIT(0),
 	gpiod_LINE_REQ_FLAG_OPEN_SOURCE		= GPIOD_BIT(1),
 	gpiod_LINE_REQ_FLAG_ACTIVE_LOW		= GPIOD_BIT(2),
+	gpiod_LINE_REQ_FLAG_PULL_UP		= GPIOD_BIT(3),
+	gpiod_LINE_REQ_FLAG_PULL_DOWN		= GPIOD_BIT(4),
 };
 
 enum {
@@ -1030,6 +1032,10 @@ static void gpiod_MakeRequestConfig(struct gpiod_line_request_config *conf,
 		conf->flags |= GPIOD_LINE_REQUEST_FLAG_OPEN_SOURCE;
 	if (flags & gpiod_LINE_REQ_FLAG_ACTIVE_LOW)
 		conf->flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+	if (flags & gpiod_LINE_REQ_FLAG_PULL_UP)
+		conf->flags |= GPIOD_LINE_REQUEST_FLAG_PULL_UP;
+	if (flags & gpiod_LINE_REQ_FLAG_PULL_DOWN)
+		conf->flags |= GPIOD_LINE_REQUEST_FLAG_PULL_DOWN;
 }
 
 PyDoc_STRVAR(gpiod_LineBulk_request_doc,
@@ -2380,6 +2386,14 @@ static gpiod_ModuleConst gpiod_ModuleConsts[] = {
 	{
 		.name = "LINE_REQ_FLAG_ACTIVE_LOW",
 		.value = gpiod_LINE_REQ_FLAG_ACTIVE_LOW,
+	},
+	{
+		.name = "LINE_REQ_FLAG_PULL_UP",
+		.value = gpiod_LINE_REQ_FLAG_PULL_UP,
+	},
+	{
+		.name = "LINE_REQ_FLAG_PULL_DOWN",
+		.value = gpiod_LINE_REQ_FLAG_PULL_DOWN,
 	},
 	{ }
 };
