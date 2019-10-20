@@ -494,10 +494,12 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 		req.flags |= GPIOHANDLE_REQUEST_OPEN_SOURCE;
 	if (config->flags & GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW)
 		req.flags |= GPIOHANDLE_REQUEST_ACTIVE_LOW;
-	if (config->flags & GPIOD_LINE_REQUEST_FLAG_PULL_UP)
-		req.flags |= GPIOHANDLE_REQUEST_PULL_UP;
-	if (config->flags & GPIOD_LINE_REQUEST_FLAG_PULL_DOWN)
-		req.flags |= GPIOHANDLE_REQUEST_PULL_DOWN;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE)
+		req.flags |= GPIOHANDLE_REQUEST_BIAS_DISABLE;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN)
+		req.flags |= GPIOHANDLE_REQUEST_BIAS_PULL_DOWN;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP)
+		req.flags |= GPIOHANDLE_REQUEST_BIAS_PULL_UP;
 
 	if (config->request_type == GPIOD_LINE_REQUEST_DIRECTION_INPUT)
 		req.flags |= GPIOHANDLE_REQUEST_INPUT;
@@ -560,10 +562,12 @@ static int line_request_event_single(struct gpiod_line *line,
 		req.handleflags |= GPIOHANDLE_REQUEST_OPEN_SOURCE;
 	if (config->flags & GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW)
 		req.handleflags |= GPIOHANDLE_REQUEST_ACTIVE_LOW;
-	if (config->flags & GPIOD_LINE_REQUEST_FLAG_PULL_UP)
-		req.handleflags |= GPIOHANDLE_REQUEST_PULL_UP;
-	if (config->flags & GPIOD_LINE_REQUEST_FLAG_PULL_DOWN)
-		req.handleflags |= GPIOHANDLE_REQUEST_PULL_DOWN;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE)
+		req.handleflags |= GPIOHANDLE_REQUEST_BIAS_DISABLE;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN)
+		req.handleflags |= GPIOHANDLE_REQUEST_BIAS_PULL_DOWN;
+	if (config->flags & GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP)
+		req.handleflags |= GPIOHANDLE_REQUEST_BIAS_PULL_UP;
 
 	if (config->request_type == GPIOD_LINE_REQUEST_EVENT_RISING_EDGE)
 		req.eventflags |= GPIOEVENT_REQUEST_RISING_EDGE;

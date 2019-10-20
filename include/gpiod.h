@@ -792,10 +792,12 @@ enum {
 	/**< The line is an open-source port. */
 	GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW	= GPIOD_BIT(2),
 	/**< The active state of the line is low (high is the default). */
-	GPIOD_LINE_REQUEST_FLAG_PULL_UP	= GPIOD_BIT(3),
-	/**< The line can be configured for pull-up resistor */
-	GPIOD_LINE_REQUEST_FLAG_PULL_DOWN	= GPIOD_BIT(4),
-	/**< The line can be configured for pull-down resistor */
+	GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE	= GPIOD_BIT(3),
+	/**< The line has neither either pull-up nor pull-down resistor */
+	GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN	= GPIOD_BIT(4),
+	/**< The line has pull-down resistor enabled */
+	GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP	= GPIOD_BIT(5),
+	/**< The line has pull-up resistor enabled */
 };
 
 /**
