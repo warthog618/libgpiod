@@ -88,6 +88,27 @@ bool line::is_open_source(void) const
 	return ::gpiod_line_is_open_source(this->_m_line);
 }
 
+bool line::is_bias_disable(void) const
+{
+	this->throw_if_null();
+
+	return ::gpiod_line_is_bias_disable(this->_m_line);
+}
+
+bool line::is_bias_pull_down(void) const
+{
+	this->throw_if_null();
+
+	return ::gpiod_line_is_bias_pull_down(this->_m_line);
+}
+
+bool line::is_bias_pull_up(void) const
+{
+	this->throw_if_null();
+
+	return ::gpiod_line_is_bias_pull_up(this->_m_line);
+}
+
 void line::request(const line_request& config, int default_val) const
 {
 	this->throw_if_null();

@@ -346,6 +346,26 @@ public:
 	GPIOD_API bool is_open_source(void) const;
 
 	/**
+	 * @brief Check if this line has bias disabled.
+	 * @return True if the line has bias disabled, false otherwise.
+	 */
+	GPIOD_API bool is_bias_disable(void) const;
+
+	/**
+	 * @brief Check if this line has pull-down bias enabled.
+	 * @return True if the line has pull-down bias enabled, false
+	 * 	   otherwise.
+	 */
+	GPIOD_API bool is_bias_pull_down(void) const;
+
+	/**
+	 * @brief Check if this line has pull-up bias enabled.
+	 * @return True if the line has pull-up bias enabled, false
+	 * 	   otherwise.
+	 */
+	GPIOD_API bool is_bias_pull_up(void) const;
+
+	/**
 	 * @brief Request this line.
 	 * @param config Request config (see gpiod::line_request).
 	 * @param default_val Default value - only matters for OUTPUT direction.
