@@ -723,6 +723,27 @@ bool gpiod_line_is_open_drain(struct gpiod_line *line) GPIOD_API;
 bool gpiod_line_is_open_source(struct gpiod_line *line) GPIOD_API;
 
 /**
+ * @brief Check if the line has bias disabled.
+ * @param line GPIO line object.
+ * @return True if the line has bias disabled, false otherwise.
+ */
+bool gpiod_line_is_bias_disable(struct gpiod_line *line) GPIOD_API;
+
+/**
+ * @brief Check if the line has pull-down enabled.
+ * @param line GPIO line object.
+ * @return True if the line has pull-down enabled, false otherwise.
+ */
+bool gpiod_line_is_bias_pull_down(struct gpiod_line *line) GPIOD_API;
+
+/**
+ * @brief Check if the line has pull-up enabled.
+ * @param line GPIO line object.
+ * @return True if the line has pull-up enabled, false otherwise.
+ */
+bool gpiod_line_is_bias_pull_up(struct gpiod_line *line) GPIOD_API;
+
+/**
  * @brief Re-read the line info.
  * @param line GPIO line object.
  * @return 0 is the operation succeeds. In case of an error this routine
