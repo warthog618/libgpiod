@@ -412,6 +412,57 @@ static PyObject *gpiod_Line_is_open_source(gpiod_LineObject *self,
 	Py_RETURN_FALSE;
 }
 
+PyDoc_STRVAR(gpiod_Line_is_bias_disable_doc,
+"is_bias_disable() -> boolean\n"
+"\n"
+"Check if this line has bias disabled.");
+
+static PyObject *gpiod_Line_is_bias_disable(gpiod_LineObject *self,
+					  PyObject *Py_UNUSED(ignored))
+{
+	if (gpiod_ChipIsClosed(self->owner))
+		return NULL;
+
+	if (gpiod_line_is_bias_disable(self->line))
+		Py_RETURN_TRUE;
+
+	Py_RETURN_FALSE;
+}
+
+PyDoc_STRVAR(gpiod_Line_is_bias_pull_down_doc,
+"is_bias_pull_down() -> boolean\n"
+"\n"
+"Check if this line has bias pull-down enabled.");
+
+static PyObject *gpiod_Line_is_bias_pull_down(gpiod_LineObject *self,
+					  PyObject *Py_UNUSED(ignored))
+{
+	if (gpiod_ChipIsClosed(self->owner))
+		return NULL;
+
+	if (gpiod_line_is_bias_pull_down(self->line))
+		Py_RETURN_TRUE;
+
+	Py_RETURN_FALSE;
+}
+
+PyDoc_STRVAR(gpiod_Line_is_bias_pull_up_doc,
+"is_bias_pull_up() -> boolean\n"
+"\n"
+"Check if this line has bias pull-up enabled.");
+
+static PyObject *gpiod_Line_is_bias_pull_up(gpiod_LineObject *self,
+					  PyObject *Py_UNUSED(ignored))
+{
+	if (gpiod_ChipIsClosed(self->owner))
+		return NULL;
+
+	if (gpiod_line_is_bias_pull_up(self->line))
+		Py_RETURN_TRUE;
+
+	Py_RETURN_FALSE;
+}
+
 PyDoc_STRVAR(gpiod_Line_request_doc,
 "request(consumer[, type[, flags[, default_val]]]) -> None\n"
 "\n"
