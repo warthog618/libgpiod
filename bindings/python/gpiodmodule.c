@@ -825,6 +825,24 @@ static PyMethodDef gpiod_Line_methods[] = {
 		.ml_doc = gpiod_Line_is_open_source_doc,
 	},
 	{
+		.ml_name = "is_bias_disable",
+		.ml_meth = (PyCFunction)gpiod_Line_is_bias_disable,
+		.ml_flags = METH_NOARGS,
+		.ml_doc = gpiod_Line_is_bias_disable_doc,
+	},
+	{
+		.ml_name = "is_bias_pull_down",
+		.ml_meth = (PyCFunction)gpiod_Line_is_bias_pull_down,
+		.ml_flags = METH_NOARGS,
+		.ml_doc = gpiod_Line_is_bias_pull_down_doc,
+	},
+	{
+		.ml_name = "is_bias_pull_up",
+		.ml_meth = (PyCFunction)gpiod_Line_is_bias_pull_up,
+		.ml_flags = METH_NOARGS,
+		.ml_doc = gpiod_Line_is_bias_pull_up_doc,
+	},
+	{
 		.ml_name = "request",
 		.ml_meth = (PyCFunction)(void (*)(void))gpiod_Line_request,
 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
