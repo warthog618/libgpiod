@@ -1096,6 +1096,14 @@ void gpiod_line_release_bulk(struct gpiod_line_bulk *bulk) GPIOD_API;
 bool gpiod_line_is_requested(struct gpiod_line *line) GPIOD_API;
 
 /**
+ * @brief Check if the calling user has ownership of this line for values,
+ * not events.
+ * @param line GPIO line object.
+ * @return True if given line was requested, false otherwise.
+ */
+bool gpiod_line_is_requested_values(struct gpiod_line *line) GPIOD_API;
+
+/**
  * @brief Check if the calling user has neither requested ownership of this
  *        line nor configured any event notifications.
  * @param line GPIO line object.
@@ -1153,6 +1161,78 @@ int gpiod_line_set_value(struct gpiod_line *line, int value) GPIOD_API;
  */
 int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk,
 			      const int *values) GPIOD_API;
+
+/**
+ * @}
+ *
+ * @defgroup __line_config__ Setting line configuration
+ * @{
+ */
+
+/**
+ * @brief Update the configuration flags of a single GPIO line.
+ * @param line GPIO line object.
+ * @param flags Replacement flags.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ */
+int gpiod_line_set_config(struct gpiod_line *line, int flags) GPIOD_API;
+
+/**
+ * @brief Update the configuration flags of a set of GPIO lines.
+ * @param bulk Set of GPIO lines.
+ * @param flags Replacement flags.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ *
+ * If the lines were not previously requested together, the behavior is
+ * undefined.
+ */
+int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
+			       int flags) GPIOD_API;
+
+/**
+ * @brief Set the direction of a single GPIO line to input.
+ * @param line GPIO line object.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ */
+int gpiod_line_set_direction_input(struct gpiod_line *line) GPIOD_API;
+
+/**
+ * @brief Set the direction of a set of GPIO lines to input.
+ * @param bulk Set of GPIO lines.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ *
+ * If the lines were not previously requested together, the behavior is
+ * undefined.
+ */
+int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk
+					) GPIOD_API;
+
+/**
+ * @brief Set the direction of a single GPIO line to output.
+ * @param line GPIO line object.
+ * @param value The logical value output on the line.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ */
+int gpiod_line_set_direction_output(struct gpiod_line *line,
+				    int value) GPIOD_API;
+
+/**
+ * @brief Set the direction of a set of GPIO lines to output.
+ * @param bulk Set of GPIO lines.
+ * @values The logical value to output for each line.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ *
+ * If the lines were not previously requested together, the behavior is
+ * undefined.
+ */
+int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
+					 const int *values) GPIOD_API;
 
 /**
  * @}
