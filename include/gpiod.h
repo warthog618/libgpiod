@@ -1170,6 +1170,37 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk,
  */
 
 /**
+ * @brief Update the configuration of a single GPIO line.
+ * @param line GPIO line object.
+ * @param direction Updated direction.
+ * @param flags Replacement flags.
+ * @param value The new output value for the line when direction is
+ * GPIOD_LINE_DIRECTION_OUTPUT.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ */
+int gpiod_line_set_config(struct gpiod_line *line, int direction,
+			  int flags, int value) GPIOD_API;
+
+/**
+ * @brief Update the configuration of a set of GPIO lines.
+ * @param bulk Set of GPIO lines.
+ * @param direction Updated direction.
+ * @param flags Replacement flags.
+ * @param values An array holding line_bulk->num_lines new values for lines
+ * when direction is GPIOD_LINE_DIRECTION_OUTPUT.
+ * @return 0 is the operation succeeds. In case of an error this routine
+ *         returns -1 and sets the last error number.
+ *
+ * If the lines were not previously requested together, the behavior is
+ * undefined.
+ */
+int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
+			       int direction, int flags,
+			       const int *values) GPIOD_API;
+
+
+/**
  * @brief Update the configuration flags of a single GPIO line.
  * @param line GPIO line object.
  * @param flags Replacement flags.
@@ -1189,7 +1220,7 @@ int gpiod_line_set_flags(struct gpiod_line *line, int flags) GPIOD_API;
  * undefined.
  */
 int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk,
-			       int flags) GPIOD_API;
+			      int flags) GPIOD_API;
 
 /**
  * @brief Set the direction of a single GPIO line to input.

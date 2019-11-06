@@ -36,11 +36,13 @@ struct gpiod_line {
 	unsigned int offset;
 	int direction;
 	int active_state;
+	int output_value;
 	__u32 lflags;
-	__u32 hflags;
+	__u32 cflags;
 
 	int state;
 	bool needs_update;
+	bool as_is;
 
 	struct gpiod_chip *chip;
 	struct line_fd_handle *fd_handle;
@@ -489,6 +491,26 @@ static bool line_bulk_all_free(struct gpiod_line_bulk *bulk)
 	return true;
 }
 
+static bool line_direction_is_valid(int direction)
+{
+	if ((direction == GPIOD_LINE_DIRECTION_INPUT) ||
+	    (direction == GPIOD_LINE_DIRECTION_OUTPUT))
+		return true;
+
+	errno = EINVAL;
+	return false;
+}
+
+static __u32 line_direction_to_gpio_handleflag(int direction)
+{
+	if (direction == GPIOD_LINE_DIRECTION_INPUT)
+		return GPIOHANDLE_REQUEST_INPUT;
+	if (direction == GPIOD_LINE_DIRECTION_OUTPUT)
+		return GPIOHANDLE_REQUEST_OUTPUT;
+
+	return 0;
+}
+
 static __u32 line_request_flag_to_gpio_handleflag(int flags)
 {
 	int hflags = 0;
@@ -513,7 +535,7 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 			       const struct gpiod_line_request_config *config,
 			       const int *default_vals)
 {
-	struct gpiod_line *line, **lineptr;
+	struct gpiod_line *line;
 	struct line_fd_handle *line_fd;
 	struct gpiohandle_request req;
 	unsigned int i;
@@ -565,9 +587,15 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 	if (!line_fd)
 		return -1;
 
-	gpiod_line_bulk_foreach_line(bulk, line, lineptr) {
+	gpiod_line_bulk_foreach_line_off(bulk, line, i) {
 		line->state = LINE_REQUESTED_VALUES;
-		line->hflags = req.flags;
+		line->cflags = config->flags;
+		if (config->request_type ==
+			GPIOD_LINE_REQUEST_DIRECTION_OUTPUT &&
+		    	default_vals)
+			line->output_value = !!default_vals[i];
+		if (config->request_type == GPIOD_LINE_REQUEST_DIRECTION_AS_IS)
+			line->as_is = true;
 		line_set_fd(line, line_fd);
 		line_maybe_update(line);
 	}
@@ -608,7 +636,7 @@ static int line_request_event_single(struct gpiod_line *line,
 		return -1;
 
 	line->state = LINE_REQUESTED_EVENTS;
-	line->hflags = req.handleflags;
+	line->cflags = config->flags;
 	line_set_fd(line, line_fd);
 	line_maybe_update(line);
 
@@ -793,102 +821,21 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk, const int *values)
 	return 0;
 }
 
-int gpiod_line_set_flags(struct gpiod_line *line, int flags)
-{
+int gpiod_line_set_config(struct gpiod_line *line, int direction,
+			  int flags, int value){
 	struct gpiod_line_bulk bulk;
 
 	gpiod_line_bulk_init(&bulk);
 	gpiod_line_bulk_add(&bulk, line);
 
-	return gpiod_line_set_flags_bulk(&bulk, flags);
+	return gpiod_line_set_config_bulk(&bulk, direction, flags, &value);
 }
 
-int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
-{
+int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
+			       int direction, int flags, // !!! dirn or req_type - direction can't support AS_IS?
+			       const int *values){
 	struct gpiohandle_config hcfg;
-	struct gpiod_line *line, **lineptr;
-	int rv, fd;
-	__u32 hflags;
-
-	if (!line_bulk_same_chip(bulk) ||
-	    !line_bulk_all_requested_values(bulk))
-		return -1;
-
-	memset(&hcfg, 0, sizeof(hcfg));
-
-	hcfg.flags = line_request_flag_to_gpio_handleflag(flags);
-
-	line = gpiod_line_bulk_get_line(bulk, 0);
-	fd = line_get_fd(line);
-
-	rv = ioctl(fd, GPIOHANDLE_SET_CONFIG_IOCTL, &hcfg);
-	if (rv < 0)
-		return -1;
-
-	hflags = line->hflags & (GPIOHANDLE_REQUEST_INPUT |
-				 GPIOHANDLE_REQUEST_OUTPUT);
-	hflags |= hcfg.flags;
-	gpiod_line_bulk_foreach_line(bulk, line, lineptr) {
-		line->hflags = hflags;
-		line_maybe_update(line);
-	}
-	return 0;
-}
-
-int gpiod_line_set_direction_input(struct gpiod_line *line)
-{
-	struct gpiod_line_bulk bulk;
-
-	gpiod_line_bulk_init(&bulk);
-	gpiod_line_bulk_add(&bulk, line);
-
-	return gpiod_line_set_direction_bulk_input(&bulk);
-}
-
-int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk)
-{
-	struct gpiohandle_config hcfg;
-	struct gpiod_line *line, **lineptr;
-	int rv, fd;
-
-	if (!line_bulk_same_chip(bulk) ||
-	    !line_bulk_all_requested_values(bulk))
-		return -1;
-
-	line = gpiod_line_bulk_get_line(bulk, 0);
-	fd = line_get_fd(line);
-
-	memset(&hcfg, 0, sizeof(hcfg));
-	hcfg.flags = line->hflags | GPIOHANDLE_REQUEST_INPUT;
-	hcfg.flags &= ~GPIOHANDLE_REQUEST_OUTPUT;
-
-	rv = ioctl(fd, GPIOHANDLE_SET_CONFIG_IOCTL, &hcfg);
-	if (rv < 0)
-		return -1;
-
-	gpiod_line_bulk_foreach_line(bulk, line, lineptr) {
-		line->hflags = hcfg.flags;
-		line_maybe_update(line);
-	}
-
-	return 0;
-}
-
-int gpiod_line_set_direction_output(struct gpiod_line *line, int value)
-{
-	struct gpiod_line_bulk bulk;
-
-	gpiod_line_bulk_init(&bulk);
-	gpiod_line_bulk_add(&bulk, line);
-
-	return gpiod_line_set_direction_bulk_output(&bulk, &value);
-}
-
-int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
-					const int *values)
-{
-	struct gpiohandle_config hcfg;
-	struct gpiod_line *line, **lineptr;
+	struct gpiod_line *line;
 	unsigned int i;
 	int rv, fd;
 
@@ -896,25 +843,98 @@ int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
 	    !line_bulk_all_requested_values(bulk))
 		return -1;
 
-	line = gpiod_line_bulk_get_line(bulk, 0);
-	fd = line_get_fd(line);
+	if (!line_direction_is_valid(direction)) {
+		return -1;
+	}
 
 	memset(&hcfg, 0, sizeof(hcfg));
-	hcfg.flags = line->hflags | GPIOHANDLE_REQUEST_OUTPUT;
-	hcfg.flags &= ~GPIOHANDLE_REQUEST_INPUT;
-	for (i = 0; i < gpiod_line_bulk_num_lines(bulk); i++)
-		hcfg.default_values[i] = (uint8_t)!!values[i];
+
+	hcfg.flags = line_request_flag_to_gpio_handleflag(flags);
+	hcfg.flags |= line_direction_to_gpio_handleflag(direction);
+	if (direction == GPIOD_LINE_DIRECTION_OUTPUT && values) {
+		for (i = 0; i < gpiod_line_bulk_num_lines(bulk); i++)
+			hcfg.default_values[i] = (uint8_t)!!values[i];
+	}
+
+	line = gpiod_line_bulk_get_line(bulk, 0);
+	fd = line_get_fd(line);
 
 	rv = ioctl(fd, GPIOHANDLE_SET_CONFIG_IOCTL, &hcfg);
 	if (rv < 0)
 		return -1;
 
-	gpiod_line_bulk_foreach_line(bulk, line, lineptr) {
-		line->hflags = hcfg.flags;
+	gpiod_line_bulk_foreach_line_off(bulk, line, i) {
+		line->cflags = flags;
+		if (direction == GPIOD_LINE_DIRECTION_OUTPUT &&	values)
+			line->output_value = !!values[i];
+		// !!! update line->as_is - how??
 		line_maybe_update(line);
 	}
-
 	return 0;
+}
+
+
+int gpiod_line_set_flags(struct gpiod_line *line, int flags)
+{
+	if (line->as_is) {
+		errno = EPERM;
+		return -1;
+	}
+	return gpiod_line_set_config(line,line->direction,
+				     flags,line->output_value);
+}
+
+int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
+{
+	struct gpiod_line *line;
+	int values[GPIOD_LINE_BULK_MAX_LINES];
+	unsigned int i;
+
+	line = gpiod_line_bulk_get_line(bulk, 0);
+	if (line->as_is) {
+		errno = EPERM;
+		return -1;
+	}
+	if (line->direction == GPIOD_LINE_DIRECTION_OUTPUT)
+		gpiod_line_bulk_foreach_line_off(bulk, line, i) {
+			values[i] = line->output_value;
+		}
+
+	return gpiod_line_set_config_bulk(bulk, line->direction,
+					  flags, values);
+}
+
+int gpiod_line_set_direction_input(struct gpiod_line *line)
+{
+	return gpiod_line_set_config(line,GPIOD_LINE_DIRECTION_INPUT,
+				     line->cflags,0);
+}
+
+int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk)
+{
+	struct gpiod_line *line;
+
+	line = gpiod_line_bulk_get_line(bulk, 0);
+	return gpiod_line_set_config_bulk(bulk, 
+					  GPIOD_LINE_DIRECTION_INPUT,
+					  line->cflags, NULL);
+}
+
+int gpiod_line_set_direction_output(struct gpiod_line *line, int value)
+{
+	return gpiod_line_set_config(line,GPIOD_LINE_DIRECTION_OUTPUT,
+				     line->cflags,value);
+}
+
+int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
+					const int *values)
+{
+	struct gpiod_line *line;
+
+	line = gpiod_line_bulk_get_line(bulk, 0);
+	return gpiod_line_set_config_bulk(bulk, 
+					  GPIOD_LINE_DIRECTION_OUTPUT,
+					  line->cflags, values);
 }
 
 int gpiod_line_event_wait(struct gpiod_line *line,

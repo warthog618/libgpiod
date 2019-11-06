@@ -356,11 +356,13 @@ GPIOD_TEST_CASE(set_direction, 0, { 8 })
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
 			GPIOD_LINE_DIRECTION_INPUT);
+
 	ret = gpiod_line_set_direction_output(line, 1);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
+
 }
 
 
