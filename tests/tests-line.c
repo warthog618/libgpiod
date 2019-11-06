@@ -276,7 +276,7 @@ GPIOD_TEST_CASE(set_value, 0, { 8 })
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 }
 
-GPIOD_TEST_CASE(set_config_active_state, 0, { 8 })
+GPIOD_TEST_CASE(set_flags_active_state, 0, { 8 })
 {
 	g_autoptr(gpiod_chip_struct) chip = NULL;
 	struct gpiod_line *line;
@@ -295,17 +295,17 @@ GPIOD_TEST_CASE(set_config_active_state, 0, { 8 })
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_HIGH);
 
-	ret = gpiod_line_set_config(line, GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW);
+	ret = gpiod_line_set_flags(line, GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_LOW);
-	ret = gpiod_line_set_config(line, 0);
+	ret = gpiod_line_set_flags(line, 0);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_HIGH);		
 }
 
-GPIOD_TEST_CASE(set_config_bias, 0, { 8 })
+GPIOD_TEST_CASE(set_flags_bias, 0, { 8 })
 {
 	g_autoptr(gpiod_chip_struct) chip = NULL;
 	struct gpiod_line *line;
@@ -322,11 +322,11 @@ GPIOD_TEST_CASE(set_config_bias, 0, { 8 })
 	ret = gpiod_line_request_input(line, GPIOD_TEST_CONSUMER);
 	g_assert_cmpint(ret, ==, 0);
 
-	ret = gpiod_line_set_config(line,
+	ret = gpiod_line_set_flags(line,
 		GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
-	ret = gpiod_line_set_config(line,
+	ret = gpiod_line_set_flags(line,
 		GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);

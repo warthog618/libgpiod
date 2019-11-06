@@ -793,17 +793,17 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk, const int *values)
 	return 0;
 }
 
-int gpiod_line_set_config(struct gpiod_line *line, int flags)
+int gpiod_line_set_flags(struct gpiod_line *line, int flags)
 {
 	struct gpiod_line_bulk bulk;
 
 	gpiod_line_bulk_init(&bulk);
 	gpiod_line_bulk_add(&bulk, line);
 
-	return gpiod_line_set_config_bulk(&bulk, flags);
+	return gpiod_line_set_flags_bulk(&bulk, flags);
 }
 
-int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk, int flags)
+int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 {
 	struct gpiohandle_config hcfg;
 	struct gpiod_line *line, **lineptr;

@@ -1176,7 +1176,7 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk,
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  */
-int gpiod_line_set_config(struct gpiod_line *line, int flags) GPIOD_API;
+int gpiod_line_set_flags(struct gpiod_line *line, int flags) GPIOD_API;
 
 /**
  * @brief Update the configuration flags of a set of GPIO lines.
@@ -1188,7 +1188,7 @@ int gpiod_line_set_config(struct gpiod_line *line, int flags) GPIOD_API;
  * If the lines were not previously requested together, the behavior is
  * undefined.
  */
-int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
+int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk,
 			       int flags) GPIOD_API;
 
 /**
