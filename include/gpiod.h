@@ -1172,10 +1172,12 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk,
 /**
  * @brief Update the configuration of a single GPIO line.
  * @param line GPIO line object.
- * @param direction Updated direction.
+ * @param direction Updated direction which may be one of
+ * GPIOD_LINE_REQUEST_DIRECTION_AS_IS, GPIOD_LINE_REQUEST_DIRECTION_INPUT,
+ * or GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @param flags Replacement flags.
  * @param value The new output value for the line when direction is
- * GPIOD_LINE_DIRECTION_OUTPUT.
+ * GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  */
@@ -1185,10 +1187,12 @@ int gpiod_line_set_config(struct gpiod_line *line, int direction,
 /**
  * @brief Update the configuration of a set of GPIO lines.
  * @param bulk Set of GPIO lines.
- * @param direction Updated direction.
+ * @param direction Updated direction which may be one of
+ * GPIOD_LINE_REQUEST_DIRECTION_AS_IS, GPIOD_LINE_REQUEST_DIRECTION_INPUT,
+ * or GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @param flags Replacement flags.
- * @param values An array holding line_bulk->num_lines new values for lines
- * when direction is GPIOD_LINE_DIRECTION_OUTPUT.
+ * @param values An array holding line_bulk->num_lines new logical values
+ * for lines when direction is GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  *
