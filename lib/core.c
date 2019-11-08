@@ -867,8 +867,8 @@ int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
 	as_is = line->as_is && direction == GPIOD_LINE_REQUEST_DIRECTION_AS_IS;
 	gpiod_line_bulk_foreach_line_off(bulk, line, i) {
 		line->cflags = flags;
-		if (direction == GPIOD_LINE_REQUEST_DIRECTION_OUTPUT &&	values)
-			line->output_value = !!values[i];
+		if (direction == GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
+			line->output_value = hcfg.default_values[i];
 		line->as_is = as_is;
 		line_maybe_update(line);
 	}
