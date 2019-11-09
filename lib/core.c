@@ -592,9 +592,8 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 		line->state = LINE_REQUESTED_VALUES;
 		line->cflags = config->flags;
 		if (config->request_type ==
-			GPIOD_LINE_REQUEST_DIRECTION_OUTPUT &&
-		    	default_vals)
-			line->output_value = !!default_vals[i];
+			GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
+			line->output_value = req.default_values[i];
 		if (config->request_type == GPIOD_LINE_REQUEST_DIRECTION_AS_IS)
 			line->as_is = true;
 		line_set_fd(line, line_fd);
@@ -819,6 +818,9 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk, const int *values)
 	rv = ioctl(fd, GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data);
 	if (rv < 0)
 		return -1;
+
+	gpiod_line_bulk_foreach_line_off(bulk, line, i)
+		line->output_value = data.values[i];
 
 	return 0;
 }
