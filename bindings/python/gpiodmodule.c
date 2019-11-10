@@ -1560,7 +1560,7 @@ static PyObject *gpiod_LineBulk_set_config(gpiod_LineBulkObject *self,
 PyDoc_STRVAR(gpiod_LineBulk_set_flags_doc,
 "set_flags(flags) -> None\n"
 "\n"
-"Set the flags of of all the lines held by this LineBulk object.\n"
+"Set the flags of all the lines held by this LineBulk object.\n"
 "\n"
 "  flags\n"
 "    New flags (integer)");
@@ -1593,7 +1593,7 @@ static PyObject *gpiod_LineBulk_set_flags(gpiod_LineBulkObject *self,
 PyDoc_STRVAR(gpiod_LineBulk_set_direction_input_doc,
 "set_direction_input() -> None\n"
 "\n"
-"Set the direction of of all the lines held by this LineBulk object to input.\n");
+"Set the direction of all the lines held by this LineBulk object to input.\n");
 
 static PyObject *gpiod_LineBulk_set_direction_input(gpiod_LineBulkObject *self,
 						    PyObject *Py_UNUSED(ignored))
@@ -1618,7 +1618,7 @@ static PyObject *gpiod_LineBulk_set_direction_input(gpiod_LineBulkObject *self,
 PyDoc_STRVAR(gpiod_LineBulk_set_direction_output_doc,
 "set_direction_output(value) -> None\n"
 "\n"
-"Set the direction of of all the lines held by this LineBulk object to output.\n"
+"Set the direction of all the lines held by this LineBulk object to output.\n"
 "\n"
 "  values\n"
 "    List of values (integers) to set when direction is output.\n"
