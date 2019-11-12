@@ -17,10 +17,13 @@ static const struct option longopts[] = {
 	{ "help",	no_argument,	NULL,	'h' },
 	{ "version",	no_argument,	NULL,	'v' },
 	{ "active-low",	no_argument,	NULL,	'l' },
+	{ "pull-down",	no_argument,	NULL,	'D' },
+	{ "pull-up",	no_argument,	NULL,	'U' },
+	{ "bias-disable", no_argument,	NULL,	'B' },
 	{ GETOPT_NULL_LONGOPT },
 };
 
-static const char *const shortopts = "+hvl";
+static const char *const shortopts = "+hvlDUB";
 
 static void print_help(void)
 {
@@ -32,13 +35,16 @@ static void print_help(void)
 	printf("  -h, --help:\t\tdisplay this message and exit\n");
 	printf("  -v, --version:\tdisplay the version and exit\n");
 	printf("  -l, --active-low:\tset the line active state to low\n");
+	printf("  -D, --pull-down:\tenable internal pull-down\n");
+	printf("  -U, --pull-up:\tenable internal pull-up\n");
+	printf("  -B, --bias-disable:\tdisable internal bias\n");
 }
 
 int main(int argc, char **argv)
 {
 	unsigned int *offsets, i, num_lines;
 	int *values, optc, opti, rv;
-	bool active_low = false;
+	int flags = 0;
 	char *device, *end;
 
 	for (;;) {
@@ -54,7 +60,16 @@ int main(int argc, char **argv)
 			print_version();
 			return EXIT_SUCCESS;
 		case 'l':
-			active_low = true;
+			flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+			break;
+		case 'D':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
+			break;
+		case 'U':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP;
+			break;
+		case 'B':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE;
 			break;
 		case '?':
 			die("try %s --help", get_progname());
@@ -86,9 +101,9 @@ int main(int argc, char **argv)
 			die("invalid GPIO offset: %s", argv[i + 1]);
 	}
 
-	rv = gpiod_ctxless_get_value_multiple(device, offsets, values,
-					      num_lines, active_low,
-					      "gpioget");
+	rv = gpiod_ctxless_get_value_multiple_ext(device, offsets, values,
+						  num_lines, flags,
+						  "gpioget");
 	if (rv < 0)
 		die_perror("error reading GPIO values");
 

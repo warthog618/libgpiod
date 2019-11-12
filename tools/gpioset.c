@@ -27,10 +27,13 @@ static const struct option longopts[] = {
 	{ "sec",		required_argument,	NULL,	's' },
 	{ "usec",		required_argument,	NULL,	'u' },
 	{ "background",		no_argument,		NULL,	'b' },
+	{ "pull-down",		no_argument,		NULL,	'D' },
+	{ "pull-up",		no_argument,		NULL,	'U' },
+	{ "bias-disable",	no_argument,		NULL,	'B' },
 	{ GETOPT_NULL_LONGOPT },
 };
 
-static const char *const shortopts = "+hvlm:s:u:b";
+static const char *const shortopts = "+hvlm:s:u:bDUB";
 
 static void print_help(void)
 {
@@ -42,6 +45,9 @@ static void print_help(void)
 	printf("  -h, --help:\t\tdisplay this message and exit\n");
 	printf("  -v, --version:\tdisplay the version and exit\n");
 	printf("  -l, --active-low:\tset the line active state to low\n");
+	printf("  -D, --pull-down:\tenable internal pull-down\n");
+	printf("  -U, --pull-up:\tenable internal pull-up\n");
+	printf("  -B, --bias-disable:\tdisable internal bias\n");
 	printf("  -m, --mode=[exit|wait|time|signal] (defaults to 'exit'):\n");
 	printf("		tell the program what to do after setting values\n");
 	printf("  -s, --sec=SEC:\tspecify the number of seconds to wait (only valid for --mode=time)\n");
@@ -182,9 +188,8 @@ int main(int argc, char **argv)
 {
 	const struct mode_mapping *mode = &modes[MODE_EXIT];
 	unsigned int *offsets, num_lines, i;
-	int *values, rv, optc, opti;
+	int *values, rv, optc, opti, flags = 0;
 	struct callback_data cbdata;
-	bool active_low = false;
 	char *device, *end;
 
 	memset(&cbdata, 0, sizeof(cbdata));
@@ -202,7 +207,16 @@ int main(int argc, char **argv)
 			print_version();
 			return EXIT_SUCCESS;
 		case 'l':
-			active_low = true;
+			flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+			break;
+		case 'D':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
+			break;
+		case 'U':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP;
+			break;
+		case 'B':
+			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE;
 			break;
 		case 'm':
 			mode = parse_mode(optarg);
@@ -268,9 +282,10 @@ int main(int argc, char **argv)
 			die("invalid offset: %s", argv[i + 1]);
 	}
 
-	rv = gpiod_ctxless_set_value_multiple(device, offsets, values,
-					      num_lines, active_low, "gpioset",
-					      mode->callback, &cbdata);
+	rv = gpiod_ctxless_set_value_multiple_ext(
+				device, offsets, values,
+				num_lines, flags, "gpioset",
+				mode->callback, &cbdata);
 	if (rv < 0)
 		die_perror("error setting the GPIO line values");
 
