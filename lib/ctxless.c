@@ -27,16 +27,44 @@ int gpiod_ctxless_get_value(const char *device, unsigned int offset,
 	return value;
 }
 
+int gpiod_ctxless_get_value_ext(const char *device, unsigned int offset,
+				int flags, const char *consumer)
+{
+	int value, rv;
+
+	rv = gpiod_ctxless_get_value_multiple_ext(device, &offset, &value,
+						  1, flags, consumer);
+	if (rv < 0)
+		return rv;
+
+	return value;
+}
+
 int gpiod_ctxless_get_value_multiple(const char *device,
 				     const unsigned int *offsets, int *values,
 				     unsigned int num_lines, bool active_low,
 				     const char *consumer)
 {
+	int rv, flags;
+
+	flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
+	rv = gpiod_ctxless_get_value_multiple_ext(device, offsets, values,
+					      num_lines, flags, consumer);
+	return rv;
+}
+
+int gpiod_ctxless_get_value_multiple_ext(const char *device,
+					 const unsigned int *offsets,
+					 int *values,
+					 unsigned int num_lines,
+					 int flags,
+					 const char *consumer)
+{
 	struct gpiod_line_bulk bulk;
 	struct gpiod_chip *chip;
 	struct gpiod_line *line;
 	unsigned int i;
-	int rv, flags;
+	int rv;
 
 	if (!num_lines || num_lines > GPIOD_LINE_BULK_MAX_LINES) {
 		errno = EINVAL;
@@ -58,8 +86,6 @@ int gpiod_ctxless_get_value_multiple(const char *device,
 
 		gpiod_line_bulk_add(&bulk, line);
 	}
-
-	flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
 
 	rv = gpiod_line_request_bulk_input_flags(&bulk, consumer, flags);
 	if (rv < 0) {
@@ -83,17 +109,41 @@ int gpiod_ctxless_set_value(const char *device, unsigned int offset, int value,
 						active_low, consumer, cb, data);
 }
 
+int gpiod_ctxless_set_value_ext(const char *device, unsigned int offset,
+				int value, int flags, const char *consumer,
+				gpiod_ctxless_set_value_cb cb, void *data)
+{
+	return gpiod_ctxless_set_value_multiple_ext(device, &offset, &value,
+						    1, flags, consumer,
+						    cb, data);
+}
+
 int gpiod_ctxless_set_value_multiple(const char *device,
 				     const unsigned int *offsets,
 				     const int *values, unsigned int num_lines,
 				     bool active_low, const char *consumer,
 				     gpiod_ctxless_set_value_cb cb, void *data)
 {
+	int flags;
+
+	flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
+	return gpiod_ctxless_set_value_multiple_ext(device, offsets, values,
+						    num_lines, flags,
+						    consumer, cb, data);
+}
+
+int gpiod_ctxless_set_value_multiple_ext(
+			const char *device,
+			const unsigned int *offsets,
+			const int *values, unsigned int num_lines,
+			int flags, const char *consumer,
+			gpiod_ctxless_set_value_cb cb, void *data)
+{
 	struct gpiod_line_bulk bulk;
 	struct gpiod_chip *chip;
 	struct gpiod_line *line;
 	unsigned int i;
-	int rv, flags;
+	int rv;
 
 	if (!num_lines || num_lines > GPIOD_LINE_BULK_MAX_LINES) {
 		errno = EINVAL;
@@ -115,8 +165,6 @@ int gpiod_ctxless_set_value_multiple(const char *device,
 
 		gpiod_line_bulk_add(&bulk, line);
 	}
-
-	flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
 
 	rv = gpiod_line_request_bulk_output_flags(&bulk, consumer,
 						  flags, values);
@@ -216,10 +264,43 @@ int gpiod_ctxless_event_monitor(const char *device, int event_type,
 						    poll_cb, event_cb, data);
 }
 
+int gpiod_ctxless_event_monitor_ext(const char *device, int event_type,
+				    unsigned int offset, int flags,
+				    const char *consumer,
+				    const struct timespec *timeout,
+				    gpiod_ctxless_event_poll_cb poll_cb,
+				    gpiod_ctxless_event_handle_cb event_cb,
+				    void *data)
+{
+	return gpiod_ctxless_event_monitor_multiple(device, event_type,
+						    &offset, 1, flags,
+						    consumer, timeout,
+						    poll_cb, event_cb, data);
+}
+
 int gpiod_ctxless_event_monitor_multiple(
 			const char *device, int event_type,
 			const unsigned int *offsets,
 			unsigned int num_lines, bool active_low,
+			const char *consumer,
+			const struct timespec *timeout,
+			gpiod_ctxless_event_poll_cb poll_cb,
+			gpiod_ctxless_event_handle_cb event_cb,
+			void *data)
+{
+	int flags;
+
+	flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
+	return gpiod_ctxless_event_monitor_multiple_ext(
+			device, event_type, offsets,
+			num_lines, flags, consumer, timeout,
+			poll_cb, event_cb, data);
+}
+
+int gpiod_ctxless_event_monitor_multiple_ext(
+			const char *device, int event_type,
+			const unsigned int *offsets,
+			unsigned int num_lines, int flags,
 			const char *consumer,
 			const struct timespec *timeout,
 			gpiod_ctxless_event_poll_cb poll_cb,
@@ -259,7 +340,7 @@ int gpiod_ctxless_event_monitor_multiple(
 		gpiod_line_bulk_add(&bulk, line);
 	}
 
-	conf.flags = active_low ? GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW : 0;
+	conf.flags = flags;
 	conf.consumer = consumer;
 
 	if (event_type == GPIOD_CTXLESS_EVENT_RISING_EDGE) {
