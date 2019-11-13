@@ -360,6 +360,18 @@ int gpiod_line_active_state(struct gpiod_line *line)
 	return line->active_state;
 }
 
+int gpiod_line_bias(struct gpiod_line *line)
+{
+	if (line->lflags & GPIOLINE_FLAG_BIAS_DISABLE)
+		return GPIOD_LINE_BIAS_DISABLE;
+	if (line->lflags & GPIOLINE_FLAG_BIAS_PULL_UP)
+		return GPIOD_LINE_BIAS_PULL_UP;
+	if (line->lflags & GPIOLINE_FLAG_BIAS_PULL_DOWN)
+		return GPIOD_LINE_BIAS_PULL_DOWN;
+
+	return GPIOD_LINE_BIAS_AS_IS;
+}
+
 bool gpiod_line_is_used(struct gpiod_line *line)
 {
 	return line->lflags & GPIOLINE_FLAG_KERNEL;
@@ -373,21 +385,6 @@ bool gpiod_line_is_open_drain(struct gpiod_line *line)
 bool gpiod_line_is_open_source(struct gpiod_line *line)
 {
 	return line->lflags & GPIOLINE_FLAG_OPEN_SOURCE;
-}
-
-bool gpiod_line_is_bias_disable(struct gpiod_line *line)
-{
-	return line->lflags & GPIOLINE_FLAG_BIAS_DISABLE;
-}
-
-bool gpiod_line_is_bias_pull_down(struct gpiod_line *line)
-{
-	return line->lflags & GPIOLINE_FLAG_BIAS_PULL_DOWN;
-}
-
-bool gpiod_line_is_bias_pull_up(struct gpiod_line *line)
-{
-	return line->lflags & GPIOLINE_FLAG_BIAS_PULL_UP;
 }
 
 bool gpiod_line_needs_update(struct gpiod_line *line)

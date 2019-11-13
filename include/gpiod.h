@@ -789,6 +789,20 @@ enum {
 };
 
 /**
+ * @brief Possible internal bias settings.
+ */
+enum {
+	GPIOD_LINE_BIAS_AS_IS = 1,
+	/**< The internal bias state is unknown. */
+	GPIOD_LINE_BIAS_DISABLE,
+	/**< The internal bias is disabled. */
+	GPIOD_LINE_BIAS_PULL_UP,
+	/**< The internal pull-up bias is enabled. */
+	GPIOD_LINE_BIAS_PULL_DOWN,
+	/**< The internal pull-down bias is enabled. */
+};
+
+/**
  * @brief Read the GPIO line offset.
  * @param line GPIO line object.
  * @return Line offset.
@@ -828,6 +842,14 @@ int gpiod_line_direction(struct gpiod_line *line) GPIOD_API;
 int gpiod_line_active_state(struct gpiod_line *line) GPIOD_API;
 
 /**
+ * @brief Read the GPIO line bias setting.
+ * @param line GPIO line object.
+ * @return Returns GPIOD_LINE_BIAS_PULL_UP, GPIOD_LINE_BIAS_PULL_DOWN,
+ * 	   GPIOD_LINE_BIAS_DISABLE or GPIOD_LINE_BIAS_AS_IS.
+ */
+int gpiod_line_bias(struct gpiod_line *line) GPIOD_API;
+
+/**
  * @brief Check if the line is currently in use.
  * @param line GPIO line object.
  * @return True if the line is in use, false otherwise.
@@ -851,27 +873,6 @@ bool gpiod_line_is_open_drain(struct gpiod_line *line) GPIOD_API;
  * @return True if the line is an open-source GPIO, false otherwise.
  */
 bool gpiod_line_is_open_source(struct gpiod_line *line) GPIOD_API;
-
-/**
- * @brief Check if the line has bias disabled.
- * @param line GPIO line object.
- * @return True if the line has bias disabled, false otherwise.
- */
-bool gpiod_line_is_bias_disable(struct gpiod_line *line) GPIOD_API;
-
-/**
- * @brief Check if the line has pull-down enabled.
- * @param line GPIO line object.
- * @return True if the line has pull-down enabled, false otherwise.
- */
-bool gpiod_line_is_bias_pull_down(struct gpiod_line *line) GPIOD_API;
-
-/**
- * @brief Check if the line has pull-up enabled.
- * @param line GPIO line object.
- * @return True if the line has pull-up enabled, false otherwise.
- */
-bool gpiod_line_is_bias_pull_up(struct gpiod_line *line) GPIOD_API;
 
 /**
  * @brief Re-read the line info.
