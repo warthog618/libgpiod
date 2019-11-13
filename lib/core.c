@@ -826,7 +826,8 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk, const int *values)
 }
 
 int gpiod_line_set_config(struct gpiod_line *line, int direction,
-			  int flags, int value){
+			  int flags, int value)
+{
 	struct gpiod_line_bulk bulk;
 
 	gpiod_line_bulk_init(&bulk);
@@ -837,7 +838,8 @@ int gpiod_line_set_config(struct gpiod_line *line, int direction,
 
 int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
 			       int direction, int flags,
-			       const int *values){
+			       const int *values)
+{
 	struct gpiohandle_config hcfg;
 	struct gpiod_line *line;
 	unsigned int i;
@@ -905,8 +907,7 @@ int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 			values[i] = line->output_value;
 		}
 		direction = GPIOD_LINE_REQUEST_DIRECTION_OUTPUT;
-	}
-	else
+	} else
 		direction = GPIOD_LINE_REQUEST_DIRECTION_INPUT;
 
 	return gpiod_line_set_config_bulk(bulk, direction,
@@ -915,8 +916,8 @@ int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 
 int gpiod_line_set_direction_input(struct gpiod_line *line)
 {
-	return gpiod_line_set_config(line,GPIOD_LINE_REQUEST_DIRECTION_INPUT,
-				     line->cflags,0);
+	return gpiod_line_set_config(line, GPIOD_LINE_REQUEST_DIRECTION_INPUT,
+				     line->cflags, 0);
 }
 
 int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk)
@@ -924,15 +925,15 @@ int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk)
 	struct gpiod_line *line;
 
 	line = gpiod_line_bulk_get_line(bulk, 0);
-	return gpiod_line_set_config_bulk(bulk, 
+	return gpiod_line_set_config_bulk(bulk,
 					  GPIOD_LINE_REQUEST_DIRECTION_INPUT,
 					  line->cflags, NULL);
 }
 
 int gpiod_line_set_direction_output(struct gpiod_line *line, int value)
 {
-	return gpiod_line_set_config(line,GPIOD_LINE_REQUEST_DIRECTION_OUTPUT,
-				     line->cflags,value);
+	return gpiod_line_set_config(line, GPIOD_LINE_REQUEST_DIRECTION_OUTPUT,
+				     line->cflags, value);
 }
 
 int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
@@ -941,7 +942,7 @@ int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
 	struct gpiod_line *line;
 
 	line = gpiod_line_bulk_get_line(bulk, 0);
-	return gpiod_line_set_config_bulk(bulk, 
+	return gpiod_line_set_config_bulk(bulk,
 					  GPIOD_LINE_REQUEST_DIRECTION_OUTPUT,
 					  line->cflags, values);
 }

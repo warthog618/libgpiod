@@ -196,7 +196,7 @@ void line_bulk::set_config(int direction, ::std::bitset<32> flags,
 
 	this->to_line_bulk(::std::addressof(bulk));
 
-	rv = ::gpiod_line_set_config_bulk(::std::addressof(bulk), direction, 
+	rv = ::gpiod_line_set_config_bulk(::std::addressof(bulk), direction,
 					  gflags, values.data());
 	if (rv)
 		throw ::std::system_error(errno, ::std::system_category(),

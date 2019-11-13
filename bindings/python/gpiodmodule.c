@@ -621,9 +621,9 @@ PyDoc_STRVAR(gpiod_Line_set_config_doc,
 "Set the configuration of this GPIO line.\n"
 "\n"
 "  direction\n"
-"    New direction (integer)"
+"    New direction (integer)\n"
 "  flags\n"
-"    New flags (integer)"
+"    New flags (integer)\n"
 "  value\n"
 "    New value (integer)");
 
@@ -651,8 +651,7 @@ static PyObject *gpiod_Line_set_config(gpiod_LineObject *self, PyObject *args)
 		ret = PyObject_CallMethod((PyObject *)bulk_obj,
 				"set_config", "OO(O)", dirn, flags, vals);
 		Py_DECREF(vals);
-	}
-	else
+	} else
 		ret = PyObject_CallMethod((PyObject *)bulk_obj,
 				"set_config", "OO", dirn, flags);
 
@@ -715,13 +714,13 @@ PyDoc_STRVAR(gpiod_Line_set_direction_output_doc,
 "  value\n"
 "    New value (integer)");
 
-static PyObject *gpiod_Line_set_direction_output(gpiod_LineObject *self, 
+static PyObject *gpiod_Line_set_direction_output(gpiod_LineObject *self,
 						 PyObject *args)
 {
 	gpiod_LineBulkObject *bulk_obj;
 	PyObject *val, *vals, *ret;
 	int rv;
-	const char * fmt;
+	const char *fmt;
 
 	val = NULL;
 	rv = PyArg_ParseTuple(args, "|O", &val);
@@ -731,8 +730,7 @@ static PyObject *gpiod_Line_set_direction_output(gpiod_LineObject *self,
 	if (val) {
 		fmt = "(O)";
 		vals = Py_BuildValue(fmt, val);
-	}
-	else {
+	} else {
 		vals = Py_BuildValue("()");
 		fmt = "O"; // pass empty args to bulk
 	}
@@ -1472,7 +1470,8 @@ static PyObject *gpiod_LineBulk_set_values(gpiod_LineBulkObject *self,
 	Py_RETURN_NONE;
 }
 
-static int convert_values(PyObject * src, int * dst, Py_ssize_t n) {
+static int convert_values(PyObject *src, int *dst, Py_ssize_t n)
+{
 	int val;
 	Py_ssize_t num_vals, i;
 	PyObject *iter, *next;
@@ -1509,9 +1508,9 @@ PyDoc_STRVAR(gpiod_LineBulk_set_config_doc,
 "Set the configuration of all the lines held by this LineBulk object.\n"
 "\n"
 "  direction\n"
-"    New direction (integer)"
+"    New direction (integer)\n"
 "  flags\n"
-"    New flags (integer)"
+"    New flags (integer)\n"
 "  values\n"
 "    List of values (integers) to set when direction is output.\n"
 "\n"
@@ -1525,7 +1524,7 @@ static PyObject *gpiod_LineBulk_set_config(gpiod_LineBulkObject *self,
 	int rv, vals[GPIOD_LINE_BULK_MAX_LINES];
 	PyObject *val_list;
 	struct gpiod_line_bulk bulk;
-	const int * valp;
+	const int *valp;
 	int dirn, flags;
 
 	if (gpiod_LineBulkOwnerIsClosed(self))
@@ -1538,7 +1537,7 @@ static PyObject *gpiod_LineBulk_set_config(gpiod_LineBulkObject *self,
 	if (!rv)
 		return NULL;
 
-	if (val_list == NULL) 
+	if (val_list == NULL)
 		valp = NULL;
 	else {
 		memset(vals, 0, sizeof(vals));
@@ -1596,7 +1595,7 @@ PyDoc_STRVAR(gpiod_LineBulk_set_direction_input_doc,
 "Set the direction of all the lines held by this LineBulk object to input.\n");
 
 static PyObject *gpiod_LineBulk_set_direction_input(gpiod_LineBulkObject *self,
-						    PyObject *Py_UNUSED(ignored))
+						PyObject *Py_UNUSED(ignored))
 {
 	struct gpiod_line_bulk bulk;
 	int rv;
@@ -1627,8 +1626,9 @@ PyDoc_STRVAR(gpiod_LineBulk_set_direction_output_doc,
 "the number of lines held by this gpiod.LineBulk object. The index of each\n"
 "value corresponds to the index of each line in the object.\n");
 
-static PyObject *gpiod_LineBulk_set_direction_output(gpiod_LineBulkObject *self, 
-						     PyObject *args)
+static PyObject *gpiod_LineBulk_set_direction_output(
+				gpiod_LineBulkObject *self,
+				PyObject *args)
 {
 	int rv, vals[GPIOD_LINE_BULK_MAX_LINES];
 	PyObject *val_list;
@@ -1645,7 +1645,7 @@ static PyObject *gpiod_LineBulk_set_direction_output(gpiod_LineBulkObject *self,
 	if (!rv)
 		return NULL;
 
-	if (val_list == NULL) 
+	if (val_list == NULL)
 		valp = NULL;
 	else {
 		memset(vals, 0, sizeof(vals));
