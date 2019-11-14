@@ -249,7 +249,7 @@ static int make_signalfd(void)
 int main(int argc, char **argv)
 {
 	unsigned int offsets[GPIOD_LINE_BULK_MAX_LINES], num_lines = 0, offset;
-	bool watch_rising = false, watch_falling = false;
+	bool active_low = false, watch_rising = false, watch_falling = false;
 	int flags = 0;
 	struct timespec timeout = { 10, 0 };
 	int optc, opti, rv, i, event_type;
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 			print_version();
 			return EXIT_SUCCESS;
 		case 'l':
-			flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+			active_low = true;
 			break;
 		case 'D':
 			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 
 	rv = gpiod_ctxless_event_monitor_multiple_ext(
 				argv[0], event_type, offsets,
-				num_lines, flags, "gpiomon",
+				num_lines, active_low, flags, "gpiomon",
 				&timeout, poll_callback,
 				event_callback, &ctx);
 	if (rv)

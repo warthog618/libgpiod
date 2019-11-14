@@ -190,6 +190,7 @@ int main(int argc, char **argv)
 	unsigned int *offsets, num_lines, i;
 	int *values, rv, optc, opti, flags = 0;
 	struct callback_data cbdata;
+	bool active_low = false;
 	char *device, *end;
 
 	memset(&cbdata, 0, sizeof(cbdata));
@@ -207,7 +208,7 @@ int main(int argc, char **argv)
 			print_version();
 			return EXIT_SUCCESS;
 		case 'l':
-			flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+			active_low = true;
 			break;
 		case 'D':
 			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
@@ -284,7 +285,7 @@ int main(int argc, char **argv)
 
 	rv = gpiod_ctxless_set_value_multiple_ext(
 				device, offsets, values,
-				num_lines, flags, "gpioset",
+				num_lines, active_low, flags, "gpioset",
 				mode->callback, &cbdata);
 	if (rv < 0)
 		die_perror("error setting the GPIO line values");

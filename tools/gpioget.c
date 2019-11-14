@@ -44,6 +44,7 @@ int main(int argc, char **argv)
 {
 	unsigned int *offsets, i, num_lines;
 	int *values, optc, opti, rv;
+	bool active_low = false;
 	int flags = 0;
 	char *device, *end;
 
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
 			print_version();
 			return EXIT_SUCCESS;
 		case 'l':
-			flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
+			active_low = true;
 			break;
 		case 'D':
 			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
@@ -102,7 +103,7 @@ int main(int argc, char **argv)
 	}
 
 	rv = gpiod_ctxless_get_value_multiple_ext(device, offsets, values,
-						  num_lines, flags,
+						  num_lines, active_low, flags,
 						  "gpioget");
 	if (rv < 0)
 		die_perror("error reading GPIO values");
