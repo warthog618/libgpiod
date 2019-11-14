@@ -14,6 +14,12 @@
 #include <stdio.h>
 #include <string.h>
 
+static int ctxless_flags_to_line_request_flags(int flags)
+{
+	// currently a direct mapping...
+	return flags;
+}
+
 int gpiod_ctxless_get_value(const char *device, unsigned int offset,
 			    bool active_low, const char *consumer)
 {
@@ -32,6 +38,7 @@ int gpiod_ctxless_get_value_ext(const char *device, unsigned int offset,
 {
 	int value, rv;
 
+	flags = ctxless_flags_to_line_request_flags(flags);
 	rv = gpiod_ctxless_get_value_multiple_ext(device, &offset, &value,
 						  1, flags, consumer);
 	if (rv < 0)
@@ -87,6 +94,7 @@ int gpiod_ctxless_get_value_multiple_ext(const char *device,
 		gpiod_line_bulk_add(&bulk, line);
 	}
 
+	flags = ctxless_flags_to_line_request_flags(flags);
 	rv = gpiod_line_request_bulk_input_flags(&bulk, consumer, flags);
 	if (rv < 0) {
 		gpiod_chip_close(chip);
@@ -166,6 +174,7 @@ int gpiod_ctxless_set_value_multiple_ext(
 		gpiod_line_bulk_add(&bulk, line);
 	}
 
+	flags = ctxless_flags_to_line_request_flags(flags);
 	rv = gpiod_line_request_bulk_output_flags(&bulk, consumer,
 						  flags, values);
 	if (rv < 0) {
@@ -340,7 +349,7 @@ int gpiod_ctxless_event_monitor_multiple_ext(
 		gpiod_line_bulk_add(&bulk, line);
 	}
 
-	conf.flags = flags;
+	conf.flags = ctxless_flags_to_line_request_flags(flags);
 	conf.consumer = consumer;
 
 	if (event_type == GPIOD_CTXLESS_EVENT_RISING_EDGE) {

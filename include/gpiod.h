@@ -85,6 +85,24 @@ struct gpiod_line_bulk;
  */
 
 /**
+ * @brief Miscellaneous GPIO flags.
+ */
+enum {
+	GPIOD_CTXLESS_FLAG_OPEN_DRAIN		= GPIOD_BIT(0),
+	/**< The line is an open-drain port. */
+	GPIOD_CTXLESS_FLAG_OPEN_SOURCE		= GPIOD_BIT(1),
+	/**< The line is an open-source port. */
+	GPIOD_CTXLESS_FLAG_ACTIVE_LOW		= GPIOD_BIT(2),
+	/**< The active state of the line is low (high is the default). */
+	GPIOD_CTXLESS_FLAG_BIAS_DISABLE		= GPIOD_BIT(3),
+	/**< The line has neither either pull-up nor pull-down resistor */
+	GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN	= GPIOD_BIT(4),
+	/**< The line has pull-down resistor enabled */
+	GPIOD_CTXLESS_FLAG_BIAS_PULL_UP		= GPIOD_BIT(5),
+	/**< The line has pull-up resistor enabled */
+};
+
+/**
  * @brief Read current value from a single GPIO line.
  * @param device Name, path, number or label of the gpiochip.
  * @param offset Offset of the GPIO line.
@@ -99,7 +117,7 @@ int gpiod_ctxless_get_value(const char *device, unsigned int offset,
  * @brief Read current value from a single GPIO line.
  * @param device Name, path, number or label of the gpiochip.
  * @param offset Offset of the GPIO line.
- * @param flags The request flags for the line.
+ * @param flags The flags for the line.
  * @param consumer Name of the consumer.
  * @return 0 or 1 (GPIO value) if the operation succeeds, -1 on error.
  */
@@ -127,7 +145,7 @@ int gpiod_ctxless_get_value_multiple(const char *device,
  * @param offsets Array of offsets of lines whose values should be read.
  * @param values Buffer in which the values will be stored.
  * @param num_lines Number of lines, must be > 0.
- * @param flags The request flags for the lines.
+ * @param flags The flags for the lines.
  * @param consumer Name of the consumer.
  * @return 0 if the operation succeeds, -1 on error.
  */
@@ -165,7 +183,7 @@ int gpiod_ctxless_set_value(const char *device, unsigned int offset, int value,
  * @param device Name, path, number or label of the gpiochip.
  * @param offset The offset of the GPIO line.
  * @param value New value (0 or 1).
- * @param flags The request flags for the line.
+ * @param flags The flags for the line.
  * @param consumer Name of the consumer.
  * @param cb Optional callback function that will be called right after setting
  *           the value. Users can use this, for example, to pause the execution
@@ -204,7 +222,7 @@ int gpiod_ctxless_set_value_multiple(const char *device,
  * @param offsets Array of offsets of lines the values of which should be set.
  * @param values Array of integers containing new values.
  * @param num_lines Number of lines, must be > 0.
- * @param flags The request flags for the lines.
+ * @param flags The flags for the lines.
  * @param consumer Name of the consumer.
  * @param cb Optional callback function that will be called right after setting
  *           all values. Works the same as in ::gpiod_ctxless_set_value.
