@@ -76,6 +76,13 @@ enum {
 };
 
 enum {
+	gpiod_BIAS_AS_IS = 1,
+	gpiod_BIAS_DISABLE,
+	gpiod_BIAS_PULL_UP,
+	gpiod_BIAS_PULL_DOWN,
+};
+
+enum {
 	gpiod_RISING_EDGE = 1,
 	gpiod_FALLING_EDGE,
 };
@@ -361,6 +368,34 @@ static PyObject *gpiod_Line_active_state(gpiod_LineObject *self,
 	return ret;
 }
 
+PyDoc_STRVAR(gpiod_Line_bias_doc,
+"bias() -> integer\n"
+"\n"
+"Get the bias setting of this GPIO line.");
+
+static PyObject *gpiod_Line_bias(gpiod_LineObject *self,
+				 PyObject *Py_UNUSED(ignored))
+{
+	int bias;
+
+	if (gpiod_ChipIsClosed(self->owner))
+		return NULL;
+
+	bias = gpiod_line_bias(self->line);
+
+	switch (bias) {
+	case GPIOD_LINE_BIAS_PULL_UP:
+		return Py_BuildValue("I", gpiod_BIAS_PULL_UP);
+	case GPIOD_LINE_BIAS_PULL_DOWN:
+		return Py_BuildValue("I", gpiod_BIAS_PULL_DOWN);
+	case GPIOD_LINE_BIAS_DISABLE:
+		return Py_BuildValue("I", gpiod_BIAS_DISABLE);
+	case GPIOD_LINE_BIAS_AS_IS:
+	default:
+		return Py_BuildValue("I", gpiod_BIAS_AS_IS);
+	}
+}
+
 PyDoc_STRVAR(gpiod_Line_is_used_doc,
 "is_used() -> boolean\n"
 "\n"
@@ -407,57 +442,6 @@ static PyObject *gpiod_Line_is_open_source(gpiod_LineObject *self,
 		return NULL;
 
 	if (gpiod_line_is_open_source(self->line))
-		Py_RETURN_TRUE;
-
-	Py_RETURN_FALSE;
-}
-
-PyDoc_STRVAR(gpiod_Line_is_bias_disable_doc,
-"is_bias_disable() -> boolean\n"
-"\n"
-"Check if this line has bias disabled.");
-
-static PyObject *gpiod_Line_is_bias_disable(gpiod_LineObject *self,
-					  PyObject *Py_UNUSED(ignored))
-{
-	if (gpiod_ChipIsClosed(self->owner))
-		return NULL;
-
-	if (gpiod_line_is_bias_disable(self->line))
-		Py_RETURN_TRUE;
-
-	Py_RETURN_FALSE;
-}
-
-PyDoc_STRVAR(gpiod_Line_is_bias_pull_down_doc,
-"is_bias_pull_down() -> boolean\n"
-"\n"
-"Check if this line has bias pull-down enabled.");
-
-static PyObject *gpiod_Line_is_bias_pull_down(gpiod_LineObject *self,
-					  PyObject *Py_UNUSED(ignored))
-{
-	if (gpiod_ChipIsClosed(self->owner))
-		return NULL;
-
-	if (gpiod_line_is_bias_pull_down(self->line))
-		Py_RETURN_TRUE;
-
-	Py_RETURN_FALSE;
-}
-
-PyDoc_STRVAR(gpiod_Line_is_bias_pull_up_doc,
-"is_bias_pull_up() -> boolean\n"
-"\n"
-"Check if this line has bias pull-up enabled.");
-
-static PyObject *gpiod_Line_is_bias_pull_up(gpiod_LineObject *self,
-					  PyObject *Py_UNUSED(ignored))
-{
-	if (gpiod_ChipIsClosed(self->owner))
-		return NULL;
-
-	if (gpiod_line_is_bias_pull_up(self->line))
 		Py_RETURN_TRUE;
 
 	Py_RETURN_FALSE;
@@ -942,6 +926,12 @@ static PyMethodDef gpiod_Line_methods[] = {
 		.ml_doc = gpiod_Line_active_state_doc,
 	},
 	{
+		.ml_name = "bias",
+		.ml_meth = (PyCFunction)gpiod_Line_bias,
+		.ml_flags = METH_NOARGS,
+		.ml_doc = gpiod_Line_bias_doc,
+	},
+	{
 		.ml_name = "is_used",
 		.ml_meth = (PyCFunction)gpiod_Line_is_used,
 		.ml_flags = METH_NOARGS,
@@ -958,24 +948,6 @@ static PyMethodDef gpiod_Line_methods[] = {
 		.ml_meth = (PyCFunction)gpiod_Line_is_open_source,
 		.ml_flags = METH_NOARGS,
 		.ml_doc = gpiod_Line_is_open_source_doc,
-	},
-	{
-		.ml_name = "is_bias_disable",
-		.ml_meth = (PyCFunction)gpiod_Line_is_bias_disable,
-		.ml_flags = METH_NOARGS,
-		.ml_doc = gpiod_Line_is_bias_disable_doc,
-	},
-	{
-		.ml_name = "is_bias_pull_down",
-		.ml_meth = (PyCFunction)gpiod_Line_is_bias_pull_down,
-		.ml_flags = METH_NOARGS,
-		.ml_doc = gpiod_Line_is_bias_pull_down_doc,
-	},
-	{
-		.ml_name = "is_bias_pull_up",
-		.ml_meth = (PyCFunction)gpiod_Line_is_bias_pull_up,
-		.ml_flags = METH_NOARGS,
-		.ml_doc = gpiod_Line_is_bias_pull_up_doc,
 	},
 	{
 		.ml_name = "request",
@@ -2767,6 +2739,26 @@ static gpiod_ConstDescr gpiod_ConstList[] = {
 		.typeobj = &gpiod_LineType,
 		.name = "ACTIVE_LOW",
 		.val = gpiod_ACTIVE_LOW,
+	},
+	{
+		.typeobj = &gpiod_LineType,
+		.name = "BIAS_AS_IS",
+		.val = gpiod_BIAS_AS_IS,
+	},
+	{
+		.typeobj = &gpiod_LineType,
+		.name = "BIAS_DISABLE",
+		.val = gpiod_BIAS_DISABLE,
+	},
+	{
+		.typeobj = &gpiod_LineType,
+		.name = "BIAS_PULL_UP",
+		.val = gpiod_BIAS_PULL_UP,
+	},
+	{
+		.typeobj = &gpiod_LineType,
+		.name = "BIAS_PULL_DOWN",
+		.val = gpiod_BIAS_PULL_DOWN,
 	},
 	{
 		.typeobj = &gpiod_LineEventType,
