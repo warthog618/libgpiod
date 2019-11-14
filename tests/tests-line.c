@@ -444,31 +444,23 @@ GPIOD_TEST_CASE(set_flags_bias, 0, { 8 })
 
 	ret = gpiod_line_request_input(line, GPIOD_TEST_CONSUMER);
 	g_assert_cmpint(ret, ==, 0);
-	g_assert_cmpint(gpiod_line_is_bias_disable(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_up(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_down(line), ==, false);
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 
 	ret = gpiod_line_set_flags(line,
 		GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE);
 	g_assert_cmpint(ret, ==, 0);
-	g_assert_cmpint(gpiod_line_is_bias_disable(line), ==, true);
-	g_assert_cmpint(gpiod_line_is_bias_pull_up(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_down(line), ==, false);
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_DISABLE);
 
 	ret = gpiod_line_set_flags(line,
 		GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP);
 	g_assert_cmpint(ret, ==, 0);
-	g_assert_cmpint(gpiod_line_is_bias_disable(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_up(line), ==, true);
-	g_assert_cmpint(gpiod_line_is_bias_pull_down(line), ==, false);
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_PULL_UP);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
 
 	ret = gpiod_line_set_flags(line,
 		GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN);
 	g_assert_cmpint(ret, ==, 0);
-	g_assert_cmpint(gpiod_line_is_bias_disable(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_up(line), ==, false);
-	g_assert_cmpint(gpiod_line_is_bias_pull_down(line), ==, true);
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_PULL_DOWN);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 }
 
@@ -882,9 +874,7 @@ GPIOD_TEST_CASE(misc_flags, 0, { 8 })
 	g_assert_false(gpiod_line_is_used(line));
 	g_assert_false(gpiod_line_is_open_drain(line));
 	g_assert_false(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 
 	config.request_type = GPIOD_LINE_REQUEST_DIRECTION_OUTPUT;
 	config.consumer = GPIOD_TEST_CONSUMER;
@@ -896,9 +886,7 @@ GPIOD_TEST_CASE(misc_flags, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_true(gpiod_line_is_open_drain(line));
 	g_assert_false(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
 
@@ -912,9 +900,7 @@ GPIOD_TEST_CASE(misc_flags, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_false(gpiod_line_is_open_drain(line));
 	g_assert_true(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
 
@@ -952,9 +938,7 @@ GPIOD_TEST_CASE(misc_flags_work_together, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_true(gpiod_line_is_open_drain(line));
 	g_assert_false(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_LOW);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
@@ -971,9 +955,7 @@ GPIOD_TEST_CASE(misc_flags_work_together, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_false(gpiod_line_is_open_drain(line));
 	g_assert_true(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_AS_IS);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_LOW);
 
@@ -994,9 +976,7 @@ GPIOD_TEST_CASE(misc_flags_work_together, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_false(gpiod_line_is_open_drain(line));
 	g_assert_false(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_true(gpiod_line_is_bias_pull_down(line));
-	g_assert_false(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_PULL_DOWN);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_LOW);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
@@ -1017,9 +997,7 @@ GPIOD_TEST_CASE(misc_flags_work_together, 0, { 8 })
 	g_assert_true(gpiod_line_is_used(line));
 	g_assert_false(gpiod_line_is_open_drain(line));
 	g_assert_false(gpiod_line_is_open_source(line));
-	g_assert_false(gpiod_line_is_bias_disable(line));
-	g_assert_false(gpiod_line_is_bias_pull_down(line));
-	g_assert_true(gpiod_line_is_bias_pull_up(line));
+	g_assert_cmpint(gpiod_line_bias(line), ==, GPIOD_LINE_BIAS_PULL_UP);
 	g_assert_cmpint(gpiod_line_active_state(line), ==,
 			GPIOD_LINE_ACTIVE_STATE_LOW);
 	g_assert_cmpint(gpiod_line_direction(line), ==,
