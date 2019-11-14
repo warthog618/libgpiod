@@ -67,7 +67,7 @@ int line::active_state(void) const noexcept
 	return active == GPIOD_LINE_ACTIVE_STATE_HIGH ? ACTIVE_HIGH : ACTIVE_LOW;
 }
 
-int line::bias(void) const noexcept
+int line::bias(void) const
 {
 	this->throw_if_null();
 

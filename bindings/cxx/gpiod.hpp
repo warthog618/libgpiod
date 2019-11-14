@@ -330,7 +330,7 @@ public:
 	 * @brief Get current bias of this line.
 	 * @return Current bias setting.
 	 */
-	GPIOD_API int bias(void) const noexcept;
+	GPIOD_API int bias(void) const;
 
 	/**
 	 * @brief Check if this line is used by the kernel or other user space
