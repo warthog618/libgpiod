@@ -67,6 +67,25 @@ int line::active_state(void) const noexcept
 	return active == GPIOD_LINE_ACTIVE_STATE_HIGH ? ACTIVE_HIGH : ACTIVE_LOW;
 }
 
+int line::bias(void) const noexcept
+{
+	this->throw_if_null();
+
+	int bias = ::gpiod_line_bias(this->_m_line);
+
+	switch (bias) {
+	case GPIOD_LINE_BIAS_PULL_UP:
+		return BIAS_PULL_UP;
+	case GPIOD_LINE_BIAS_PULL_DOWN:
+		return BIAS_PULL_DOWN;
+	case GPIOD_LINE_BIAS_DISABLE:
+		return BIAS_DISABLE;
+	case GPIOD_LINE_BIAS_AS_IS:
+	default:
+		return BIAS_AS_IS;
+	}
+}
+
 bool line::is_used(void) const
 {
 	this->throw_if_null();
@@ -86,27 +105,6 @@ bool line::is_open_source(void) const
 	this->throw_if_null();
 
 	return ::gpiod_line_is_open_source(this->_m_line);
-}
-
-bool line::is_bias_disable(void) const
-{
-	this->throw_if_null();
-
-	return ::gpiod_line_is_bias_disable(this->_m_line);
-}
-
-bool line::is_bias_pull_down(void) const
-{
-	this->throw_if_null();
-
-	return ::gpiod_line_is_bias_pull_down(this->_m_line);
-}
-
-bool line::is_bias_pull_up(void) const
-{
-	this->throw_if_null();
-
-	return ::gpiod_line_is_bias_pull_up(this->_m_line);
 }
 
 void line::request(const line_request& config, int default_val) const

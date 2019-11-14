@@ -327,6 +327,12 @@ public:
 	GPIOD_API int active_state(void) const noexcept;
 
 	/**
+	 * @brief Get current bias of this line.
+	 * @return Current bias setting.
+	 */
+	GPIOD_API int bias(void) const noexcept;
+
+	/**
 	 * @brief Check if this line is used by the kernel or other user space
 	 *        process.
 	 * @return True if this line is in use, false otherwise.
@@ -344,26 +350,6 @@ public:
 	 * @return True if the line is an open-source GPIO, false otherwise.
 	 */
 	GPIOD_API bool is_open_source(void) const;
-
-	/**
-	 * @brief Check if this line has bias disabled.
-	 * @return True if the line has bias disabled, false otherwise.
-	 */
-	GPIOD_API bool is_bias_disable(void) const;
-
-	/**
-	 * @brief Check if this line has pull-down bias enabled.
-	 * @return True if the line has pull-down bias enabled, false
-	 * 	   otherwise.
-	 */
-	GPIOD_API bool is_bias_pull_down(void) const;
-
-	/**
-	 * @brief Check if this line has pull-up bias enabled.
-	 * @return True if the line has pull-up bias enabled, false
-	 * 	   otherwise.
-	 */
-	GPIOD_API bool is_bias_pull_up(void) const;
 
 	/**
 	 * @brief Request this line.
@@ -506,6 +492,20 @@ public:
 		/**< Line's active state is low. */
 		ACTIVE_HIGH,
 		/**< Line's active state is high. */
+	};
+
+	/**
+	 * @brief Possible bias settings.
+	 */
+	enum : int {
+		BIAS_AS_IS = 1,
+		/**< Line's bias state is unknown. */
+		BIAS_DISABLE,
+		/**< Line's internal bias is disabled. */
+		BIAS_PULL_UP,
+		/**< Line's internal pull-up bias is enabled. */
+		BIAS_PULL_DOWN,
+		/**< Line's internal pull-down bias is enabled. */
 	};
 
 private:
