@@ -234,11 +234,11 @@ struct line_request
 	GPIOD_API static const ::std::bitset<32> FLAG_OPEN_DRAIN;
 	/**< The line is an open-drain port. */
 	GPIOD_API static const ::std::bitset<32> FLAG_BIAS_DISABLE;
-	/**< The line is has neither pull-up nor pull-down resistor */
+	/**< The line has neither pull-up nor pull-down resistor enabled */
 	GPIOD_API static const ::std::bitset<32> FLAG_BIAS_PULL_DOWN;
-	/**< The line is has a configurable pull-down resistor */
+	/**< The line has a configurable pull-down resistor enabled */
 	GPIOD_API static const ::std::bitset<32> FLAG_BIAS_PULL_UP;
-	/**< The line is has a configurable pull-up resistor */
+	/**< The line has a configurable pull-up resistor enabled */
 
 	::std::string consumer;
 	/**< Consumer name to pass to the request. */
