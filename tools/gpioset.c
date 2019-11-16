@@ -23,17 +23,16 @@ static const struct option longopts[] = {
 	{ "help",		no_argument,		NULL,	'h' },
 	{ "version",		no_argument,		NULL,	'v' },
 	{ "active-low",		no_argument,		NULL,	'l' },
+	{ "bias",		required_argument,	NULL,	'B' },
+	{ "drive",		required_argument,	NULL,	'D' },
 	{ "mode",		required_argument,	NULL,	'm' },
 	{ "sec",		required_argument,	NULL,	's' },
 	{ "usec",		required_argument,	NULL,	'u' },
 	{ "background",		no_argument,		NULL,	'b' },
-	{ "pull-down",		no_argument,		NULL,	'D' },
-	{ "pull-up",		no_argument,		NULL,	'U' },
-	{ "bias-disable",	no_argument,		NULL,	'B' },
 	{ GETOPT_NULL_LONGOPT },
 };
 
-static const char *const shortopts = "+hvlm:s:u:bDUB";
+static const char *const shortopts = "+hvlB:D:m:s:u:b";
 
 static void print_help(void)
 {
@@ -45,14 +44,26 @@ static void print_help(void)
 	printf("  -h, --help:\t\tdisplay this message and exit\n");
 	printf("  -v, --version:\tdisplay the version and exit\n");
 	printf("  -l, --active-low:\tset the line active state to low\n");
-	printf("  -D, --pull-down:\tenable internal pull-down\n");
-	printf("  -U, --pull-up:\tenable internal pull-up\n");
-	printf("  -B, --bias-disable:\tdisable internal bias\n");
+	printf("  -B, --bias=[as-is|disable|pull-down|pull-up] (defaults to 'as-is'):\n");
+	printf("		set the line bias\n");
+	printf("  -D, --drive=[push-pull|open-drain|open-source] (defaults to 'push-pull'):\n");
+	printf("		set the line drive mode\n");
 	printf("  -m, --mode=[exit|wait|time|signal] (defaults to 'exit'):\n");
 	printf("		tell the program what to do after setting values\n");
 	printf("  -s, --sec=SEC:\tspecify the number of seconds to wait (only valid for --mode=time)\n");
 	printf("  -u, --usec=USEC:\tspecify the number of microseconds to wait (only valid for --mode=time)\n");
 	printf("  -b, --background:\tafter setting values: detach from the controlling terminal\n");
+	printf("\n");
+	printf("Biases:\n");
+	printf("  as-is:\tleave bias unchanged\n");
+	printf("  disable:\tdisable bias\n");
+	printf("  pull-up:\tenable pull-up\n");
+	printf("  pull-down:\tenable pull-down\n");
+	printf("\n");
+	printf("Drives:\n");
+	printf("  push-pull:\tdrive the line both high and low\n");
+	printf("  open-drain:\tdrive the line low or go high impedance\n");
+	printf("  open-source:\tdrive the line high or go high impedance\n");
 	printf("\n");
 	printf("Modes:\n");
 	printf("  exit:\t\tset values and exit immediately\n");
@@ -184,6 +195,26 @@ static const struct mode_mapping *parse_mode(const char *mode)
 	return NULL;
 }
 
+static int bias_flags(const char * option)
+{
+	if (strcmp(option,"pull-down") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
+	if (strcmp(option,"pull-up") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
+	if (strcmp(option,"disable") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
+	return 0;
+}
+
+static int drive_flags(const char * option)
+{
+	if (strcmp(option,"open-drain") == 0)
+		return GPIOD_CTXLESS_FLAG_OPEN_DRAIN;
+	if (strcmp(option,"open-source") == 0)
+		return GPIOD_CTXLESS_FLAG_OPEN_SOURCE;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	const struct mode_mapping *mode = &modes[MODE_EXIT];
@@ -210,14 +241,11 @@ int main(int argc, char **argv)
 		case 'l':
 			active_low = true;
 			break;
-		case 'D':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-			break;
-		case 'U':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-			break;
 		case 'B':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
+			flags |= bias_flags(optarg);
+			break;
+		case 'D':
+			flags |= drive_flags(optarg);
 			break;
 		case 'm':
 			mode = parse_mode(optarg);

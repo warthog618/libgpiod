@@ -22,19 +22,17 @@ static const struct option longopts[] = {
 	{ "help",		no_argument,		NULL,	'h' },
 	{ "version",		no_argument,		NULL,	'v' },
 	{ "active-low",		no_argument,		NULL,	'l' },
+	{ "bias",		required_argument,	NULL,	'B' },
 	{ "num-events",		required_argument,	NULL,	'n' },
 	{ "silent",		no_argument,		NULL,	's' },
 	{ "rising-edge",	no_argument,		NULL,	'r' },
 	{ "falling-edge",	no_argument,		NULL,	'f' },
-	{ "pull-down",		no_argument,		NULL,	'D' },
-	{ "pull-up",		no_argument,		NULL,	'U' },
-	{ "bias-disable",	no_argument,		NULL,	'B' },
 	{ "line-buffered",	no_argument,		NULL,	'b' },
 	{ "format",		required_argument,	NULL,	'F' },
 	{ GETOPT_NULL_LONGOPT },
 };
 
-static const char *const shortopts = "+hvln:srfDUBbF:";
+static const char *const shortopts = "+hvlB:n:srfbF:";
 
 static void print_help(void)
 {
@@ -46,15 +44,20 @@ static void print_help(void)
 	printf("  -h, --help:\t\tdisplay this message and exit\n");
 	printf("  -v, --version:\tdisplay the version and exit\n");
 	printf("  -l, --active-low:\tset the line active state to low\n");
+	printf("  -B, --bias=[as-is|disable|pull-down|pull-up] (defaults to 'as-is'):\n");
+	printf("		set the line bias\n");
 	printf("  -n, --num-events=NUM:\texit after processing NUM events\n");
 	printf("  -s, --silent:\t\tdon't print event info\n");
 	printf("  -r, --rising-edge:\tonly process rising edge events\n");
 	printf("  -f, --falling-edge:\tonly process falling edge events\n");
-	printf("  -D, --pull-down:\tenable internal pull-down\n");
-	printf("  -U, --pull-up:\tenable internal pull-up\n");
-	printf("  -B, --bias-disable:\tdisable internal bias\n");
 	printf("  -b, --line-buffered:\tset standard output as line buffered\n");
 	printf("  -F, --format=FMT\tspecify custom output format\n");
+	printf("\n");
+	printf("Biases:\n");
+	printf("  as-is:\tleave bias unchanged\n");
+	printf("  disable:\tdisable bias\n");
+	printf("  pull-up:\tenable pull-up\n");
+	printf("  pull-down:\tenable pull-down\n");
 	printf("\n");
 	printf("Format specifiers:\n");
 	printf("  %%o:  GPIO line offset\n");
@@ -246,6 +249,17 @@ static int make_signalfd(void)
 	return sigfd;
 }
 
+static int bias_flags(const char * option)
+{
+	if (strcmp(option,"pull-down") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
+	if (strcmp(option,"pull-up") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
+	if (strcmp(option,"disable") == 0)
+		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	unsigned int offsets[GPIOD_LINE_BULK_MAX_LINES], num_lines = 0, offset;
@@ -273,14 +287,8 @@ int main(int argc, char **argv)
 		case 'l':
 			active_low = true;
 			break;
-		case 'D':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-			break;
-		case 'U':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-			break;
 		case 'B':
-			flags |= GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
+			flags = bias_flags(optarg);
 			break;
 		case 'n':
 			ctx.events_wanted = strtoul(optarg, &end, 10);
