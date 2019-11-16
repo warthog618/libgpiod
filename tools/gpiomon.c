@@ -274,13 +274,13 @@ int main(int argc, char **argv)
 			active_low = true;
 			break;
 		case 'D':
-			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN;
+			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
 			break;
 		case 'U':
-			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP;
+			flags |= GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
 			break;
 		case 'B':
-			flags |= GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE;
+			flags |= GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
 			break;
 		case 'n':
 			ctx.events_wanted = strtoul(optarg, &end, 10);
