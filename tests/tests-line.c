@@ -394,7 +394,6 @@ GPIOD_TEST_CASE(set_config_bulk_null_values, 0, { 8 })
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 }
 
-
 GPIOD_TEST_CASE(set_flags_active_state, 0, { 8 })
 {
 	g_autoptr(gpiod_chip_struct) chip = NULL;
