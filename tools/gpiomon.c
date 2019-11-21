@@ -249,13 +249,13 @@ static int make_signalfd(void)
 	return sigfd;
 }
 
-static int bias_flags(const char * option)
+static int bias_flags(const char *option)
 {
-	if (strcmp(option,"pull-down") == 0)
+	if (strcmp(option, "pull-down") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option,"pull-up") == 0)
+	if (strcmp(option, "pull-up") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option,"disable") == 0)
+	if (strcmp(option, "disable") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
 	return 0;
 }
@@ -346,9 +346,9 @@ int main(int argc, char **argv)
 
 	rv = gpiod_ctxless_event_monitor_multiple_ext(
 				argv[0], event_type, offsets,
-				num_lines, active_low, flags, "gpiomon",
+				num_lines, active_low, "gpiomon",
 				&timeout, poll_callback,
-				event_callback, &ctx);
+				event_callback, &ctx, flags);
 	if (rv)
 		die_perror("error waiting for events");
 

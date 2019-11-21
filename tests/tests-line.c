@@ -569,7 +569,7 @@ GPIOD_TEST_CASE(set_direction_bulk, 0, { 8 })
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 1), ==, 1);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
 
-	ret = gpiod_line_set_direction_bulk_input(&bulk);
+	ret = gpiod_line_set_direction_input_bulk(&bulk);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_direction(line0), ==,
 			GPIOD_LINE_DIRECTION_INPUT);
@@ -582,7 +582,7 @@ GPIOD_TEST_CASE(set_direction_bulk, 0, { 8 })
 	values[1] = 1;
 	values[2] = 0;
 
-	ret = gpiod_line_set_direction_bulk_output(&bulk, values);
+	ret = gpiod_line_set_direction_output_bulk(&bulk, values);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_direction(line0), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
@@ -594,7 +594,7 @@ GPIOD_TEST_CASE(set_direction_bulk, 0, { 8 })
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 1), ==, 1);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 
-	ret = gpiod_line_set_direction_bulk_output(&bulk, NULL);
+	ret = gpiod_line_set_direction_output_bulk(&bulk, NULL);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_line_direction(line0), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
@@ -622,17 +622,17 @@ GPIOD_TEST_CASE(output_value_caching, 0, { 8 })
 	g_assert_nonnull(line);
 	gpiod_test_return_if_failed();
 
-	// check cached by request...
+	/* check cached by request... */
 	ret = gpiod_line_request_output(line, GPIOD_TEST_CONSUMER, 1);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
 
-	// ...by checking cached value applied by set_flags
+	/* ...by checking cached value applied by set_flags */
 	ret = gpiod_line_set_flags(line, 0);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
 
-	// check cached by set_value
+	/* check cached by set_value */
 	ret = gpiod_line_set_value(line, 0);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
@@ -649,7 +649,7 @@ GPIOD_TEST_CASE(output_value_caching, 0, { 8 })
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
 
-	// check cached by set_config
+	/* check cached by set_config */
 	ret = gpiod_line_set_config(line, GPIOD_LINE_REQUEST_DIRECTION_OUTPUT,
 				    0, 0);
 	g_assert_cmpint(ret, ==, 0);
@@ -659,7 +659,7 @@ GPIOD_TEST_CASE(output_value_caching, 0, { 8 })
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 
-	// check cached by set_value_bulk default
+	/* check cached by set_value_bulk default */
 	ret = gpiod_line_set_value(line, 1);
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 1);
@@ -674,7 +674,6 @@ GPIOD_TEST_CASE(output_value_caching, 0, { 8 })
 	g_assert_cmpint(ret, ==, 0);
 	g_assert_cmpint(gpiod_test_chip_get_value(0, 2), ==, 0);
 }
-
 
 GPIOD_TEST_CASE(get_value_different_chips, 0, { 8, 8 })
 {

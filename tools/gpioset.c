@@ -195,22 +195,22 @@ static const struct mode_mapping *parse_mode(const char *mode)
 	return NULL;
 }
 
-static int bias_flags(const char * option)
+static int bias_flags(const char *option)
 {
-	if (strcmp(option,"pull-down") == 0)
+	if (strcmp(option, "pull-down") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option,"pull-up") == 0)
+	if (strcmp(option, "pull-up") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option,"disable") == 0)
+	if (strcmp(option, "disable") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
 	return 0;
 }
 
-static int drive_flags(const char * option)
+static int drive_flags(const char *option)
 {
-	if (strcmp(option,"open-drain") == 0)
+	if (strcmp(option, "open-drain") == 0)
 		return GPIOD_CTXLESS_FLAG_OPEN_DRAIN;
-	if (strcmp(option,"open-source") == 0)
+	if (strcmp(option, "open-source") == 0)
 		return GPIOD_CTXLESS_FLAG_OPEN_SOURCE;
 	return 0;
 }
@@ -313,8 +313,8 @@ int main(int argc, char **argv)
 
 	rv = gpiod_ctxless_set_value_multiple_ext(
 				device, offsets, values,
-				num_lines, active_low, flags, "gpioset",
-				mode->callback, &cbdata);
+				num_lines, active_low, "gpioset",
+				mode->callback, &cbdata, flags);
 	if (rv < 0)
 		die_perror("error setting the GPIO line values");
 

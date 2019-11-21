@@ -43,13 +43,13 @@ static void print_help(void)
 	printf("  pull-down:\tenable pull-down\n");
 }
 
-static int bias_flags(const char * option)
+static int bias_flags(const char *option)
 {
-	if (strcmp(option,"pull-down") == 0)
+	if (strcmp(option, "pull-down") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option,"pull-up") == 0)
+	if (strcmp(option, "pull-up") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option,"disable") == 0)
+	if (strcmp(option, "disable") == 0)
 		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
 	return 0;
 }
@@ -111,8 +111,8 @@ int main(int argc, char **argv)
 	}
 
 	rv = gpiod_ctxless_get_value_multiple_ext(device, offsets, values,
-						  num_lines, active_low, flags,
-						  "gpioget");
+						  num_lines, active_low,
+						  "gpioget", flags);
 	if (rv < 0)
 		die_perror("error reading GPIO values");
 

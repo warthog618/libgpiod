@@ -116,13 +116,13 @@ int gpiod_ctxless_get_value(const char *device, unsigned int offset,
  * @param device Name, path, number or label of the gpiochip.
  * @param offset Offset of the GPIO line.
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the line.
  * @param consumer Name of the consumer.
+ * @param flags The flags for the line.
  * @return 0 or 1 (GPIO value) if the operation succeeds, -1 on error.
  */
 int gpiod_ctxless_get_value_ext(const char *device, unsigned int offset,
-				bool active_low, int flags,
-				const char *consumer) GPIOD_API;
+				bool active_low, const char *consumer,
+				int flags) GPIOD_API;
 
 /**
  * @brief Read current values from a set of GPIO lines.
@@ -146,16 +146,15 @@ int gpiod_ctxless_get_value_multiple(const char *device,
  * @param values Buffer in which the values will be stored.
  * @param num_lines Number of lines, must be > 0.
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the lines.
  * @param consumer Name of the consumer.
+ * @param flags The flags for the lines.
  * @return 0 if the operation succeeds, -1 on error.
  */
 int gpiod_ctxless_get_value_multiple_ext(const char *device,
 					 const unsigned int *offsets,
-					 int *values,
-					 unsigned int num_lines,
-					 bool active_low, int flags,
-					 const char *consumer) GPIOD_API;
+					 int *values, unsigned int num_lines,
+					 bool active_low, const char *consumer,
+					 int flags) GPIOD_API;
 
 /**
  * @brief Simple set value callback signature.
@@ -186,19 +185,19 @@ int gpiod_ctxless_set_value(const char *device, unsigned int offset, int value,
  * @param offset The offset of the GPIO line.
  * @param value New value (0 or 1).
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the line.
  * @param consumer Name of the consumer.
  * @param cb Optional callback function that will be called right after setting
  *           the value. Users can use this, for example, to pause the execution
  *           after toggling a GPIO.
  * @param data Optional user data that will be passed to the callback function.
+ * @param flags The flags for the line.
  * @return 0 if the operation succeeds, -1 on error.
  */
 int gpiod_ctxless_set_value_ext(const char *device, unsigned int offset,
-				int value, bool active_low, int flags,
+				int value, bool active_low,
 				const char *consumer,
 				gpiod_ctxless_set_value_cb cb,
-				void *data) GPIOD_API;
+				void *data, int flags) GPIOD_API;
 
 /**
  * @brief Set values of multiple GPIO lines.
@@ -227,21 +226,21 @@ int gpiod_ctxless_set_value_multiple(const char *device,
  * @param values Array of integers containing new values.
  * @param num_lines Number of lines, must be > 0.
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the lines.
  * @param consumer Name of the consumer.
  * @param cb Optional callback function that will be called right after setting
  *           all values. Works the same as in ::gpiod_ctxless_set_value.
  * @param data Optional user data that will be passed to the callback function.
+ * @param flags The flags for the lines.
  * @return 0 if the operation succeeds, -1 on error.
  */
 int gpiod_ctxless_set_value_multiple_ext(const char *device,
 					 const unsigned int *offsets,
 					 const int *values,
 					 unsigned int num_lines,
-					 bool active_low, int flags,
+					 bool active_low,
 					 const char *consumer,
 					 gpiod_ctxless_set_value_cb cb,
-					 void *data) GPIOD_API;
+					 void *data, int flags) GPIOD_API;
 
 /**
  * @brief Event types that the ctxless event monitor can wait for.
@@ -423,12 +422,12 @@ int gpiod_ctxless_event_monitor(const char *device, int event_type,
  * @param event_type Type of events to listen for.
  * @param offset GPIO line offset to monitor.
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the line.
  * @param consumer Name of the consumer.
  * @param timeout Maximum wait time for each iteration.
  * @param poll_cb Callback function to call when waiting for events.
  * @param event_cb Callback function to call for each line event.
  * @param data User data passed to the callback.
+ * @param flags The flags for the line.
  * @return 0 if no errors were encountered, -1 if an error occurred.
  * @note The way the ctxless event loop works is described in detail in
  *       ::gpiod_ctxless_event_monitor_multiple - this is just a wrapper aound
@@ -436,11 +435,11 @@ int gpiod_ctxless_event_monitor(const char *device, int event_type,
  */
 int gpiod_ctxless_event_monitor_ext(const char *device, int event_type,
 				    unsigned int offset, bool active_low,
-				    int flags, const char *consumer,
+				    const char *consumer,
 				    const struct timespec *timeout,
 				    gpiod_ctxless_event_poll_cb poll_cb,
 				    gpiod_ctxless_event_handle_cb event_cb,
-				    void *data) GPIOD_API;
+				    void *data, int flags) GPIOD_API;
 
 /**
  * @brief Wait for events on multiple GPIO lines.
@@ -488,13 +487,13 @@ int gpiod_ctxless_event_monitor_multiple(
  * @param offsets Array of GPIO line offsets to monitor.
  * @param num_lines Number of lines to monitor.
  * @param active_low The active state of this line - true if low.
- * @param flags The flags for the lines.
  * @param consumer Name of the consumer.
  * @param timeout Maximum wait time for each iteration.
  * @param poll_cb Callback function to call when waiting for events. Can
  *                be NULL.
  * @param event_cb Callback function to call on event occurrence.
  * @param data User data passed to the callback.
+ * @param flags The flags for the lines.
  * @return 0 no errors were encountered, -1 if an error occurred.
  * @note The poll callback can be NULL in which case the routine will fall
  *       back to a basic, ppoll() based callback.
@@ -515,11 +514,11 @@ int gpiod_ctxless_event_monitor_multiple(
 int gpiod_ctxless_event_monitor_multiple_ext(
 			const char *device, int event_type,
 			const unsigned int *offsets,
-			unsigned int num_lines, bool active_low, int flags,
+			unsigned int num_lines, bool active_low,
 			const char *consumer, const struct timespec *timeout,
 			gpiod_ctxless_event_poll_cb poll_cb,
 			gpiod_ctxless_event_handle_cb event_cb,
-			void *data) GPIOD_API;
+			void *data, int flags) GPIOD_API;
 
 
 /**
@@ -1256,7 +1255,8 @@ bool gpiod_line_is_requested(struct gpiod_line *line) GPIOD_API;
  * @brief Check if the calling user has ownership of this line for values,
  * not events.
  * @param line GPIO line object.
- * @return True if given line was requested, false otherwise.
+ * @return True if given line was requested for reading/setting values,
+ *         false otherwise.
  */
 bool gpiod_line_is_requested_values(struct gpiod_line *line) GPIOD_API;
 
@@ -1310,6 +1310,7 @@ int gpiod_line_set_value(struct gpiod_line *line, int value) GPIOD_API;
  * @brief Set the values of a set of GPIO lines.
  * @param bulk Set of GPIO lines to reserve.
  * @param values An array holding line_bulk->num_lines new values for lines.
+ *               A NULL pointer is interpreted as a logical low for all lines.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  *
@@ -1330,11 +1331,12 @@ int gpiod_line_set_value_bulk(struct gpiod_line_bulk *bulk,
  * @brief Update the configuration of a single GPIO line.
  * @param line GPIO line object.
  * @param direction Updated direction which may be one of
- * GPIOD_LINE_REQUEST_DIRECTION_AS_IS, GPIOD_LINE_REQUEST_DIRECTION_INPUT,
- * or GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
+ *                  GPIOD_LINE_REQUEST_DIRECTION_AS_IS,
+ *                  GPIOD_LINE_REQUEST_DIRECTION_INPUT, or
+ *                  GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @param flags Replacement flags.
  * @param value The new output value for the line when direction is
- * GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
+ *              GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  */
@@ -1345,11 +1347,14 @@ int gpiod_line_set_config(struct gpiod_line *line, int direction,
  * @brief Update the configuration of a set of GPIO lines.
  * @param bulk Set of GPIO lines.
  * @param direction Updated direction which may be one of
- * GPIOD_LINE_REQUEST_DIRECTION_AS_IS, GPIOD_LINE_REQUEST_DIRECTION_INPUT,
- * or GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
+ *                  GPIOD_LINE_REQUEST_DIRECTION_AS_IS,
+ *                  GPIOD_LINE_REQUEST_DIRECTION_INPUT, or
+ *                  GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
  * @param flags Replacement flags.
  * @param values An array holding line_bulk->num_lines new logical values
- * for lines when direction is GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
+ *               for lines when direction is
+ *               GPIOD_LINE_REQUEST_DIRECTION_OUTPUT.
+ *               A NULL pointer is interpreted as a logical low for all lines.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  *
@@ -1400,7 +1405,7 @@ int gpiod_line_set_direction_input(struct gpiod_line *line) GPIOD_API;
  * If the lines were not previously requested together, the behavior is
  * undefined.
  */
-int gpiod_line_set_direction_bulk_input(struct gpiod_line_bulk *bulk
+int gpiod_line_set_direction_input_bulk(struct gpiod_line_bulk *bulk
 					) GPIOD_API;
 
 /**
@@ -1416,14 +1421,16 @@ int gpiod_line_set_direction_output(struct gpiod_line *line,
 /**
  * @brief Set the direction of a set of GPIO lines to output.
  * @param bulk Set of GPIO lines.
- * @values The logical value to output for each line.
+ * @param values An array holding line_bulk->num_lines new logical values
+ *               for lines.  A NULL pointer is interpreted as a logical low
+ *               for all lines.
  * @return 0 is the operation succeeds. In case of an error this routine
  *         returns -1 and sets the last error number.
  *
  * If the lines were not previously requested together, the behavior is
  * undefined.
  */
-int gpiod_line_set_direction_bulk_output(struct gpiod_line_bulk *bulk,
+int gpiod_line_set_direction_output_bulk(struct gpiod_line_bulk *bulk,
 					 const int *values) GPIOD_API;
 
 /**

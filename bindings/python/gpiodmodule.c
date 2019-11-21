@@ -716,7 +716,7 @@ static PyObject *gpiod_Line_set_direction_output(gpiod_LineObject *self,
 		vals = Py_BuildValue(fmt, val);
 	} else {
 		vals = Py_BuildValue("()");
-		fmt = "O"; // pass empty args to bulk
+		fmt = "O"; /* pass empty args to bulk */
 	}
 	if (!vals)
 		return NULL;
@@ -1578,7 +1578,7 @@ static PyObject *gpiod_LineBulk_set_direction_input(gpiod_LineBulkObject *self,
 	gpiod_LineBulkObjToCLineBulk(self, &bulk);
 
 	Py_BEGIN_ALLOW_THREADS;
-	rv = gpiod_line_set_direction_bulk_input(&bulk);
+	rv = gpiod_line_set_direction_input_bulk(&bulk);
 	Py_END_ALLOW_THREADS;
 	if (rv)
 		return PyErr_SetFromErrno(PyExc_OSError);
@@ -1628,7 +1628,7 @@ static PyObject *gpiod_LineBulk_set_direction_output(
 	}
 
 	Py_BEGIN_ALLOW_THREADS;
-	rv = gpiod_line_set_direction_bulk_output(&bulk, valp);
+	rv = gpiod_line_set_direction_output_bulk(&bulk, valp);
 	Py_END_ALLOW_THREADS;
 	if (rv)
 		return PyErr_SetFromErrno(PyExc_OSError);

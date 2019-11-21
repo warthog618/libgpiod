@@ -234,7 +234,7 @@ void line_bulk::set_direction_input() const
 
 	this->to_line_bulk(::std::addressof(bulk));
 
-	rv = ::gpiod_line_set_direction_bulk_input(::std::addressof(bulk));
+	rv = ::gpiod_line_set_direction_input_bulk(::std::addressof(bulk));
 	if (rv)
 		throw ::std::system_error(errno, ::std::system_category(),
 			"error setting GPIO line direction to input");
@@ -252,7 +252,7 @@ void line_bulk::set_direction_output(const ::std::vector<int>& values) const
 
 	this->to_line_bulk(::std::addressof(bulk));
 
-	rv = ::gpiod_line_set_direction_bulk_output(::std::addressof(bulk),
+	rv = ::gpiod_line_set_direction_output_bulk(::std::addressof(bulk),
 						    values.data());
 	if (rv)
 		throw ::std::system_error(errno, ::std::system_category(),
