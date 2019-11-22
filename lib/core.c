@@ -909,8 +909,9 @@ int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 			values[i] = line->output_value;
 		}
 		direction = GPIOD_LINE_REQUEST_DIRECTION_OUTPUT;
-	} else
+	} else {
 		direction = GPIOD_LINE_REQUEST_DIRECTION_INPUT;
+	}
 
 	return gpiod_line_set_config_bulk(bulk, direction,
 					  flags, values);
