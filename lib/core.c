@@ -55,7 +55,6 @@ struct gpiod_line {
 	 *  LINE_REQUESTED_EVENTS
 	 */
 	int state;
-	bool needs_update;
 
 	struct gpiod_chip *chip;
 	struct line_fd_handle *fd_handle;
@@ -334,15 +333,6 @@ static int line_get_fd(struct gpiod_line *line)
 	return line->fd_handle->fd;
 }
 
-static void line_maybe_update(struct gpiod_line *line)
-{
-	int rv;
-
-	rv = gpiod_line_update(line);
-	if (rv < 0)
-		line->needs_update = true;
-}
-
 struct gpiod_chip *gpiod_line_get_chip(struct gpiod_line *line)
 {
 	return line->chip;
@@ -400,9 +390,9 @@ bool gpiod_line_is_open_source(struct gpiod_line *line)
 	return line->info_flags & GPIOLINE_FLAG_OPEN_SOURCE;
 }
 
-bool gpiod_line_needs_update(struct gpiod_line *line)
+bool gpiod_line_needs_update(struct gpiod_line *line GPIOD_UNUSED)
 {
-	return line->needs_update;
+	return false;
 }
 
 int gpiod_line_update(struct gpiod_line *line)
@@ -428,8 +418,6 @@ int gpiod_line_update(struct gpiod_line *line)
 
 	strncpy(line->name, info.name, sizeof(line->name));
 	strncpy(line->consumer, info.consumer, sizeof(line->consumer));
-
-	line->needs_update = false;
 
 	return 0;
 }
@@ -605,7 +593,12 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 			GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
 			line->output_value = req.default_values[i];
 		line_set_fd(line, line_fd);
-		line_maybe_update(line);
+
+		rv = gpiod_line_update(line);
+		if (rv) {
+			gpiod_line_release_bulk(bulk);
+			return rv;
+		}
 	}
 
 	return 0;
@@ -646,7 +639,12 @@ static int line_request_event_single(struct gpiod_line *line,
 	line->state = LINE_REQUESTED_EVENTS;
 	line->req_flags = config->flags;
 	line_set_fd(line, line_fd);
-	line_maybe_update(line);
+
+	rv = gpiod_line_update(line);
+	if (rv) {
+		gpiod_line_release(line);
+		return rv;
+	}
 
 	return 0;
 }
