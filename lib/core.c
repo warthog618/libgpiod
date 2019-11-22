@@ -879,7 +879,9 @@ int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
 		line->req_flags = flags;
 		if (direction == GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
 			line->output_value = hcfg.default_values[i];
-		line_maybe_update(line);
+		rv = gpiod_line_update(line);
+		if (rv < 0)
+			return rv;
 	}
 	return 0;
 }
@@ -902,10 +904,6 @@ int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 	int direction;
 
 	line = gpiod_line_bulk_get_line(bulk, 0);
-	if (line->needs_update) {
-		errno = EPERM;
-		return -1;
-	}
 	if (line->direction == GPIOD_LINE_DIRECTION_OUTPUT) {
 		gpiod_line_bulk_foreach_line_off(bulk, line, i) {
 			values[i] = line->output_value;
