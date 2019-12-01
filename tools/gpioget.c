@@ -36,22 +36,7 @@ static void print_help(void)
 	printf("  -B, --bias=[as-is|disable|pull-down|pull-up] (defaults to 'as-is'):\n");
 	printf("		set the line bias\n");
 	printf("\n");
-	printf("Biases:\n");
-	printf("  as-is:\tleave bias unchanged\n");
-	printf("  disable:\tdisable bias\n");
-	printf("  pull-up:\tenable pull-up\n");
-	printf("  pull-down:\tenable pull-down\n");
-}
-
-static int bias_flags(const char *option)
-{
-	if (strcmp(option, "pull-down") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option, "pull-up") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option, "disable") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
-	return 0;
+	print_bias_help();
 }
 
 int main(int argc, char **argv)

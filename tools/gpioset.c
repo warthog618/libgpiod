@@ -54,11 +54,7 @@ static void print_help(void)
 	printf("  -u, --usec=USEC:\tspecify the number of microseconds to wait (only valid for --mode=time)\n");
 	printf("  -b, --background:\tafter setting values: detach from the controlling terminal\n");
 	printf("\n");
-	printf("Biases:\n");
-	printf("  as-is:\tleave bias unchanged\n");
-	printf("  disable:\tdisable bias\n");
-	printf("  pull-up:\tenable pull-up\n");
-	printf("  pull-down:\tenable pull-down\n");
+	print_bias_help();
 	printf("\n");
 	printf("Drives:\n");
 	printf("  push-pull:\tdrive the line both high and low\n");
@@ -195,23 +191,14 @@ static const struct mode_mapping *parse_mode(const char *mode)
 	return NULL;
 }
 
-static int bias_flags(const char *option)
-{
-	if (strcmp(option, "pull-down") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option, "pull-up") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option, "disable") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
-	return 0;
-}
-
 static int drive_flags(const char *option)
 {
 	if (strcmp(option, "open-drain") == 0)
 		return GPIOD_CTXLESS_FLAG_OPEN_DRAIN;
 	if (strcmp(option, "open-source") == 0)
 		return GPIOD_CTXLESS_FLAG_OPEN_SOURCE;
+	if (strcmp(option, "push-pull") != 0)
+		die("invalid drive: %s", option);
 	return 0;
 }
 

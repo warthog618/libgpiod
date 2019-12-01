@@ -387,6 +387,15 @@ teardown() {
 	output_regex_match ".*error reading GPIO values.*"
 }
 
+@test "gpioget: invalid bias" {
+	gpio_mockup_probe 8 8 8
+
+	run_tool gpioget --bias=bad "$(gpio_mockup_chip_name 1)" 0 1
+
+	test "$status" -eq "1"
+	output_regex_match ".*invalid bias.*"
+}
+
 #
 # gpioset test cases
 #
@@ -620,6 +629,24 @@ teardown() {
 
 	test "$status" -eq "1"
 	output_regex_match ".*invalid offset"
+}
+
+@test "gpioset: invalid bias" {
+	gpio_mockup_probe 8 8 8
+
+	run_tool gpioset --bias=bad "$(gpio_mockup_chip_name 1)" 0=1 1=1
+
+	test "$status" -eq "1"
+	output_regex_match ".*invalid bias.*"
+}
+
+@test "gpioset: invalid drive" {
+	gpio_mockup_probe 8 8 8
+
+	run_tool gpioset --drive=bad "$(gpio_mockup_chip_name 1)" 0=1 1=1
+
+	test "$status" -eq "1"
+	output_regex_match ".*invalid drive.*"
 }
 
 @test "gpioset: daemonize in invalid mode" {
@@ -886,6 +913,15 @@ teardown() {
 
 	test "$status" -eq "1"
 	output_regex_match ".*error waiting for events"
+}
+
+@test "gpiomon: invalid bias" {
+	gpio_mockup_probe 8 8 8
+
+	run_tool gpiomon --bias=bad "$(gpio_mockup_chip_name 1)" 0 1
+
+	test "$status" -eq "1"
+	output_regex_match ".*invalid bias.*"
 }
 
 @test "gpiomon: custom format (event type + offset)" {

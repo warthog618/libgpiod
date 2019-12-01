@@ -466,7 +466,7 @@ static bool line_bulk_all_requested_values(struct gpiod_line_bulk *bulk)
 	struct gpiod_line *line, **lineptr;
 
 	gpiod_line_bulk_foreach_line(bulk, line, lineptr) {
-		if (!gpiod_line_is_requested_values(line)) {
+		if (line->state != LINE_REQUESTED_VALUES) {
 			errno = EPERM;
 			return false;
 		}
@@ -563,6 +563,7 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 	else if (config->request_type == GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
 		req.flags |= GPIOHANDLE_REQUEST_OUTPUT;
 
+
 	gpiod_line_bulk_foreach_line_off(bulk, line, i) {
 		req.lineoffsets[i] = gpiod_line_offset(line);
 		if (config->request_type ==
@@ -590,7 +591,7 @@ static int line_request_values(struct gpiod_line_bulk *bulk,
 		line->state = LINE_REQUESTED_VALUES;
 		line->req_flags = config->flags;
 		if (config->request_type ==
-			GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
+				GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
 			line->output_value = req.default_values[i];
 		line_set_fd(line, line_fd);
 
@@ -741,11 +742,6 @@ bool gpiod_line_is_requested(struct gpiod_line *line)
 		line->state == LINE_REQUESTED_EVENTS);
 }
 
-bool gpiod_line_is_requested_values(struct gpiod_line *line)
-{
-	return (line->state == LINE_REQUESTED_VALUES);
-}
-
 bool gpiod_line_is_free(struct gpiod_line *line)
 {
 	return line->state == LINE_FREE;
@@ -879,6 +875,7 @@ int gpiod_line_set_config_bulk(struct gpiod_line_bulk *bulk,
 		line->req_flags = flags;
 		if (direction == GPIOD_LINE_REQUEST_DIRECTION_OUTPUT)
 			line->output_value = hcfg.default_values[i];
+
 		rv = gpiod_line_update(line);
 		if (rv < 0)
 			return rv;
@@ -905,9 +902,9 @@ int gpiod_line_set_flags_bulk(struct gpiod_line_bulk *bulk, int flags)
 
 	line = gpiod_line_bulk_get_line(bulk, 0);
 	if (line->direction == GPIOD_LINE_DIRECTION_OUTPUT) {
-		gpiod_line_bulk_foreach_line_off(bulk, line, i) {
+		gpiod_line_bulk_foreach_line_off(bulk, line, i)
 			values[i] = line->output_value;
-		}
+
 		direction = GPIOD_LINE_REQUEST_DIRECTION_OUTPUT;
 	} else {
 		direction = GPIOD_LINE_REQUEST_DIRECTION_INPUT;

@@ -388,7 +388,7 @@ public:
 	 * @param value New value (0 or 1) - only matters for OUTPUT direction.
 	 */
 	GPIOD_API void set_config(int direction, ::std::bitset<32> flags,
-			int value = 0) const;
+				  int value = 0) const;
 
 	/**
 	 * @brief Set configuration flags of this line.
@@ -670,7 +670,7 @@ public:
 	/**
 	 * @brief Set values of all lines held by this object.
 	 * @param values Vector of values to set. Must be the same size as the
-	 *        number of lines held by this line_bulk.
+	 *               number of lines held by this line_bulk.
 	 */
 	GPIOD_API void set_values(const ::std::vector<int>& values) const;
 
@@ -679,11 +679,11 @@ public:
 	 * @param direction New direction.
 	 * @param flags Replacement flags.
 	 * @param values Vector of values to set. Must be the same size as the
-	 *        number of lines held by this line_bulk.
-	 * 	  Only relevant for output direction requests.
+	 *               number of lines held by this line_bulk.
+	 *               Only relevant for output direction requests.
 	 */
 	GPIOD_API void set_config(int direction, ::std::bitset<32> flags,
-			const ::std::vector<int> values = std::vector<int>()) const;
+				  const ::std::vector<int> values = std::vector<int>()) const;
 
 	/**
 	 * @brief Set configuration flags of all lines held by this object.
@@ -699,14 +699,14 @@ public:
 	/**
 	 * @brief Change the direction all lines held by this object to output.
 	 * @param values Vector of values to set. Must be the same size as the
-	 *        number of lines held by this line_bulk.
+	 *               number of lines held by this line_bulk.
 	 */
 	GPIOD_API void set_direction_output(const ::std::vector<int>& values) const;
 
 	/**
 	 * @brief Poll the set of lines for line events.
 	 * @param timeout Number of nanoseconds to wait before returning an
-	 *        empty line_bulk.
+	 *                empty line_bulk.
 	 * @return Returns a line_bulk object containing lines on which events
 	 *         occurred.
 	 */

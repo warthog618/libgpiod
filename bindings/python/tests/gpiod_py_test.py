@@ -913,6 +913,6 @@ class EventFileDescriptor(MockupTestCase):
 #
 
 if __name__ == '__main__':
-    check_kernel(5, 2, 11)
+    check_kernel(5, 5, 0)
     mockup = gpiomockup.Mockup()
     unittest.main()

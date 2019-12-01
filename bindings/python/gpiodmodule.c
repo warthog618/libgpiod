@@ -635,9 +635,10 @@ static PyObject *gpiod_Line_set_config(gpiod_LineObject *self, PyObject *args)
 		ret = PyObject_CallMethod((PyObject *)bulk_obj,
 				"set_config", "OO(O)", dirn, flags, vals);
 		Py_DECREF(vals);
-	} else
+	} else {
 		ret = PyObject_CallMethod((PyObject *)bulk_obj,
 				"set_config", "OO", dirn, flags);
+	}
 
 	Py_DECREF(bulk_obj);
 
@@ -1375,74 +1376,7 @@ static PyObject *gpiod_LineBulk_get_values(gpiod_LineBulkObject *self,
 	return val_list;
 }
 
-PyDoc_STRVAR(gpiod_LineBulk_set_values_doc,
-"set_values(values) -> None\n"
-"\n"
-"Set the values of all the lines held by this LineBulk object.\n"
-"\n"
-"  values\n"
-"    List of values (integers) to set.\n"
-"\n"
-"The number of values in the list passed as argument must be the same as\n"
-"the number of lines held by this gpiod.LineBulk object. The index of each\n"
-"value corresponds to the index of each line in the object.\n");
-
-static PyObject *gpiod_LineBulk_set_values(gpiod_LineBulkObject *self,
-					   PyObject *args)
-{
-	int rv, vals[GPIOD_LINE_BULK_MAX_LINES], val;
-	PyObject *val_list, *iter, *next;
-	struct gpiod_line_bulk bulk;
-	Py_ssize_t num_vals, i;
-
-	if (gpiod_LineBulkOwnerIsClosed(self))
-		return NULL;
-
-	gpiod_LineBulkObjToCLineBulk(self, &bulk);
-	memset(vals, 0, sizeof(vals));
-
-	rv = PyArg_ParseTuple(args, "O", &val_list);
-	if (!rv)
-		return NULL;
-
-	num_vals = PyObject_Size(val_list);
-	if (self->num_lines != num_vals) {
-		PyErr_SetString(PyExc_TypeError,
-				"Number of values must correspond to the number of lines");
-		return NULL;
-	}
-
-	iter = PyObject_GetIter(val_list);
-	if (!iter)
-		return NULL;
-
-	for (i = 0;; i++) {
-		next = PyIter_Next(iter);
-		if (!next) {
-			Py_DECREF(iter);
-			break;
-		}
-
-		val = PyLong_AsLong(next);
-		Py_DECREF(next);
-		if (PyErr_Occurred()) {
-			Py_DECREF(iter);
-			return NULL;
-		}
-
-		vals[i] = (int)val;
-	}
-
-	Py_BEGIN_ALLOW_THREADS;
-	rv = gpiod_line_set_value_bulk(&bulk, vals);
-	Py_END_ALLOW_THREADS;
-	if (rv)
-		return PyErr_SetFromErrno(PyExc_OSError);
-
-	Py_RETURN_NONE;
-}
-
-static int convert_values(PyObject *src, int *dst, Py_ssize_t n)
+static int gpiod_TupleToIntArray(PyObject *src, int *dst, Py_ssize_t n)
 {
 	int val;
 	Py_ssize_t num_vals, i;
@@ -1472,6 +1406,48 @@ static int convert_values(PyObject *src, int *dst, Py_ssize_t n)
 		dst[i] = (int)val;
 	}
 	return 0;
+}
+
+PyDoc_STRVAR(gpiod_LineBulk_set_values_doc,
+"set_values(values) -> None\n"
+"\n"
+"Set the values of all the lines held by this LineBulk object.\n"
+"\n"
+"  values\n"
+"    List of values (integers) to set.\n"
+"\n"
+"The number of values in the list passed as argument must be the same as\n"
+"the number of lines held by this gpiod.LineBulk object. The index of each\n"
+"value corresponds to the index of each line in the object.\n");
+
+static PyObject *gpiod_LineBulk_set_values(gpiod_LineBulkObject *self,
+					   PyObject *args)
+{
+	int rv, vals[GPIOD_LINE_BULK_MAX_LINES];
+	PyObject *val_list;
+	struct gpiod_line_bulk bulk;
+
+	if (gpiod_LineBulkOwnerIsClosed(self))
+		return NULL;
+
+	gpiod_LineBulkObjToCLineBulk(self, &bulk);
+	memset(vals, 0, sizeof(vals));
+
+	rv = PyArg_ParseTuple(args, "O", &val_list);
+	if (!rv)
+		return NULL;
+
+	rv = gpiod_TupleToIntArray(val_list, vals, self->num_lines);
+	if (rv)
+		return NULL;
+
+	Py_BEGIN_ALLOW_THREADS;
+	rv = gpiod_line_set_value_bulk(&bulk, vals);
+	Py_END_ALLOW_THREADS;
+	if (rv)
+		return PyErr_SetFromErrno(PyExc_OSError);
+
+	Py_RETURN_NONE;
 }
 
 PyDoc_STRVAR(gpiod_LineBulk_set_config_doc,
@@ -1509,11 +1485,11 @@ static PyObject *gpiod_LineBulk_set_config(gpiod_LineBulkObject *self,
 	if (!rv)
 		return NULL;
 
-	if (val_list == NULL)
+	if (val_list == NULL) {
 		valp = NULL;
-	else {
+	} else {
 		memset(vals, 0, sizeof(vals));
-		rv = convert_values(val_list, vals, self->num_lines);
+		rv = gpiod_TupleToIntArray(val_list, vals, self->num_lines);
 		if (rv)
 			return NULL;
 		valp = vals;
@@ -1621,7 +1597,7 @@ static PyObject *gpiod_LineBulk_set_direction_output(
 		valp = NULL;
 	else {
 		memset(vals, 0, sizeof(vals));
-		rv = convert_values(val_list, vals, self->num_lines);
+		rv = gpiod_TupleToIntArray(val_list, vals, self->num_lines);
 		if (rv)
 			return NULL;
 		valp = vals;

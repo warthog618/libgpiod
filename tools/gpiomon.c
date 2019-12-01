@@ -53,11 +53,7 @@ static void print_help(void)
 	printf("  -b, --line-buffered:\tset standard output as line buffered\n");
 	printf("  -F, --format=FMT\tspecify custom output format\n");
 	printf("\n");
-	printf("Biases:\n");
-	printf("  as-is:\tleave bias unchanged\n");
-	printf("  disable:\tdisable bias\n");
-	printf("  pull-up:\tenable pull-up\n");
-	printf("  pull-down:\tenable pull-down\n");
+	print_bias_help();
 	printf("\n");
 	printf("Format specifiers:\n");
 	printf("  %%o:  GPIO line offset\n");
@@ -247,17 +243,6 @@ static int make_signalfd(void)
 		die("error creating signalfd: %s", strerror(errno));
 
 	return sigfd;
-}
-
-static int bias_flags(const char *option)
-{
-	if (strcmp(option, "pull-down") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_DOWN;
-	if (strcmp(option, "pull-up") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_PULL_UP;
-	if (strcmp(option, "disable") == 0)
-		return GPIOD_CTXLESS_FLAG_BIAS_DISABLE;
-	return 0;
 }
 
 int main(int argc, char **argv)
