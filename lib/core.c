@@ -986,7 +986,6 @@ int gpiod_line_event_wait_bulk(struct gpiod_line_bulk *bulk,
 {
 	struct pollfd pfd;
 	struct gpiod_line *line;
-	struct gpiod_line_event event;
 	int rv;
 
 	if (!line_bulk_same_chip(bulk) || !line_bulk_all_requested(bulk))
@@ -1010,10 +1009,7 @@ int gpiod_line_event_wait_bulk(struct gpiod_line_bulk *bulk,
 
 		if (event_bulk) {
 			gpiod_line_bulk_init(event_bulk);
-			rv = gpiod_line_event_read(line, &event);
-			if (rv)
-				return rv;
-			line = gpiod_line_bulk_get_line(bulk, event.offset);
+			line = gpiod_line_bulk_get_line(bulk, 0);
 			gpiod_line_bulk_add(event_bulk, line);
 		}
 	}
