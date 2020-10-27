@@ -23,6 +23,12 @@ struct gpiod_line_iter {
 	unsigned int offset;
 };
 
+struct gpiod_line_bulk_iter {
+	struct gpiod_line_bulk *bulk;
+	unsigned int num_lines;
+	unsigned int index;
+};
+
 static int dir_filter(const struct dirent *dir)
 {
 	return !strncmp(dir->d_name, "gpiochip", 8);
@@ -168,4 +174,31 @@ struct gpiod_line *gpiod_line_iter_next(struct gpiod_line_iter *iter)
 {
 	return iter->offset < (iter->num_lines)
 					? iter->lines[iter->offset++] : NULL;
+}
+
+struct gpiod_line_bulk_iter *
+gpiod_line_bulk_iter_new(struct gpiod_line_bulk *bulk)
+{
+	struct gpiod_line_bulk_iter *iter;
+
+	iter = malloc(sizeof(*iter));
+	if (!iter)
+		return NULL;
+
+	iter->bulk = bulk;
+	iter->index = 0;
+	iter->num_lines = gpiod_line_bulk_num_lines(bulk);
+
+	return iter;
+}
+
+void gpiod_line_bulk_iter_free(struct gpiod_line_bulk_iter *iter)
+{
+	free(iter);
+}
+
+struct gpiod_line *gpiod_line_bulk_iter_next(struct gpiod_line_bulk_iter *iter)
+{
+	return iter->index < iter->num_lines ?
+		gpiod_line_bulk_get_line(iter->bulk, iter->index++) : NULL;
 }

@@ -121,3 +121,29 @@ GPIOD_TEST_CASE(line_iter, 0, { 8 })
 
 	g_assert_cmpuint(i, ==, 8);
 }
+
+GPIOD_TEST_CASE(line_bulk_iter, 0, { 4 })
+{
+	g_autoptr(gpiod_line_bulk_iter_struct) iter = NULL;
+	g_autoptr(gpiod_line_bulk_struct) bulk = NULL;
+	g_autoptr(gpiod_chip_struct) chip = NULL;
+	struct gpiod_line *line;
+	gint i = 0;
+
+	chip = gpiod_chip_open(gpiod_test_chip_path(0));
+	g_assert_nonnull(chip);
+	gpiod_test_return_if_failed();
+
+	bulk = gpiod_chip_get_all_lines(chip);
+	g_assert_nonnull(bulk);
+	gpiod_test_return_if_failed();
+
+	iter = gpiod_line_bulk_iter_new(bulk);
+	g_assert_nonnull(iter);
+	gpiod_test_return_if_failed();
+
+	gpiod_line_bulk_iter_foreach_line(iter, line)
+		g_assert_cmpint(i++, ==, gpiod_line_offset(line));
+
+	g_assert_cmpint(i, ==, 4);
+}
