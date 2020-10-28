@@ -46,29 +46,6 @@ const ::std::map<::std::bitset<32>, int, bitset_cmp> reqflag_mapping = {
 	{ line_request::FLAG_BIAS_PULL_UP,	GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP, },
 };
 
-struct line_bulk_iter_deleter
-{
-	void operator()(::gpiod_line_bulk_iter *iter)
-	{
-		::gpiod_line_bulk_iter_free(iter);
-	}
-};
-
-using line_bulk_iter_ptr = ::std::unique_ptr<::gpiod_line_bulk_iter,
-					     line_bulk_iter_deleter>;
-
-line_bulk_iter_ptr make_line_bulk_iter(::gpiod_line_bulk *bulk)
-{
-	::gpiod_line_bulk_iter *iter;
-
-	iter = ::gpiod_line_bulk_iter_new(bulk);
-	if (!iter)
-		throw ::std::system_error(errno, ::std::system_category(),
-					  "Unable to create new line bulk iterator");
-
-	return line_bulk_iter_ptr(iter);
-}
-
 } /* namespace */
 
 const unsigned int line_bulk::MAX_LINES = GPIOD_LINE_BULK_MAX_LINES;
@@ -270,8 +247,8 @@ line_bulk line_bulk::event_wait(const ::std::chrono::nanoseconds& timeout) const
 {
 	this->throw_if_empty();
 
-	line_bulk_ptr ev_bulk(::gpiod_line_bulk_new(this->size()));
-	auto chip = this->_m_bulk[0].get_chip();
+	auto ev_bulk = ::gpiod_line_bulk_new(this->size());
+	line_bulk_ptr ev_bulk_deleter(ev_bulk);
 	auto bulk = this->to_line_bulk();
 	::timespec ts;
 	line_bulk ret;
@@ -280,16 +257,16 @@ line_bulk line_bulk::event_wait(const ::std::chrono::nanoseconds& timeout) const
 	ts.tv_sec = timeout.count() / 1000000000ULL;
 	ts.tv_nsec = timeout.count() % 1000000000ULL;
 
-	rv = ::gpiod_line_event_wait_bulk(bulk.get(), ::std::addressof(ts), ev_bulk.get());
+	rv = ::gpiod_line_event_wait_bulk(bulk.get(), ::std::addressof(ts), ev_bulk);
 	if (rv < 0) {
 		throw ::std::system_error(errno, ::std::system_category(),
 					  "error polling for events");
 	} else if (rv > 0) {
-		auto iter = make_line_bulk_iter(ev_bulk.get());
-		::gpiod_line *curr_line;
+		auto chip = this->_m_bulk[0].get_chip();
+		auto num_lines = ::gpiod_line_bulk_num_lines(ev_bulk);
 
-		gpiod_line_bulk_iter_foreach_line(iter.get(), curr_line)
-			ret.append(line(curr_line, chip));
+		for (unsigned int i = 0; i < num_lines; i++)
+			ret.append(line(::gpiod_line_bulk_get_line(ev_bulk, i), chip));
 	}
 
 	return ret;
