@@ -1752,14 +1752,12 @@ static PyObject *gpiod_LineBulk_event_wait(gpiod_LineBulkObject *self,
 	static char *kwlist[] = { "sec", "nsec", NULL };
 
 	struct gpiod_line_bulk *bulk, *ev_bulk;
-	struct gpiod_line_bulk_iter *iter;
 	gpiod_LineObject *line_obj;
-	struct gpiod_line *line;
 	gpiod_ChipObject *owner;
 	long sec = 0, nsec = 0;
 	struct timespec ts;
 	PyObject *ret;
-	Py_ssize_t i;
+	unsigned int idx;
 	int rv;
 
 	if (gpiod_LineBulkOwnerIsClosed(self))
@@ -1803,32 +1801,22 @@ static PyObject *gpiod_LineBulk_event_wait(gpiod_LineBulkObject *self,
 
 	owner = ((gpiod_LineObject *)(self->lines[0]))->owner;
 
-	iter = gpiod_line_bulk_iter_new(ev_bulk);
-	if (!iter) {
-		gpiod_line_bulk_free(ev_bulk);
-		return PyErr_SetFromErrno(PyExc_OSError);
-	}
-
-	i = 0;
-	gpiod_line_bulk_iter_foreach_line(iter, line) {
-		line_obj = gpiod_MakeLineObject(owner, line);
+	for (idx = 0; idx < gpiod_line_bulk_num_lines(ev_bulk); idx++) {
+		line_obj = gpiod_MakeLineObject(owner, gpiod_line_bulk_get_line(ev_bulk, idx));
 		if (!line_obj) {
-			gpiod_line_bulk_iter_free(iter);
 			gpiod_line_bulk_free(ev_bulk);
 			Py_DECREF(ret);
 			return NULL;
 		}
 
-		rv = PyList_SetItem(ret, i++, (PyObject *)line_obj);
+		rv = PyList_SetItem(ret, idx, (PyObject *)line_obj);
 		if (rv < 0) {
-			gpiod_line_bulk_iter_free(iter);
 			gpiod_line_bulk_free(ev_bulk);
 			Py_DECREF(ret);
 			return NULL;
 		}
 	}
 
-	gpiod_line_bulk_iter_free(iter);
 	gpiod_line_bulk_free(ev_bulk);
 
 	return ret;
@@ -2305,12 +2293,10 @@ PyDoc_STRVAR(gpiod_Chip_get_all_lines_doc,
 static gpiod_LineBulkObject *
 gpiod_Chip_get_all_lines(gpiod_ChipObject *self, PyObject *Py_UNUSED(ignored))
 {
-	struct gpiod_line_bulk_iter *iter;
 	gpiod_LineBulkObject *bulk_obj;
 	struct gpiod_line_bulk *bulk;
 	gpiod_LineObject *line_obj;
-	struct gpiod_line *line;
-	unsigned int index = 0;
+	unsigned int idx;
 	PyObject *list;
 	int rv;
 
@@ -2328,26 +2314,16 @@ gpiod_Chip_get_all_lines(gpiod_ChipObject *self, PyObject *Py_UNUSED(ignored))
 		return NULL;
 	}
 
-	iter = gpiod_line_bulk_iter_new(bulk);
-	if (!iter) {
-		gpiod_line_bulk_free(bulk);
-		Py_DECREF(list);
-		return (gpiod_LineBulkObject *)PyErr_SetFromErrno(
-							PyExc_OSError);
-	}
-
-	gpiod_line_bulk_iter_foreach_line(iter, line) {
-		line_obj = gpiod_MakeLineObject(self, line);
+	for (idx = 0; idx < gpiod_line_bulk_num_lines(bulk); idx++) {
+		line_obj = gpiod_MakeLineObject(self, gpiod_line_bulk_get_line(bulk, idx));
 		if (!line_obj) {
-			gpiod_line_bulk_iter_free(iter);
 			gpiod_line_bulk_free(bulk);
 			Py_DECREF(list);
 			return NULL;
 		}
 
-		rv = PyList_SetItem(list, index++, (PyObject *)line_obj);
+		rv = PyList_SetItem(list, idx, (PyObject *)line_obj);
 		if (rv < 0) {
-			gpiod_line_bulk_iter_free(iter);
 			gpiod_line_bulk_free(bulk);
 			Py_DECREF(line_obj);
 			Py_DECREF(list);
@@ -2355,7 +2331,6 @@ gpiod_Chip_get_all_lines(gpiod_ChipObject *self, PyObject *Py_UNUSED(ignored))
 		}
 	}
 
-	gpiod_line_bulk_iter_free(iter);
 	gpiod_line_bulk_free(bulk);
 
 	bulk_obj = gpiod_ListToLineBulk(list);
