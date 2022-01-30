@@ -903,11 +903,6 @@ int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
 	uint64_t mask, values;
 	int ret;
 
-	if (!config) {
-		cfgbuf->flags = GPIO_V2_LINE_FLAG_INPUT;
-		return 0;
-	}
-
 	if (config->too_complex)
 		goto err_2big;
 
