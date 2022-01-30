@@ -173,11 +173,9 @@ int gpiod_chip_find_line(struct gpiod_chip *chip, const char *name);
  * @brief Request a set of lines for exclusive usage.
  * @param chip GPIO chip object.
  * @param req_cfg Request config object.
- * @param line_cfg Line config object. May be NULL.
+ * @param line_cfg Line config object.
  * @return New line request object or NULL if an error occurred. The request
  *         must be released by the caller using ::gpiod_line_request_release.
- * @note If line_cfg is NULL, lines will be requested in input mode with no
- *       additional parameters set.
  */
 struct gpiod_line_request *
 gpiod_chip_request_lines(struct gpiod_chip *chip,
