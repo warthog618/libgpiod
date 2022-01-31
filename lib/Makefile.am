@@ -17,6 +17,7 @@ libgpiod_la_SOURCES =	chip.c \
 libgpiod_la_CFLAGS = -Wall -Wextra -g -std=gnu89
 libgpiod_la_CFLAGS += -fvisibility=hidden -I$(top_srcdir)/include/
 libgpiod_la_CFLAGS += -include $(top_builddir)/config.h
+libgpiod_la_CFLAGS += $(PROFILING_FLAGS)
 libgpiod_la_LDFLAGS = -version-info $(subst .,:,$(ABI_VERSION))
 
 pkgconfigdir = $(libdir)/pkgconfig

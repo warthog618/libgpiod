@@ -122,6 +122,16 @@ AC_ARG_ENABLE([tests],
 	[with_tests=false])
 AM_CONDITIONAL([WITH_TESTS], [test "x$with_tests" = xtrue])
 
+AC_ARG_ENABLE([profiling],
+	[AS_HELP_STRING([--enable-profiling],
+		[enable gcov profiling on the core library and tests [default=no]])],
+	[if test "x$enableval" = xyes; then with_profiling=true; fi],
+	[with_profiling=false])
+if test "x$with_profiling" = xtrue
+then
+	AC_SUBST(PROFILING_FLAGS, ["-fprofile-arcs -ftest-coverage"])
+fi
+
 AC_DEFUN([FUNC_NOT_FOUND_TESTS],
 	[ERR_NOT_FOUND([$1()], [tests])])
 
