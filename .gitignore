@@ -30,3 +30,7 @@ libtool
 *-libtool
 m4/
 stamp-h1
+
+# profiling
+*.gcda
+*.gcno
