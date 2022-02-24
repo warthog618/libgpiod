@@ -7,8 +7,8 @@ AM_CFLAGS = -I$(top_srcdir)/include/ -I$(top_srcdir)/tests/gpiosim/
 AM_CFLAGS += -include $(top_builddir)/config.h
 AM_CFLAGS += -Wall -Wextra -g -std=gnu89 $(GLIB_CFLAGS)
 AM_CFLAGS += -DG_LOG_DOMAIN=\"gpiod-test\"
-AM_CFLAGS += $(PROFILING_FLAGS)
-AM_LDFLAGS = -pthread
+AM_CFLAGS += $(PROFILING_CFLAGS)
+AM_LDFLAGS = -pthread $(PROFILING_LDFLAGS)
 LDADD = $(top_builddir)/lib/libgpiod.la
 LDADD += $(top_builddir)/tests/gpiosim/libgpiosim.la
 LDADD += $(GLIB_LIBS)

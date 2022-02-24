@@ -129,7 +129,8 @@ AC_ARG_ENABLE([profiling],
 	[with_profiling=false])
 if test "x$with_profiling" = xtrue
 then
-	AC_SUBST(PROFILING_FLAGS, ["-fprofile-arcs -ftest-coverage"])
+	AC_SUBST(PROFILING_CFLAGS, ["-fprofile-arcs -ftest-coverage"])
+	AC_SUBST(PROFILING_LDFLAGS, ["-lgcov"])
 fi
 
 AC_DEFUN([FUNC_NOT_FOUND_TESTS],
