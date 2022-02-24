@@ -57,4 +57,4 @@ html_static_path = []
 html_extra_path = ['../doc/html']
 
 import subprocess
-subprocess.call('cd .. ; doxygen', shell=True)
+subprocess.call('cd .. ; ./autogen.sh ; make doc', shell=True)
