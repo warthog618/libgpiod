@@ -15,9 +15,10 @@ build:
     # rust: "1.55"
     # golang: "1.17"
   # doxygen is already available, but just in case.
-  # autoconf, m4 and graphviz are missing, so add them.
+  # autoconf, libtool, m4 and graphviz are missing, so add them.
   apt_packages:
       - autoconf
+      - libtool
       - m4
       - doxygen
       - graphviz
