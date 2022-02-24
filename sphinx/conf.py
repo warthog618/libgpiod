@@ -54,7 +54,7 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
-html_extra_path = ['../../doc/html']
+html_extra_path = ['../doc/html']
 
 import subprocess
-subprocess.call('cd ../.. ; doxygen', shell=True)
+subprocess.call('cd .. ; doxygen', shell=True)
