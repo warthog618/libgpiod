@@ -732,6 +732,7 @@ static void bank_release(struct refcount *ref)
 	unsigned int i;
 	char buf[64];
 
+	/* FIXME should be based on dirent because num_lines can change. */
 	for (i = 0; i < bank->num_lines; i++) {
 		snprintf(buf, sizeof(buf), "line%u/hog", i);
 		unlinkat(bank->cfs_dir_fd, buf, AT_REMOVEDIR);
