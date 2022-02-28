@@ -28,9 +28,8 @@ AC_SUBST(VERSION_STR, [$PACKAGE_VERSION$EXTRA_VERSION])
 AC_SUBST(ABI_VERSION, [4.1.2])
 # Have a separate ABI version for C++ bindings:
 AC_SUBST(ABI_CXX_VERSION, [2.1.1])
-# ABI version for libgpiomockup (we need this since it can be installed if we
+# ABI version for libgpiosim (we need this since it can be installed if we
 # enable install-tests).
-AC_SUBST(ABI_MOCKUP_VERSION, [0.1.0])
 AC_SUBST(ABI_GPIOSIM_VERSION, [0.1.0])
 
 AC_CONFIG_AUX_DIR([autostuff])
@@ -138,14 +137,14 @@ AC_DEFUN([FUNC_NOT_FOUND_TESTS],
 
 if test "x$with_tests" = xtrue
 then
-	# For libgpiomockup & libgpiosim
+	# For libgpiosim
 	AC_CHECK_FUNC([qsort], [], [FUNC_NOT_FOUND_TESTS([qsort])])
 	PKG_CHECK_MODULES([KMOD], [libkmod >= 18])
-	PKG_CHECK_MODULES([UDEV], [libudev >= 215])
 	PKG_CHECK_MODULES([MOUNT], [mount >= 2.33.1])
 
 	# For core library tests
 	PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.50])
+	PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= 2.50])
 
 	if test "x$with_tools" = xtrue
 	then
@@ -236,7 +235,6 @@ AC_CONFIG_FILES([Makefile
 		 lib/libgpiod.pc
 		 tools/Makefile
 		 tests/Makefile
-		 tests/mockup/Makefile
 		 tests/gpiosim/Makefile
 		 bindings/cxx/libgpiodcxx.pc
 		 bindings/Makefile
