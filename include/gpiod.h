@@ -185,11 +185,19 @@ gpiod_chip_request_lines(struct gpiod_chip *chip,
 /**
  * @}
  *
- * @defgroup line_settings Line settings
+ * @defgroup line_settings Line definitions
  * @{
  *
- * These defines are used both by gpiod_line_info and gpiod_line_config.
+ * These defines are used across the API.
  */
+
+/**
+ * @brief Logical line state.
+ */
+enum {
+	GPIOD_LINE_VALUE_INACTIVE = 0,
+	GPIOD_LINE_VALUE_ACTIVE = 1,
+};
 
 /**
  * @brief Direction settings.
