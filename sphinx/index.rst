@@ -1,7 +1,11 @@
-.. libgpiod documentation master file, created by
-   sphinx-quickstart on Thu Feb 24 09:49:41 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. SPDX-License-Identifier: LGPL-2.1-or-later
+
+..
+   This file is part of libgpiod.
+
+   Copyright (C) 2022 Bartosz Golaszewski <bartekgola@gmail.com>
+
+   libgpiod documentation master file.
 
 Welcome to libgpiod's documentation!
 ====================================

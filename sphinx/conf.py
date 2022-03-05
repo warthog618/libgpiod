@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#
+# This file is part of libgpiod.
+#
+# Copyright (C) 2022 Bartosz Golaszewski <bartekgola@gmail.com>
+#
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full

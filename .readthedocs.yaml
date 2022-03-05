@@ -1,4 +1,10 @@
-# .readthedocs.yaml
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#
+# This file is part of libgpiod.
+#
+# Copyright (C) 2022 Bartosz Golaszewski <bartekgola@gmail.com>
+#
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
