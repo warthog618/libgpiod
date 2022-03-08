@@ -130,7 +130,7 @@ static void list_lines(struct gpiod_chip *chip)
 	unsigned int i, offset;
 	int direction;
 
-	printf("%s - %u lines:\n",
+	printf("%s - %zu lines:\n",
 	       gpiod_chip_get_name(chip), gpiod_chip_get_num_lines(chip));
 
 	for (offset = 0; offset < gpiod_chip_get_num_lines(chip); offset++) {

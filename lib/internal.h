@@ -29,7 +29,7 @@ int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
 struct gpiod_line_request *
 gpiod_line_request_from_kernel(struct gpio_v2_line_request *reqbuf);
 int gpiod_edge_event_buffer_read_fd(int fd, struct gpiod_edge_event_buffer *buffer,
-				    unsigned int max_events);
+				    size_t max_events);
 struct gpiod_info_event *
 gpiod_info_event_from_kernel(struct gpio_v2_line_info_changed *evbuf);
 struct gpiod_info_event *gpiod_info_event_read_fd(int fd);

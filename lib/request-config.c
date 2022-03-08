@@ -13,8 +13,8 @@
 struct gpiod_request_config {
 	char consumer[GPIO_MAX_NAME_SIZE];
 	unsigned int offsets[GPIO_V2_LINES_MAX];
-	unsigned int num_offsets;
-	unsigned int event_buffer_size;
+	size_t num_offsets;
+	size_t event_buffer_size;
 };
 
 GPIOD_API struct gpiod_request_config *gpiod_request_config_new(void)
@@ -54,7 +54,7 @@ gpiod_request_config_get_consumer(struct gpiod_request_config *config)
 
 GPIOD_API void
 gpiod_request_config_set_offsets(struct gpiod_request_config *config,
-				 unsigned int num_offsets,
+				 size_t num_offsets,
 				 const unsigned int *offsets)
 {
 	unsigned int i;
@@ -66,7 +66,7 @@ gpiod_request_config_set_offsets(struct gpiod_request_config *config,
 		config->offsets[i] = offsets[i];
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_request_config_get_num_offsets(struct gpiod_request_config *config)
 {
 	return config->num_offsets;
@@ -82,12 +82,12 @@ gpiod_request_config_get_offsets(struct gpiod_request_config *config,
 
 GPIOD_API void
 gpiod_request_config_set_event_buffer_size(struct gpiod_request_config *config,
-					   unsigned int event_buffer_size)
+					   size_t event_buffer_size)
 {
 	config->event_buffer_size = event_buffer_size;
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config)
 {
 	return config->event_buffer_size;

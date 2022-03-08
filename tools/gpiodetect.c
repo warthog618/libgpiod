@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 		if (!chip)
 			die_perror("unable to open %s", entries[i]->d_name);
 
-		printf("%s [%s] (%u lines)\n",
+		printf("%s [%s] (%zu lines)\n",
 		       gpiod_chip_get_name(chip),
 		       gpiod_chip_get_label(chip),
 		       gpiod_chip_get_num_lines(chip));

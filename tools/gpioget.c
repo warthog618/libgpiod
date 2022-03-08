@@ -44,12 +44,13 @@ int main(int argc, char **argv)
 	int direction = GPIOD_LINE_DIRECTION_INPUT;
 	int optc, opti, bias = 0, ret, *values;
 	struct gpiod_request_config *req_cfg;
-	unsigned int *offsets, i, num_lines;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
+	unsigned int *offsets, i;
 	struct gpiod_chip *chip;
 	bool active_low = false;
 	char *device, *end;
+	size_t num_lines;
 
 	for (;;) {
 		optc = getopt_long(argc, argv, shortopts, longopts, &opti);

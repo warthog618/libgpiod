@@ -671,7 +671,7 @@ gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
 
 GPIOD_API void
 gpiod_line_config_set_output_values(struct gpiod_line_config *config,
-				    unsigned int num_values,
+				    size_t num_values,
 				    const unsigned int *offsets,
 				    const int *values)
 {
@@ -746,7 +746,7 @@ static bool base_debounce_period_is_equal(struct base_config *base,
 	return true;
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_line_config_get_num_overrides(struct gpiod_line_config *config)
 {
 	struct override_config *override;

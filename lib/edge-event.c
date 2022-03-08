@@ -21,8 +21,8 @@ struct gpiod_edge_event {
 };
 
 struct gpiod_edge_event_buffer {
-	unsigned int capacity;
-	unsigned int num_events;
+	size_t capacity;
+	size_t num_events;
 	struct gpiod_edge_event *events;
 	struct gpio_v2_line_event *event_data;
 };
@@ -79,7 +79,7 @@ gpiod_edge_event_get_line_seqno(struct gpiod_edge_event *event)
 }
 
 GPIOD_API struct gpiod_edge_event_buffer *
-gpiod_edge_event_buffer_new(unsigned int capacity)
+gpiod_edge_event_buffer_new(size_t capacity)
 {
 	struct gpiod_edge_event_buffer *buf;
 
@@ -111,7 +111,7 @@ gpiod_edge_event_buffer_new(unsigned int capacity)
 	return buf;
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_edge_event_buffer_get_capacity(struct gpiod_edge_event_buffer *buffer)
 {
 	return buffer->capacity;
@@ -140,7 +140,7 @@ gpiod_edge_event_buffer_get_event(struct gpiod_edge_event_buffer *buffer,
 	return &buffer->events[index];
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_edge_event_buffer_get_num_events(struct gpiod_edge_event_buffer *buffer)
 {
 	return buffer->num_events;
@@ -148,7 +148,7 @@ gpiod_edge_event_buffer_get_num_events(struct gpiod_edge_event_buffer *buffer)
 
 int gpiod_edge_event_buffer_read_fd(int fd,
 				    struct gpiod_edge_event_buffer *buffer,
-				    unsigned int max_events)
+				    size_t max_events)
 {
 	struct gpio_v2_line_event *curr;
 	struct gpiod_edge_event *event;
