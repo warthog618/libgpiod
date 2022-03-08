@@ -9,7 +9,6 @@
 #ifndef __LIBGPIOD_GPIOD_H__
 #define __LIBGPIOD_GPIOD_H__
 
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 
