@@ -154,15 +154,15 @@ static void handle_signal(int signum UNUSED)
 
 int main(int argc, char **argv)
 {
-	unsigned int offsets[64], num_lines = 0, offset, events_wanted = 0,
-		     events_done = 0;
 	bool watch_rising = false, watch_falling = false, active_low = false;
+	size_t num_lines = 0, events_wanted = 0, events_done = 0;
 	struct gpiod_edge_event_buffer *event_buffer;
 	int optc, opti, ret, i, edge, bias = 0;
 	uint64_t timeout = 10 * 1000000000LLU;
 	struct gpiod_request_config *req_cfg;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
+	unsigned int offsets[64], offset;
 	struct gpiod_edge_event *event;
 	struct gpiod_chip *chip;
 	struct mon_ctx ctx;

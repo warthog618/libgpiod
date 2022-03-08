@@ -192,13 +192,14 @@ int main(int argc, char **argv)
 	const struct mode_mapping *mode = &modes[MODE_EXIT];
 	int ret, optc, opti, bias = 0, drive = 0, *values;
 	struct gpiod_request_config *req_cfg;
-	unsigned int *offsets, num_lines, i;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
 	struct callback_data cbdata;
+	unsigned int *offsets, i;
 	struct gpiod_chip *chip;
 	bool active_low = false;
 	char *device, *end;
+	size_t num_lines;
 
 	memset(&cbdata, 0, sizeof(cbdata));
 

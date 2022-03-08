@@ -14,7 +14,7 @@
 
 struct gpiod_line_request {
 	unsigned int offsets[GPIO_V2_LINES_MAX];
-	unsigned int num_lines;
+	size_t num_lines;
 	int fd;
 };
 
@@ -45,7 +45,7 @@ GPIOD_API void gpiod_line_request_release(struct gpiod_line_request *request)
 	free(request);
 }
 
-GPIOD_API unsigned int
+GPIOD_API size_t
 gpiod_line_request_get_num_lines(struct gpiod_line_request *request)
 {
 	return request->num_lines;
@@ -87,7 +87,7 @@ static int offset_to_bit(struct gpiod_line_request *request,
 
 GPIOD_API int
 gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
-				     unsigned num_lines,
+				     size_t num_lines,
 				     const unsigned int *offsets, int *values)
 {
 	struct gpio_v2_line_values buf;
@@ -140,7 +140,7 @@ GPIOD_API int gpiod_line_request_set_value(struct gpiod_line_request *request,
 
 GPIOD_API int
 gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
-				     unsigned int num_lines,
+				     size_t num_lines,
 				     const unsigned int *offsets,
 				     const int *values)
 {
@@ -210,7 +210,7 @@ gpiod_line_request_edge_event_wait(struct gpiod_line_request *request,
 GPIOD_API int
 gpiod_line_request_edge_event_read(struct gpiod_line_request *request,
 				   struct gpiod_edge_event_buffer *buffer,
-				   unsigned int max_events)
+				   size_t max_events)
 {
 	return gpiod_edge_event_buffer_read_fd(request->fd, buffer, max_events);
 }

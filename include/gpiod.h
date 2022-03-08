@@ -9,6 +9,7 @@
 #define __LIBGPIOD_GPIOD_H__
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -99,7 +100,7 @@ const char *gpiod_chip_get_path(struct gpiod_chip *chip);
  * @param chip GPIO chip object.
  * @return Number of GPIO lines.
  */
-unsigned int gpiod_chip_get_num_lines(struct gpiod_chip *chip);
+size_t gpiod_chip_get_num_lines(struct gpiod_chip *chip);
 
 /**
  * @brief Get the current snapshot of information about the line at given
@@ -940,7 +941,7 @@ gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
  *               the previous argument.
  */
 void gpiod_line_config_set_output_values(struct gpiod_line_config *config,
-					 unsigned int num_values,
+					 size_t num_values,
 					 const unsigned int *offsets,
 					 const int *values);
 
@@ -1016,8 +1017,7 @@ enum {
  * @param config Line config object.
  * @return Number of individual overridden settings.
  */
-unsigned int
-gpiod_line_config_get_num_overrides(struct gpiod_line_config *config);
+size_t gpiod_line_config_get_num_overrides(struct gpiod_line_config *config);
 
 /**
  * @brief Get the list of overridden offsets and the corresponding types of
@@ -1090,7 +1090,7 @@ gpiod_request_config_get_consumer(struct gpiod_request_config *config);
  *       accepted by the kernel (64 lines) are silently dropped.
  */
 void gpiod_request_config_set_offsets(struct gpiod_request_config *config,
-				      unsigned int num_offsets,
+				      size_t num_offsets,
 				      const unsigned int *offsets);
 
 /**
@@ -1098,7 +1098,7 @@ void gpiod_request_config_set_offsets(struct gpiod_request_config *config,
  * @param config Request config object.
  * @return Number of line offsets in this request config.
  */
-unsigned int
+size_t
 gpiod_request_config_get_num_offsets(struct gpiod_request_config *config);
 
 /**
@@ -1119,14 +1119,14 @@ void gpiod_request_config_get_offsets(struct gpiod_request_config *config,
  */
 void
 gpiod_request_config_set_event_buffer_size(struct gpiod_request_config *config,
-					   unsigned int event_buffer_size);
+					   size_t event_buffer_size);
 
 /**
  * @brief Get the edge event buffer size from this request config.
  * @param config Request config object.
  * @return Current edge event buffer size setting.
  */
-unsigned int
+size_t
 gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config);
 
 /**
@@ -1149,7 +1149,7 @@ void gpiod_line_request_release(struct gpiod_line_request *request);
  * @param request Line request object.
  * @return Number of requested lines.
  */
-unsigned int gpiod_line_request_get_num_lines(struct gpiod_line_request *request);
+size_t gpiod_line_request_get_num_lines(struct gpiod_line_request *request);
 
 /**
  * @brief Get the hardware offsets of lines in this request.
@@ -1179,7 +1179,7 @@ int gpiod_line_request_get_value(struct gpiod_line_request *request,
  * @return 0 on success, -1 on failure.
  */
 int gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
-					 unsigned num_lines,
+					 size_t num_lines,
 					 const unsigned int *offsets,
 					 int *values);
 
@@ -1216,7 +1216,7 @@ int gpiod_line_request_set_value(struct gpiod_line_request *request,
  * @return 0 on success, -1 on failure.
  */
 int gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
-					 unsigned int num_lines,
+					 size_t num_lines,
 					 const unsigned int *offsets,
 					 const int *values);
 
@@ -1272,7 +1272,7 @@ int gpiod_line_request_edge_event_wait(struct gpiod_line_request *request,
  */
 int gpiod_line_request_edge_event_read(struct gpiod_line_request *request,
 				       struct gpiod_edge_event_buffer *buffer,
-				       unsigned int max_events);
+				       size_t max_events);
 
 /**
  * @}
@@ -1361,7 +1361,7 @@ unsigned long gpiod_edge_event_get_line_seqno(struct gpiod_edge_event *event);
  *       capacity is larger than 1024, it will be limited to 1024.
  */
 struct gpiod_edge_event_buffer *
-gpiod_edge_event_buffer_new(unsigned int capacity);
+gpiod_edge_event_buffer_new(size_t capacity);
 
 /**
  * @brief Get the capacity (the max number of events that can be stored) of
@@ -1369,7 +1369,7 @@ gpiod_edge_event_buffer_new(unsigned int capacity);
  * @param buffer Edge event buffer.
  * @return The capacity of the buffer.
  */
-unsigned int
+size_t
 gpiod_edge_event_buffer_get_capacity(struct gpiod_edge_event_buffer *buffer);
 
 /**
@@ -1395,7 +1395,7 @@ gpiod_edge_event_buffer_get_event(struct gpiod_edge_event_buffer *buffer,
  * @param buffer Edge event buffer.
  * @return Number of events stored in this buffer.
  */
-unsigned int
+size_t
 gpiod_edge_event_buffer_get_num_events(struct gpiod_edge_event_buffer *buffer);
 
 /**

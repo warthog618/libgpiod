@@ -15,7 +15,7 @@
 
 struct gpiod_chip {
 	int fd;
-	unsigned int num_lines;
+	size_t num_lines;
 	char name[32];
 	char label[32];
 	char *path;
@@ -105,7 +105,7 @@ GPIOD_API const char *gpiod_chip_get_path(struct gpiod_chip *chip)
 	return chip->path;
 }
 
-GPIOD_API unsigned int gpiod_chip_get_num_lines(struct gpiod_chip *chip)
+GPIOD_API size_t gpiod_chip_get_num_lines(struct gpiod_chip *chip)
 {
 	return chip->num_lines;
 }
