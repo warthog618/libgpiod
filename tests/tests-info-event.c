@@ -60,13 +60,13 @@ struct request_ctx {
 	struct gpiod_line_config *line_cfg;
 };
 
-static gpointer request_release_line(gpointer data)
+static gpointer request_reconfigure_release_line(gpointer data)
 {
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	struct request_ctx *ctx = data;
 	gint ret;
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	request = gpiod_chip_request_lines(ctx->chip,
 					   ctx->req_cfg, ctx->line_cfg);
@@ -74,7 +74,7 @@ static gpointer request_release_line(gpointer data)
 	if (g_test_failed())
 		return NULL;
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	gpiod_line_config_set_direction_default(ctx->line_cfg,
 						GPIOD_LINE_DIRECTION_OUTPUT);
@@ -84,7 +84,7 @@ static gpointer request_release_line(gpointer data)
 	if (g_test_failed())
 		return NULL;
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	gpiod_line_request_release(request);
 	request = NULL;
@@ -126,7 +126,8 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 	ctx.req_cfg = req_cfg;
 	ctx.line_cfg = line_cfg;
 
-	thread = g_thread_new("request-release", request_release_line, &ctx);
+	thread = g_thread_new("request-release",
+			      request_reconfigure_release_line, &ctx);
 	g_thread_ref(thread);
 
 	ret = gpiod_chip_info_event_wait(chip, 1000000000);
@@ -225,7 +226,8 @@ GPIOD_TEST_CASE(chip_fd_can_be_polled)
 	ctx.req_cfg = req_cfg;
 	ctx.line_cfg = line_cfg;
 
-	thread = g_thread_new("request-release", request_release_line, &ctx);
+	thread = g_thread_new("request-release",
+			      request_reconfigure_release_line, &ctx);
 	g_thread_ref(thread);
 
 	fd = gpiod_chip_get_fd(chip);
