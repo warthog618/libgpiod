@@ -84,11 +84,11 @@ static gpointer falling_and_rising_edge_events(gpointer data)
 {
 	GPIOSimChip *sim = data;
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_DOWN);
 
@@ -361,11 +361,11 @@ static gpointer rising_edge_events_on_two_offsets(gpointer data)
 {
 	GPIOSimChip *sim = data;
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
 
-	g_usleep(50);
+	g_usleep(1000);
 
 	g_gpiosim_chip_set_pull(sim, 3, G_GPIOSIM_PULL_UP);
 
