@@ -127,7 +127,7 @@ static void list_lines(struct gpiod_chip *chip)
 	bool flag_printed, of, active_low;
 	struct gpiod_line_info *info;
 	const char *name, *consumer;
-	unsigned int i, offset;
+	size_t i, offset;
 	int direction;
 
 	printf("%s - %zu lines:\n",
@@ -146,7 +146,7 @@ static void list_lines(struct gpiod_chip *chip)
 		of = false;
 
 		printf("\tline ");
-		prinfo(&of, 3, "%u", offset);
+		prinfo(&of, 3, "%zu", offset);
 		printf(": ");
 
 		name ? prinfo(&of, 12, "\"%s\"", name)

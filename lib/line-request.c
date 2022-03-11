@@ -75,7 +75,7 @@ GPIOD_API int gpiod_line_request_get_value(struct gpiod_line_request *request,
 static int offset_to_bit(struct gpiod_line_request *request,
 			 unsigned int offset)
 {
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < request->num_lines; i++) {
 		if (offset == request->offsets[i])
@@ -92,7 +92,7 @@ gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
 {
 	struct gpio_v2_line_values buf;
 	uint64_t mask = 0, bits = 0;
-	unsigned int i;
+	size_t i;
 	int bit, ret;
 
 	buf.bits = 0;
@@ -146,7 +146,7 @@ gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
 {
 	struct gpio_v2_line_values buf;
 	uint64_t mask = 0, bits = 0;
-	unsigned int i;
+	size_t i;
 	int bit;
 
 	for (i = 0; i < num_lines; i++) {

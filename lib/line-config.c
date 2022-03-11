@@ -102,7 +102,7 @@ GPIOD_API void gpiod_line_config_free(struct gpiod_line_config *config)
 
 GPIOD_API void gpiod_line_config_reset(struct gpiod_line_config *config)
 {
-	int i;
+	size_t i;
 
 	memset(config, 0, sizeof(*config));
 	init_base_config(&config->defaults);
@@ -114,7 +114,7 @@ static struct override_config *
 get_override_by_offset(struct gpiod_line_config *config, unsigned int offset)
 {
 	struct override_config *override;
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
 		override = &config->overrides[i];
@@ -130,7 +130,7 @@ static struct override_config *
 get_free_override(struct gpiod_line_config *config, unsigned int offset)
 {
 	struct override_config *override;
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
 		override = &config->overrides[i];
@@ -675,7 +675,7 @@ gpiod_line_config_set_output_values(struct gpiod_line_config *config,
 				    const unsigned int *offsets,
 				    const int *values)
 {
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < num_values; i++)
 		gpiod_line_config_set_output_value_override(config,
@@ -750,7 +750,7 @@ GPIOD_API size_t
 gpiod_line_config_get_num_overrides(struct gpiod_line_config *config)
 {
 	struct override_config *override;
-	unsigned int i, j, count = 0;
+	size_t i, j, count = 0;
 
 	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
 		override = &config->overrides[i];
@@ -797,7 +797,7 @@ gpiod_line_config_get_overrides(struct gpiod_line_config *config,
 				unsigned int *offsets, int *props)
 {
 	struct override_config *override;
-	unsigned int i, j, count = 0;
+	size_t i, j, count = 0;
 
 	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
 		override = &config->overrides[i];
@@ -884,7 +884,7 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 static int find_bitmap_index(unsigned int needle, unsigned int num_lines,
 			     const unsigned int *haystack)
 {
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < num_lines; i++) {
 		if (needle == haystack[i])
@@ -900,7 +900,7 @@ static void set_kernel_output_values(uint64_t *mask, uint64_t *vals,
 				     const unsigned int *offsets)
 {
 	struct override_config *override;
-	unsigned int i;
+	size_t i;
 	int idx;
 
 	gpiod_line_mask_zero(mask);
@@ -1033,7 +1033,7 @@ static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
 				 struct gpiod_line_config *config)
 {
 	struct override_config *override;
-	unsigned int i, j;
+	size_t i, j;
 	int off;
 
 	gpiod_line_mask_zero(out);
@@ -1080,7 +1080,7 @@ static int process_overrides(struct gpiod_line_config *config,
 	struct gpio_v2_line_config_attribute *attr;
 	uint64_t processed = 0, marked = 0, mask;
 	struct override_config *current, *next;
-	unsigned int i, j;
+	size_t i, j;
 
 	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
 		current = &config->overrides[i];
@@ -1129,7 +1129,7 @@ static int process_overrides(struct gpiod_line_config *config,
 static bool has_at_least_one_output_direction(struct gpiod_line_config *config)
 {
 	struct override_config *override;
-	unsigned int i;
+	size_t i;
 
 	if (config->defaults.direction == GPIOD_LINE_DIRECTION_OUTPUT)
 		return true;
