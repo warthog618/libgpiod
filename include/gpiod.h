@@ -1258,7 +1258,7 @@ int gpiod_line_request_get_fd(struct gpiod_line_request *request);
  * @return 0 if wait timed out, -1 if an error occurred, 1 if an event is
  *         pending.
  */
-int gpiod_line_request_edge_event_wait(struct gpiod_line_request *request,
+int gpiod_line_request_wait_edge_event(struct gpiod_line_request *request,
 				       uint64_t timeout_ns);
 
 /**
@@ -1270,7 +1270,7 @@ int gpiod_line_request_edge_event_wait(struct gpiod_line_request *request,
  *         descriptor, on failure return -1.
  * @note This function will block if no event was queued for this line.
  */
-int gpiod_line_request_edge_event_read(struct gpiod_line_request *request,
+int gpiod_line_request_read_edge_event(struct gpiod_line_request *request,
 				       struct gpiod_edge_event_buffer *buffer,
 				       size_t max_events);
 

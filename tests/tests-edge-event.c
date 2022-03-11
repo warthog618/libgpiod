@@ -51,7 +51,7 @@ GPIOD_TEST_CASE(edge_event_wait_timeout)
 
 	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000);
 	g_assert_cmpint(ret, ==, 0);
 }
 
@@ -129,11 +129,11 @@ GPIOD_TEST_CASE(read_both_events)
 
 	/* First event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -149,11 +149,11 @@ GPIOD_TEST_CASE(read_both_events)
 
 	/* Second event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -205,11 +205,11 @@ GPIOD_TEST_CASE(read_rising_edge_event)
 
 	/* First event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -224,7 +224,7 @@ GPIOD_TEST_CASE(read_rising_edge_event)
 
 	/* Second event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000);
 	g_assert_cmpint(ret, ==, 0); /* Time-out. */
 
 	g_thread_join(thread);
@@ -263,11 +263,11 @@ GPIOD_TEST_CASE(read_falling_edge_event)
 
 	/* First event is the second generated. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -282,7 +282,7 @@ GPIOD_TEST_CASE(read_falling_edge_event)
 
 	/* No more events. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000);
 	g_assert_cmpint(ret, ==, 0); /* Time-out. */
 
 	g_thread_join(thread);
@@ -336,7 +336,7 @@ GPIOD_TEST_CASE(read_rising_edge_event_polled)
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -351,7 +351,7 @@ GPIOD_TEST_CASE(read_rising_edge_event_polled)
 
 	/* Second event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000);
 	g_assert_cmpint(ret, ==, 0); /* Time-out. */
 
 	g_thread_join(thread);
@@ -405,11 +405,11 @@ GPIOD_TEST_CASE(seqno)
 
 	/* First event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -424,11 +424,11 @@ GPIOD_TEST_CASE(seqno)
 
 	/* Second event. */
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -472,11 +472,11 @@ GPIOD_TEST_CASE(event_copy)
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
 
-	ret = gpiod_line_request_edge_event_wait(request, 1000000000);
+	ret = gpiod_line_request_wait_edge_event(request, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_return_if_failed();
 
-	ret = gpiod_line_request_edge_event_read(request, buffer, 1);
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
 	g_assert_cmpint(ret, ==, 1);
 	gpiod_test_return_if_failed();
 

@@ -201,14 +201,14 @@ GPIOD_API int gpiod_line_request_get_fd(struct gpiod_line_request *request)
 }
 
 GPIOD_API int
-gpiod_line_request_edge_event_wait(struct gpiod_line_request *request,
+gpiod_line_request_wait_edge_event(struct gpiod_line_request *request,
 				   uint64_t timeout_ns)
 {
 	return gpiod_poll_fd(request->fd, timeout_ns);
 }
 
 GPIOD_API int
-gpiod_line_request_edge_event_read(struct gpiod_line_request *request,
+gpiod_line_request_read_edge_event(struct gpiod_line_request *request,
 				   struct gpiod_edge_event_buffer *buffer,
 				   size_t max_events)
 {

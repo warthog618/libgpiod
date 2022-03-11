@@ -280,13 +280,13 @@ int main(int argc, char **argv)
 		die_perror("unable to allocate the line event buffer");
 
 	for (;;) {
-		ret = gpiod_line_request_edge_event_wait(request, timeout);
+		ret = gpiod_line_request_wait_edge_event(request, timeout);
 		if (ret < 0)
 			die_perror("error waiting for events");
 		if (ret == 0)
 			continue;
 
-		ret = gpiod_line_request_edge_event_read(request, event_buffer,
+		ret = gpiod_line_request_read_edge_event(request, event_buffer,
 							 EVENT_BUF_SIZE);
 		if (ret < 0)
 			die_perror("error reading line events");
