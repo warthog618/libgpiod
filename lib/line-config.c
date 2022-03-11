@@ -1034,7 +1034,7 @@ static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
 {
 	struct override_config *override;
 	size_t i, j;
-	int off;
+	int idx;
 
 	gpiod_line_mask_zero(out);
 
@@ -1045,9 +1045,9 @@ static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
 		    !gpiod_line_mask_test_bit(in, i))
 			continue;
 
-		for (j = 0, off = -1; j < num_lines; j++) {
+		for (j = 0, idx = -1; j < num_lines; j++) {
 			if (offsets[j] == override->offset) {
-				off = j;
+				idx = j;
 				break;
 			}
 		}
@@ -1056,10 +1056,10 @@ static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
 		 * Overridden offsets that are not in the list of offsets to
 		 * request (or already requested) are silently ignored.
 		 */
-		if (off < 0)
+		if (idx < 0)
 			continue;
 
-		gpiod_line_mask_set_bit(out, off);
+		gpiod_line_mask_set_bit(out, idx);
 	}
 }
 
