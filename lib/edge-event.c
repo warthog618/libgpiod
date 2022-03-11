@@ -152,7 +152,7 @@ int gpiod_edge_event_buffer_read_fd(int fd,
 {
 	struct gpio_v2_line_event *curr;
 	struct gpiod_edge_event *event;
-	unsigned int i;
+	size_t i;
 	ssize_t rd;
 
 	memset(buffer->event_data, 0,

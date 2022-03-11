@@ -167,7 +167,7 @@ static const struct mode_mapping modes[] = {
 
 static const struct mode_mapping *parse_mode(const char *mode)
 {
-	unsigned int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(modes); i++)
 		if (strcmp(mode, modes[i].name) == 0)
@@ -195,11 +195,11 @@ int main(int argc, char **argv)
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
 	struct callback_data cbdata;
-	unsigned int *offsets, i;
 	struct gpiod_chip *chip;
 	bool active_low = false;
+	unsigned int *offsets;
+	size_t i, num_lines;
 	char *device, *end;
-	size_t num_lines;
 
 	memset(&cbdata, 0, sizeof(cbdata));
 

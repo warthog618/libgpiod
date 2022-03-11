@@ -46,11 +46,11 @@ int main(int argc, char **argv)
 	struct gpiod_request_config *req_cfg;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
-	unsigned int *offsets, i;
 	struct gpiod_chip *chip;
 	bool active_low = false;
+	unsigned int *offsets;
+	size_t i, num_lines;
 	char *device, *end;
-	size_t num_lines;
 
 	for (;;) {
 		optc = getopt_long(argc, argv, shortopts, longopts, &opti);

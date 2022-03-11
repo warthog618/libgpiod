@@ -110,7 +110,7 @@ gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf)
 {
 	struct gpio_v2_line_attribute *attr;
 	struct gpiod_line_info *info;
-	unsigned int i;
+	size_t i;
 
 	info = malloc(sizeof(*info));
 	if (!info)

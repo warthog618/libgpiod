@@ -57,7 +57,7 @@ gpiod_request_config_set_offsets(struct gpiod_request_config *config,
 				 size_t num_offsets,
 				 const unsigned int *offsets)
 {
-	unsigned int i;
+	size_t i;
 
 	config->num_offsets = num_offsets > GPIO_V2_LINES_MAX ?
 					GPIO_V2_LINES_MAX : num_offsets;
@@ -96,7 +96,7 @@ gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config)
 int gpiod_request_config_to_kernel(struct gpiod_request_config *config,
 				   struct gpio_v2_line_request *reqbuf)
 {
-	unsigned int i;
+	size_t i;
 
 	if (config->num_offsets == 0) {
 		errno = EINVAL;
