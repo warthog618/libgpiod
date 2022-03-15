@@ -125,19 +125,24 @@ static PRINTF(3, 4) void prinfo(bool *of,
 static void list_lines(struct gpiod_chip *chip)
 {
 	bool flag_printed, of, active_low;
+	struct gpiod_chip_info *chip_info;
 	struct gpiod_line_info *info;
 	const char *name, *consumer;
-	size_t i, offset;
+	size_t i, offset, num_lines;
 	int direction;
 
-	printf("%s - %zu lines:\n",
-	       gpiod_chip_get_name(chip), gpiod_chip_get_num_lines(chip));
+	chip_info = gpiod_chip_get_info(chip);
+	if (!chip_info)
+		die_perror("unable to retrieve the chip info from chip");
 
-	for (offset = 0; offset < gpiod_chip_get_num_lines(chip); offset++) {
+	num_lines = gpiod_chip_info_get_num_lines(chip_info);
+	printf("%s - %zu lines:\n",
+	       gpiod_chip_info_get_name(chip_info), num_lines);
+
+	for (offset = 0; offset < num_lines; offset++) {
 		info = gpiod_chip_get_line_info(chip, offset);
 		if (!info)
-			die_perror("unable to retrieve the line object from chip");
-
+			die_perror("unable to retrieve the line info from chip");
 		name = gpiod_line_info_get_name(info);
 		consumer = gpiod_line_info_get_consumer(info);
 		direction = gpiod_line_info_get_direction(info);
@@ -184,6 +189,7 @@ static void list_lines(struct gpiod_chip *chip)
 
 		gpiod_line_info_free(info);
 	}
+	gpiod_chip_info_free(chip_info);
 }
 
 int main(int argc, char **argv)

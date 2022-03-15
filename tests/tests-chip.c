@@ -47,28 +47,6 @@ GPIOD_TEST_CASE(open_chip_not_a_gpio_device)
 	gpiod_test_expect_errno(ENODEV);
 }
 
-GPIOD_TEST_CASE(get_chip_name)
-{
-	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new(NULL);
-	g_autoptr(struct_gpiod_chip) chip = NULL;
-
-	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-
-	g_assert_cmpstr(gpiod_chip_get_name(chip), ==,
-			g_gpiosim_chip_get_name(sim));
-}
-
-GPIOD_TEST_CASE(get_chip_label)
-{
-	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("label", "foobar",
-							NULL);
-	g_autoptr(struct_gpiod_chip) chip = NULL;
-
-	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-
-	g_assert_cmpstr(gpiod_chip_get_label(chip), ==, "foobar");
-}
-
 GPIOD_TEST_CASE(get_chip_path)
 {
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new(NULL);
@@ -78,16 +56,6 @@ GPIOD_TEST_CASE(get_chip_path)
 	chip = gpiod_test_open_chip_or_fail(path);
 
 	g_assert_cmpstr(gpiod_chip_get_path(chip), ==, path);
-}
-
-GPIOD_TEST_CASE(get_num_lines)
-{
-	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 16, NULL);
-	g_autoptr(struct_gpiod_chip) chip = NULL;
-
-	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-
-	g_assert_cmpuint(gpiod_chip_get_num_lines(chip), ==, 16);
 }
 
 GPIOD_TEST_CASE(get_fd)

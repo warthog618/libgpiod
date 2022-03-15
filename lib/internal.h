@@ -18,6 +18,8 @@
 
 #define GPIOD_BIT(nr)	(1UL << (nr))
 
+struct gpiod_chip_info *
+gpiod_chip_info_from_kernel(struct gpiochip_info *infobuf);
 struct gpiod_line_info *
 gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf);
 int gpiod_request_config_to_kernel(struct gpiod_request_config *config,

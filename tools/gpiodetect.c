@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 {
 	int optc, opti, num_chips, i;
 	struct gpiod_chip *chip;
+	struct gpiod_chip_info *info;
 	struct dirent **entries;
 
 	for (;;) {
@@ -70,11 +71,17 @@ int main(int argc, char **argv)
 		if (!chip)
 			die_perror("unable to open %s", entries[i]->d_name);
 
-		printf("%s [%s] (%zu lines)\n",
-		       gpiod_chip_get_name(chip),
-		       gpiod_chip_get_label(chip),
-		       gpiod_chip_get_num_lines(chip));
+		info = gpiod_chip_get_info(chip);
+		if (!info)
+			die_perror("unable to get info for %s", entries[i]->d_name);
 
+
+		printf("%s [%s] (%zu lines)\n",
+		       gpiod_chip_info_get_name(info),
+		       gpiod_chip_info_get_label(info),
+		       gpiod_chip_info_get_num_lines(info));
+
+		gpiod_chip_info_free(info);
 		gpiod_chip_close(chip);
 		free(entries[i]);
 	}

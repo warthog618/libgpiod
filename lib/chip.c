@@ -15,17 +15,13 @@
 
 struct gpiod_chip {
 	int fd;
-	size_t num_lines;
-	char name[32];
-	char label[32];
 	char *path;
 };
 
 GPIOD_API struct gpiod_chip *gpiod_chip_open(const char *path)
 {
-	struct gpiochip_info info;
 	struct gpiod_chip *chip;
-	int ret, fd;
+	int fd;
 
 	if (!gpiod_is_gpiochip_device(path))
 		return NULL;
@@ -39,39 +35,15 @@ GPIOD_API struct gpiod_chip *gpiod_chip_open(const char *path)
 		goto err_close_fd;
 
 	memset(chip, 0, sizeof(*chip));
-	memset(&info, 0, sizeof(info));
 
 	chip->path = strdup(path);
 	if (!chip->path)
 		goto err_free_chip;
 
-	ret = ioctl(fd, GPIO_GET_CHIPINFO_IOCTL, &info);
-	if (ret < 0)
-		goto err_free_path;
-
 	chip->fd = fd;
-	chip->num_lines = info.lines;
-
-	/*
-	 * GPIO device must have a name - don't bother checking this field. In
-	 * the worst case (would have to be a weird kernel bug) it'll be empty.
-	 */
-	strncpy(chip->name, info.name, sizeof(chip->name));
-
-	/*
-	 * The kernel sets the label of a GPIO device to "unknown" if it
-	 * hasn't been defined in DT, board file etc. On the off-chance that
-	 * we got an empty string, do the same.
-	 */
-	if (info.label[0] == '\0')
-		strncpy(chip->label, "unknown", sizeof(chip->label));
-	else
-		strncpy(chip->label, info.label, sizeof(chip->label));
 
 	return chip;
 
-err_free_path:
-	free(chip->path);
 err_free_chip:
 	free(chip);
 err_close_fd:
@@ -90,14 +62,29 @@ GPIOD_API void gpiod_chip_close(struct gpiod_chip *chip)
 	free(chip);
 }
 
-GPIOD_API const char *gpiod_chip_get_name(struct gpiod_chip *chip)
+static int chip_read_chip_info(int fd, struct gpiochip_info *info)
 {
-	return chip->name;
+	int ret;
+
+	memset(info, 0, sizeof(*info));
+
+	ret = ioctl(fd, GPIO_GET_CHIPINFO_IOCTL, info);
+	if (ret)
+		return -1;
+
+	return 0;
 }
 
-GPIOD_API const char *gpiod_chip_get_label(struct gpiod_chip *chip)
+GPIOD_API struct gpiod_chip_info *gpiod_chip_get_info(struct gpiod_chip *chip)
 {
-	return chip->label;
+	struct gpiochip_info info;
+	int ret;
+
+	ret = chip_read_chip_info(chip->fd, &info);
+	if (ret < 0)
+		return NULL;
+
+	return gpiod_chip_info_from_kernel(&info);
 }
 
 GPIOD_API const char *gpiod_chip_get_path(struct gpiod_chip *chip)
@@ -105,23 +92,18 @@ GPIOD_API const char *gpiod_chip_get_path(struct gpiod_chip *chip)
 	return chip->path;
 }
 
-GPIOD_API size_t gpiod_chip_get_num_lines(struct gpiod_chip *chip)
-{
-	return chip->num_lines;
-}
-
 static int chip_read_line_info(int fd, unsigned int offset,
-			       struct gpio_v2_line_info *infobuf, bool watch)
+			       struct gpio_v2_line_info *info, bool watch)
 {
 	int ret, cmd;
 
-	memset(infobuf, 0, sizeof(*infobuf));
-	infobuf->offset = offset;
+	memset(info, 0, sizeof(*info));
+	info->offset = offset;
 
 	cmd = watch ? GPIO_V2_GET_LINEINFO_WATCH_IOCTL :
 		      GPIO_V2_GET_LINEINFO_IOCTL;
 
-	ret = ioctl(fd, cmd, infobuf);
+	ret = ioctl(fd, cmd, info);
 	if (ret)
 		return -1;
 
@@ -131,14 +113,14 @@ static int chip_read_line_info(int fd, unsigned int offset,
 static struct gpiod_line_info *
 chip_get_line_info(struct gpiod_chip *chip, unsigned int offset, bool watch)
 {
-	struct gpio_v2_line_info infobuf;
+	struct gpio_v2_line_info info;
 	int ret;
 
-	ret = chip_read_line_info(chip->fd, offset, &infobuf, watch);
+	ret = chip_read_line_info(chip->fd, offset, &info, watch);
 	if (ret)
 		return NULL;
 
-	return gpiod_line_info_from_kernel(&infobuf);
+	return gpiod_line_info_from_kernel(&info);
 }
 
 GPIOD_API struct gpiod_line_info *
@@ -178,16 +160,21 @@ gpiod_chip_read_info_event(struct gpiod_chip *chip)
 
 GPIOD_API int gpiod_chip_find_line(struct gpiod_chip *chip, const char *name)
 {
-	struct gpio_v2_line_info infobuf;
+	struct gpio_v2_line_info linfo;
+	struct gpiochip_info chinfo;
 	unsigned int offset;
 	int ret;
 
-	for (offset = 0; offset < chip->num_lines; offset++) {
-		ret = chip_read_line_info(chip->fd, offset, &infobuf, false);
+	ret = chip_read_chip_info(chip->fd, &chinfo);
+	if (ret < 0)
+		return -1;
+
+	for (offset = 0; offset < chinfo.lines; offset++) {
+		ret = chip_read_line_info(chip->fd, offset, &linfo, false);
 		if (ret)
 			return -1;
 
-		if (strcmp(name, infobuf.name) == 0)
+		if (strcmp(name, linfo.name) == 0)
 			return offset;
 	}
 

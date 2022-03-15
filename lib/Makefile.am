@@ -3,6 +3,7 @@
 
 lib_LTLIBRARIES = libgpiod.la
 libgpiod_la_SOURCES =	chip.c \
+			chip-info.c \
 			edge-event.c \
 			info-event.c \
 			internal.h \

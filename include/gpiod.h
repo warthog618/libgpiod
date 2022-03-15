@@ -41,6 +41,7 @@ extern "C" {
  */
 
 struct gpiod_chip;
+struct gpiod_chip_info;
 struct gpiod_line_info;
 struct gpiod_line_config;
 struct gpiod_request_config;
@@ -75,18 +76,12 @@ struct gpiod_chip *gpiod_chip_open(const char *path);
 void gpiod_chip_close(struct gpiod_chip *chip);
 
 /**
- * @brief Get the name of the chip as represented in the kernel.
+ * @brief Get information about the chip.
  * @param chip GPIO chip object.
- * @return Pointer to a human-readable string containing the chip name.
+ * @return New GPIO chip info object or NULL if an error occurred. The returned
+ *         object must be freed by the caller using ::gpiod_chip_info_free.
  */
-const char *gpiod_chip_get_name(struct gpiod_chip *chip);
-
-/**
- * @brief Get the label of the chip as represented in the kernel.
- * @param chip GPIO chip object.
- * @return Pointer to a human-readable string containing the chip label.
- */
-const char *gpiod_chip_get_label(struct gpiod_chip *chip);
+struct gpiod_chip_info *gpiod_chip_get_info(struct gpiod_chip *chip);
 
 /**
  * @brief Get the path used to open the chip.
@@ -94,13 +89,6 @@ const char *gpiod_chip_get_label(struct gpiod_chip *chip);
  * @return Path to the file passed as argument to ::gpiod_chip_open.
  */
 const char *gpiod_chip_get_path(struct gpiod_chip *chip);
-
-/**
- * @brief Get the number of lines exposed by the chip.
- * @param chip GPIO chip object.
- * @return Number of GPIO lines.
- */
-size_t gpiod_chip_get_num_lines(struct gpiod_chip *chip);
 
 /**
  * @brief Get a snapshot of information about a line.
@@ -186,6 +174,53 @@ struct gpiod_line_request *
 gpiod_chip_request_lines(struct gpiod_chip *chip,
 			 struct gpiod_request_config *req_cfg,
 			 struct gpiod_line_config *line_cfg);
+
+/**
+ * @}
+ *
+ * @defgroup chip_info Chip info
+ * @{
+ *
+ * Functions for retrieving kernel information about chips.
+ *
+ * Line info object contains an immutable snapshot of a chip's status.
+ *
+ * The chip info contains all the publicly available information about a
+ * chip.
+ *
+ * Some accessor methods return pointers.  Those pointers refer to internal
+ * fields.  The lifetimes of those fields are tied to the lifetime of the
+ * containing chip info object.
+ * Such pointers remain valid until ::gpiod_chip_info_free is called on the
+ * containing chip info object. They must not be freed by the caller.
+ */
+
+/**
+ * @brief Free a chip info object and release all associated resources.
+ * @param info GPIO chip info object to free.
+ */
+void gpiod_chip_info_free(struct gpiod_chip_info *info);
+
+/**
+ * @brief Get the name of the chip as represented in the kernel.
+ * @param info GPIO chip info object.
+ * @return Pointer to a human-readable string containing the chip name.
+ */
+const char *gpiod_chip_info_get_name(struct gpiod_chip_info *info);
+
+/**
+ * @brief Get the label of the chip as represented in the kernel.
+ * @param info GPIO chip info object.
+ * @return Pointer to a human-readable string containing the chip label.
+ */
+const char *gpiod_chip_info_get_label(struct gpiod_chip_info *info);
+
+/**
+ * @brief Get the number of lines exposed by the chip.
+ * @param info GPIO chip info object.
+ * @return Number of GPIO lines.
+ */
+size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info);
 
 /**
  * @}
