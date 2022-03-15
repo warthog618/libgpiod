@@ -37,7 +37,7 @@ GPIOD_API size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info)
 }
 
 struct gpiod_chip_info *
-gpiod_chip_info_from_kernel(struct gpiochip_info *uinfo)
+gpiod_chip_info_from_kernel(struct gpiochip_info *uapi_info)
 {
 	struct gpiod_chip_info *info;
 
@@ -47,23 +47,23 @@ gpiod_chip_info_from_kernel(struct gpiochip_info *uinfo)
 
 	memset(info, 0, sizeof(*info));
 
-	info->num_lines = uinfo->lines;
+	info->num_lines = uapi_info->lines;
 
 	/*
 	 * GPIO device must have a name - don't bother checking this field. In
 	 * the worst case (would have to be a weird kernel bug) it'll be empty.
 	 */
-	strncpy(info->name, uinfo->name, sizeof(info->name));
+	strncpy(info->name, uapi_info->name, sizeof(info->name));
 
 	/*
 	 * The kernel sets the label of a GPIO device to "unknown" if it
 	 * hasn't been defined in DT, board file etc. On the off-chance that
 	 * we got an empty string, do the same.
 	 */
-	if (uinfo->label[0] == '\0')
+	if (uapi_info->label[0] == '\0')
 		strncpy(info->label, "unknown", sizeof(info->label));
 	else
-		strncpy(info->label, uinfo->label, sizeof(info->label));
+		strncpy(info->label, uapi_info->label, sizeof(info->label));
 
 	return info;
 }

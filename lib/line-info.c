@@ -106,7 +106,7 @@ gpiod_line_info_get_debounce_period_us(struct gpiod_line_info *info)
 }
 
 struct gpiod_line_info *
-gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf)
+gpiod_line_info_from_kernel(struct gpio_v2_line_info *uapi_info)
 {
 	struct gpio_v2_line_attribute *attr;
 	struct gpiod_line_info *info;
@@ -118,47 +118,47 @@ gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf)
 
 	memset(info, 0, sizeof(*info));
 
-	info->offset = infobuf->offset;
-	strncpy(info->name, infobuf->name, GPIO_MAX_NAME_SIZE);
+	info->offset = uapi_info->offset;
+	strncpy(info->name, uapi_info->name, GPIO_MAX_NAME_SIZE);
 
-	info->used = !!(infobuf->flags & GPIO_V2_LINE_FLAG_USED);
-	strncpy(info->consumer, infobuf->consumer, GPIO_MAX_NAME_SIZE);
+	info->used = !!(uapi_info->flags & GPIO_V2_LINE_FLAG_USED);
+	strncpy(info->consumer, uapi_info->consumer, GPIO_MAX_NAME_SIZE);
 
-	if (infobuf->flags & GPIO_V2_LINE_FLAG_OUTPUT)
+	if (uapi_info->flags & GPIO_V2_LINE_FLAG_OUTPUT)
 		info->direction = GPIOD_LINE_DIRECTION_OUTPUT;
 	else
 		info->direction = GPIOD_LINE_DIRECTION_INPUT;
 
-	if (infobuf->flags & GPIO_V2_LINE_FLAG_ACTIVE_LOW)
+	if (uapi_info->flags & GPIO_V2_LINE_FLAG_ACTIVE_LOW)
 		info->active_low = true;
 
-	if (infobuf->flags & GPIO_V2_LINE_FLAG_BIAS_PULL_UP)
+	if (uapi_info->flags & GPIO_V2_LINE_FLAG_BIAS_PULL_UP)
 		info->bias = GPIOD_LINE_BIAS_PULL_UP;
-	else if (infobuf->flags & GPIO_V2_LINE_FLAG_BIAS_PULL_DOWN)
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_BIAS_PULL_DOWN)
 		info->bias = GPIOD_LINE_BIAS_PULL_DOWN;
-	else if (infobuf->flags & GPIO_V2_LINE_FLAG_BIAS_DISABLED)
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_BIAS_DISABLED)
 		info->bias = GPIOD_LINE_BIAS_DISABLED;
 	else
 		info->bias = GPIOD_LINE_BIAS_UNKNOWN;
 
-	if (infobuf->flags & GPIO_V2_LINE_FLAG_OPEN_DRAIN)
+	if (uapi_info->flags & GPIO_V2_LINE_FLAG_OPEN_DRAIN)
 		info->drive = GPIOD_LINE_DRIVE_OPEN_DRAIN;
-	else if (infobuf->flags & GPIO_V2_LINE_FLAG_OPEN_SOURCE)
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_OPEN_SOURCE)
 		info->drive = GPIOD_LINE_DRIVE_OPEN_SOURCE;
 	else
 		info->drive = GPIOD_LINE_DRIVE_PUSH_PULL;
 
-	if ((infobuf->flags & GPIO_V2_LINE_FLAG_EDGE_RISING) &&
-	    (infobuf->flags & GPIO_V2_LINE_FLAG_EDGE_FALLING))
+	if ((uapi_info->flags & GPIO_V2_LINE_FLAG_EDGE_RISING) &&
+	    (uapi_info->flags & GPIO_V2_LINE_FLAG_EDGE_FALLING))
 		info->edge = GPIOD_LINE_EDGE_BOTH;
-	else if (infobuf->flags & GPIO_V2_LINE_FLAG_EDGE_RISING)
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_EDGE_RISING)
 		info->edge = GPIOD_LINE_EDGE_RISING;
-	else if (infobuf->flags & GPIO_V2_LINE_FLAG_EDGE_FALLING)
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_EDGE_FALLING)
 		info->edge = GPIOD_LINE_EDGE_FALLING;
 	else
 		info->edge = GPIOD_LINE_EDGE_NONE;
 
-	if (infobuf->flags & GPIO_V2_LINE_FLAG_EVENT_CLOCK_REALTIME)
+	if (uapi_info->flags & GPIO_V2_LINE_FLAG_EVENT_CLOCK_REALTIME)
 		info->event_clock = GPIOD_LINE_EVENT_CLOCK_REALTIME;
 	else
 		info->event_clock = GPIOD_LINE_EVENT_CLOCK_MONOTONIC;
@@ -167,8 +167,8 @@ gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf)
 	 * We assume that the kernel returns correct configuration and that no
 	 * attributes repeat.
 	 */
-	for (i = 0; i < infobuf->num_attrs; i++) {
-		attr = &infobuf->attrs[i];
+	for (i = 0; i < uapi_info->num_attrs; i++) {
+		attr = &uapi_info->attrs[i];
 
 		if (attr->id == GPIO_V2_LINE_ATTR_ID_DEBOUNCE) {
 			info->debounced = true;
