@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2017-2021 Bartosz Golaszewski <bartekgola@gmail.com>
 
-/* Misc code that didn't fit anywhere else. */
-
 #include <errno.h>
 #include <gpiod.h>
 #include <stdint.h>
