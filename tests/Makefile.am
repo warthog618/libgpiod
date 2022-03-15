@@ -23,6 +23,7 @@ gpiod_test_SOURCES =			\
 		gpiod-test-sim.c	\
 		gpiod-test-sim.h	\
 		tests-chip.c		\
+		tests-chip-info.c	\
 		tests-edge-event.c	\
 		tests-info-event.c	\
 		tests-line-config.c	\

@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 {
 	int i, num_chips, optc, opti, offset;
 	struct gpiod_chip *chip;
+	struct gpiod_chip_info *info;
 	struct dirent **entries;
 
 	for (;;) {
@@ -76,8 +77,13 @@ int main(int argc, char **argv)
 
 		offset = gpiod_chip_find_line(chip, argv[0]);
 		if (offset >= 0) {
+			info = gpiod_chip_get_info(chip);
+			if (!info)
+				die_perror("unable to get info for %s", entries[i]->d_name);
+
 			printf("%s %u\n",
-			       gpiod_chip_get_name(chip), offset);
+			       gpiod_chip_info_get_name(info), offset);
+			gpiod_chip_info_free(info);
 			gpiod_chip_close(chip);
 			return EXIT_SUCCESS;
 		}

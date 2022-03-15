@@ -18,6 +18,9 @@
 typedef struct gpiod_chip struct_gpiod_chip;
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_chip, gpiod_chip_close);
 
+typedef struct gpiod_chip_info struct_gpiod_chip_info;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_chip_info, gpiod_chip_info_free);
+
 typedef struct gpiod_line_info struct_gpiod_line_info;
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_line_info, gpiod_line_info_free);
 
@@ -62,6 +65,14 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_edge_event_buffer,
 		g_assert_nonnull(_chip); \
 		gpiod_test_return_if_failed(); \
 		_chip; \
+	})
+
+#define gpiod_test_get_chip_info_or_fail(_chip) \
+	({ \
+		struct gpiod_chip_info *_info = gpiod_chip_get_info(_chip); \
+		g_assert_nonnull(_info); \
+		gpiod_test_return_if_failed(); \
+		_info; \
 	})
 
 #define gpiod_test_get_line_info_or_fail(_chip, _offset) \
