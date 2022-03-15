@@ -1054,7 +1054,7 @@ enum {
 	/**< Drive. */
 	GPIOD_LINE_CONFIG_PROP_ACTIVE_LOW,
 	/**< Active-low setting. */
-	GPIOD_LINE_CONFIG_PROP_DEBOUNCE_PERIOD,
+	GPIOD_LINE_CONFIG_PROP_DEBOUNCE_PERIOD_US,
 	/** Debounce period. */
 	GPIOD_LINE_CONFIG_PROP_EVENT_CLOCK,
 	/**< Event clock type. */
