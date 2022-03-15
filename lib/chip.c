@@ -164,14 +164,14 @@ GPIOD_API int gpiod_chip_get_fd(struct gpiod_chip *chip)
 	return chip->fd;
 }
 
-GPIOD_API int gpiod_chip_info_event_wait(struct gpiod_chip *chip,
+GPIOD_API int gpiod_chip_wait_info_event(struct gpiod_chip *chip,
 					 uint64_t timeout_ns)
 {
 	return gpiod_poll_fd(chip->fd, timeout_ns);
 }
 
 GPIOD_API struct gpiod_info_event *
-gpiod_chip_info_event_read(struct gpiod_chip *chip)
+gpiod_chip_read_info_event(struct gpiod_chip *chip)
 {
 	return gpiod_info_event_read_fd(chip->fd);
 }

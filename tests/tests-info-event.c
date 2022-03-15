@@ -50,7 +50,7 @@ GPIOD_TEST_CASE(event_timeout)
 	g_assert_nonnull(info);
 	gpiod_test_return_if_failed();
 
-	ret = gpiod_chip_info_event_wait(chip, 100000000);
+	ret = gpiod_chip_wait_info_event(chip, 100000000);
 	g_assert_cmpint(ret, ==, 0);
 }
 
@@ -130,11 +130,11 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 			      request_reconfigure_release_line, &ctx);
 	g_thread_ref(thread);
 
-	ret = gpiod_chip_info_event_wait(chip, 1000000000);
+	ret = gpiod_chip_wait_info_event(chip, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	request_event = gpiod_chip_info_event_read(chip);
+	request_event = gpiod_chip_read_info_event(chip);
 	g_assert_nonnull(request_event);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -148,11 +148,11 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 	g_assert_cmpint(gpiod_line_info_get_direction(request_info), ==,
 			GPIOD_LINE_DIRECTION_INPUT);
 
-	ret = gpiod_chip_info_event_wait(chip, 1000000000);
+	ret = gpiod_chip_wait_info_event(chip, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	reconfigure_event = gpiod_chip_info_event_read(chip);
+	reconfigure_event = gpiod_chip_read_info_event(chip);
 	g_assert_nonnull(reconfigure_event);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -166,11 +166,11 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 	g_assert_cmpint(gpiod_line_info_get_direction(reconfigure_info), ==,
 			GPIOD_LINE_DIRECTION_OUTPUT);
 
-	ret = gpiod_chip_info_event_wait(chip, 1000000000);
+	ret = gpiod_chip_wait_info_event(chip, 1000000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	release_event = gpiod_chip_info_event_read(chip);
+	release_event = gpiod_chip_read_info_event(chip);
 	g_assert_nonnull(release_event);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -243,7 +243,7 @@ GPIOD_TEST_CASE(chip_fd_can_be_polled)
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
-	event = gpiod_chip_info_event_read(chip);
+	event = gpiod_chip_read_info_event(chip);
 	g_assert_nonnull(event);
 	gpiod_test_join_thread_and_return_if_failed(thread);
 
@@ -283,11 +283,11 @@ GPIOD_TEST_CASE(unwatch_and_check_that_no_events_are_generated)
 
 	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
 
-	ret = gpiod_chip_info_event_wait(chip, 100000000);
+	ret = gpiod_chip_wait_info_event(chip, 100000000);
 	g_assert_cmpint(ret, >, 0);
 	gpiod_test_return_if_failed();
 
-	event = gpiod_chip_info_event_read(chip);
+	event = gpiod_chip_read_info_event(chip);
 	g_assert_nonnull(event);
 	gpiod_test_return_if_failed();
 
@@ -298,6 +298,6 @@ GPIOD_TEST_CASE(unwatch_and_check_that_no_events_are_generated)
 	gpiod_line_request_release(request);
 	request = NULL;
 
-	ret = gpiod_chip_info_event_wait(chip, 100000000);
+	ret = gpiod_chip_wait_info_event(chip, 100000000);
 	g_assert_cmpint(ret, ==, 0);
 }
