@@ -151,7 +151,7 @@ int gpiod_chip_get_fd(struct gpiod_chip *chip);
  * @return 0 if wait timed out, -1 if an error occurred, 1 if an event is
  *	   pending.
  */
-int gpiod_chip_info_event_wait(struct gpiod_chip *chip, uint64_t timeout_ns);
+int gpiod_chip_wait_info_event(struct gpiod_chip *chip, uint64_t timeout_ns);
 
 /**
  * @brief Read a single line status change event from the chip.
@@ -160,7 +160,7 @@ int gpiod_chip_info_event_wait(struct gpiod_chip *chip, uint64_t timeout_ns);
  *	   freed by the caller using ::gpiod_info_event_free.
  * @note If no events are pending, this function will block.
  */
-struct gpiod_info_event *gpiod_chip_info_event_read(struct gpiod_chip *chip);
+struct gpiod_info_event *gpiod_chip_read_info_event(struct gpiod_chip *chip);
 
 /**
  * @brief Map a line's name to its offset within the chip.
