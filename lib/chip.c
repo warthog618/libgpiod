@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2021 Bartosz Golaszewski <brgl@bgdev.pl>
 
-/* Line attribute data structure and functions. */
-
 #include <errno.h>
 #include <fcntl.h>
 #include <gpiod.h>

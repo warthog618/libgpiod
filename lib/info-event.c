@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2021 Bartosz Golaszewski <brgl@bgdev.pl>
 
-/* Line status watch. */
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
