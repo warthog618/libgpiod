@@ -91,8 +91,8 @@ gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config)
 	return config->event_buffer_size;
 }
 
-int gpiod_request_config_to_kernel(struct gpiod_request_config *config,
-				   struct gpio_v2_line_request *reqbuf)
+int gpiod_request_config_to_uapi(struct gpiod_request_config *config,
+				 struct gpio_v2_line_request *uapi_req)
 {
 	size_t i;
 
@@ -102,11 +102,11 @@ int gpiod_request_config_to_kernel(struct gpiod_request_config *config,
 	}
 
 	for (i = 0; i < config->num_offsets; i++)
-		reqbuf->offsets[i] = config->offsets[i];
+		uapi_req->offsets[i] = config->offsets[i];
 
-	reqbuf->num_lines = config->num_offsets;
-	strcpy(reqbuf->consumer, config->consumer);
-	reqbuf->event_buffer_size = config->event_buffer_size;
+	uapi_req->num_lines = config->num_offsets;
+	strcpy(uapi_req->consumer, config->consumer);
+	uapi_req->event_buffer_size = config->event_buffer_size;
 
 	return 0;
 }

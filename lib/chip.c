@@ -82,7 +82,7 @@ GPIOD_API struct gpiod_chip_info *gpiod_chip_get_info(struct gpiod_chip *chip)
 	if (ret < 0)
 		return NULL;
 
-	return gpiod_chip_info_from_kernel(&info);
+	return gpiod_chip_info_from_uapi(&info);
 }
 
 GPIOD_API const char *gpiod_chip_get_path(struct gpiod_chip *chip)
@@ -118,7 +118,7 @@ chip_get_line_info(struct gpiod_chip *chip, unsigned int offset, bool watch)
 	if (ret)
 		return NULL;
 
-	return gpiod_line_info_from_kernel(&info);
+	return gpiod_line_info_from_uapi(&info);
 }
 
 GPIOD_API struct gpiod_line_info *
@@ -202,34 +202,34 @@ gpiod_chip_request_lines(struct gpiod_chip *chip,
 			 struct gpiod_request_config *req_cfg,
 			 struct gpiod_line_config *line_cfg)
 {
-	struct gpio_v2_line_request reqbuf;
+	struct gpio_v2_line_request uapi_req;
 	struct gpiod_line_request *request;
 	int ret;
 
-	memset(&reqbuf, 0, sizeof(reqbuf));
+	memset(&uapi_req, 0, sizeof(uapi_req));
 
-	ret = gpiod_request_config_to_kernel(req_cfg, &reqbuf);
+	ret = gpiod_request_config_to_uapi(req_cfg, &uapi_req);
 	if (ret)
 		return NULL;
 
-	ret = gpiod_line_config_to_kernel(line_cfg, &reqbuf.config,
-					  reqbuf.num_lines, reqbuf.offsets);
+	ret = gpiod_line_config_to_uapi(line_cfg, &uapi_req.config,
+					uapi_req.num_lines, uapi_req.offsets);
 	if (ret)
 		return NULL;
 
-	ret = ioctl(chip->fd, GPIO_V2_GET_LINE_IOCTL, &reqbuf);
+	ret = ioctl(chip->fd, GPIO_V2_GET_LINE_IOCTL, &uapi_req);
 	if (ret < 0)
 		return NULL;
 
-	ret = set_fd_noblock(reqbuf.fd);
+	ret = set_fd_noblock(uapi_req.fd);
 	if (ret) {
-		close(reqbuf.fd);
+		close(uapi_req.fd);
 		return NULL;
 	}
 
-	request = gpiod_line_request_from_kernel(&reqbuf);
+	request = gpiod_line_request_from_uapi(&uapi_req);
 	if (!request) {
-		close(reqbuf.fd);
+		close(uapi_req.fd);
 		return NULL;
 	}
 

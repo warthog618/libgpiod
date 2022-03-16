@@ -17,7 +17,7 @@ struct gpiod_line_request {
 };
 
 struct gpiod_line_request *
-gpiod_line_request_from_kernel(struct gpio_v2_line_request *reqbuf)
+gpiod_line_request_from_uapi(struct gpio_v2_line_request *uapi_req)
 {
 	struct gpiod_line_request *request;
 
@@ -26,9 +26,9 @@ gpiod_line_request_from_kernel(struct gpio_v2_line_request *reqbuf)
 		return NULL;
 
 	memset(request, 0, sizeof(*request));
-	request->fd = reqbuf->fd;
-	request->num_lines = reqbuf->num_lines;
-	memcpy(request->offsets, reqbuf->offsets,
+	request->fd = uapi_req->fd;
+	request->num_lines = uapi_req->num_lines;
+	memcpy(request->offsets, uapi_req->offsets,
 	       sizeof(*request->offsets) * request->num_lines);
 
 	return request;
@@ -88,12 +88,12 @@ gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
 				     size_t num_values,
 				     const unsigned int *offsets, int *values)
 {
-	struct gpio_v2_line_values buf;
+	struct gpio_v2_line_values uapi_values;
 	uint64_t mask = 0, bits = 0;
 	size_t i;
 	int bit, ret;
 
-	buf.bits = 0;
+	uapi_values.bits = 0;
 
 	for (i = 0; i < num_values; i++) {
 		bit = offset_to_bit(request, offsets[i]);
@@ -105,13 +105,13 @@ gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
 		gpiod_line_mask_set_bit(&mask, bit);
 	}
 
-	buf.mask = mask;
+	uapi_values.mask = mask;
 
-	ret = ioctl(request->fd, GPIO_V2_LINE_GET_VALUES_IOCTL, &buf);
+	ret = ioctl(request->fd, GPIO_V2_LINE_GET_VALUES_IOCTL, &uapi_values);
 	if (ret)
 		return -1;
 
-	bits = buf.bits;
+	bits = uapi_values.bits;
 	memset(values, 0, sizeof(*values) * num_values);
 
 	for (i = 0; i < num_values; i++) {
@@ -142,7 +142,7 @@ gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
 				     const unsigned int *offsets,
 				     const int *values)
 {
-	struct gpio_v2_line_values buf;
+	struct gpio_v2_line_values uapi_values;
 	uint64_t mask = 0, bits = 0;
 	size_t i;
 	int bit;
@@ -158,11 +158,11 @@ gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
 		gpiod_line_mask_assign_bit(&bits, bit, values[i]);
 	}
 
-	memset(&buf, 0, sizeof(buf));
-	buf.mask = mask;
-	buf.bits = bits;
+	memset(&uapi_values, 0, sizeof(uapi_values));
+	uapi_values.mask = mask;
+	uapi_values.bits = bits;
 
-	return ioctl(request->fd, GPIO_V2_LINE_SET_VALUES_IOCTL, &buf);
+	return ioctl(request->fd, GPIO_V2_LINE_SET_VALUES_IOCTL, &uapi_values);
 }
 
 GPIOD_API int gpiod_line_request_set_values(struct gpiod_line_request *request,
@@ -176,17 +176,17 @@ GPIOD_API int
 gpiod_line_request_reconfigure_lines(struct gpiod_line_request *request,
 				     struct gpiod_line_config *config)
 {
-	struct gpio_v2_line_config cfgbuf;
+	struct gpio_v2_line_config uapi_cfg;
 	int ret;
 
-	memset(&cfgbuf, 0, sizeof(cfgbuf));
+	memset(&uapi_cfg, 0, sizeof(uapi_cfg));
 
-	ret = gpiod_line_config_to_kernel(config, &cfgbuf,
-					  request->num_lines, request->offsets);
+	ret = gpiod_line_config_to_uapi(config, &uapi_cfg,
+					request->num_lines, request->offsets);
 	if (ret)
 		return ret;
 
-	ret = ioctl(request->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &cfgbuf);
+	ret = ioctl(request->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &uapi_cfg);
 	if (ret)
 		return ret;
 

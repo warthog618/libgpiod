@@ -37,7 +37,7 @@ GPIOD_API size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info)
 }
 
 struct gpiod_chip_info *
-gpiod_chip_info_from_kernel(struct gpiochip_info *uapi_info)
+gpiod_chip_info_from_uapi(struct gpiochip_info *uapi_info)
 {
 	struct gpiod_chip_info *info;
 
