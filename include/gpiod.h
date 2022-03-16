@@ -1226,16 +1226,16 @@ int gpiod_line_request_get_value(struct gpiod_line_request *request,
 /**
  * @brief Get the values of a subset of requested lines.
  * @param request GPIO line request.
- * @param num_lines Number of lines for which to read values.
+ * @param num_values Number of lines for which to read values.
  * @param offsets Array of offsets identifying the subset of requested lines
  *		  from which to read values.
  * @param values Array in which the values will be stored.  Must be sized
- *		 to hold \p num_lines entries.  Each value is associated with the
+ *		 to hold \p num_values entries.  Each value is associated with the
  *		 line identified by the corresponding entry in \p offsets.
  * @return 0 on success, -1 on failure.
  */
 int gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
-					 size_t num_lines,
+					 size_t num_values,
 					 const unsigned int *offsets,
 					 int *values);
 
@@ -1265,17 +1265,17 @@ int gpiod_line_request_set_value(struct gpiod_line_request *request,
 /**
  * @brief Set the values of a subset of requested lines.
  * @param request GPIO line request.
- * @param num_lines Number of lines for which to set values.
+ * @param num_values Number of lines for which to set values.
  * @param offsets Array of offsets, containing the number of entries specified
- *		  by \p num_lines, identifying the requested lines for
+ *		  by \p num_values, identifying the requested lines for
  *		  which to set values.
  * @param values Array of values to set, containing the number of entries
- *		 specified by \p num_lines.  Each value is associated with the
+ *		 specified by \p num_values.  Each value is associated with the
  *		 line identified by the corresponding entry in \p offsets.
  * @return 0 on success, -1 on failure.
  */
 int gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
-					 size_t num_lines,
+					 size_t num_values,
 					 const unsigned int *offsets,
 					 const int *values);
 
