@@ -731,7 +731,7 @@ int gpiod_line_config_get_bias_default(struct gpiod_line_config *config);
  *	   in a request.
  */
 int gpiod_line_config_get_bias_offset(struct gpiod_line_config *config,
-			       unsigned int offset);
+				      unsigned int offset);
 
 /**
  * @brief Set the default drive setting.
@@ -986,12 +986,13 @@ gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
 					    unsigned int offset, int value);
 
 /**
- * @brief Override the output values for multiple offsets.
+ * @brief Override the output values for multiple lines.
  * @param config Line config object.
- * @param num_values Number of offsets for which to override values.
- * @param offsets Array of line offsets to override values for.
- * @param values Array of output values associated with the offsets passed in
- *               the previous argument.
+ * @param num_values Number of lines for which to override values.
+ * @param offsets Array of offsets identifying the lines for which to override
+ *		  values,  containing \p num_values entries.
+ * @param values Array of output values corresponding to the lines identified in
+ *		 \p offsets, also containing \p num_values entries.
  */
 void gpiod_line_config_set_output_values(struct gpiod_line_config *config,
 					 size_t num_values,
@@ -1125,18 +1126,18 @@ void gpiod_request_config_set_consumer(struct gpiod_request_config *config,
 				       const char *consumer);
 
 /**
- * @brief Get the consumer string.
+ * @brief Get the consumer name configured in the request config.
  * @param config Request config object.
- * @return Current consumer string stored in this request config.
+ * @return Consumer name stored in the request config.
  */
 const char *
 gpiod_request_config_get_consumer(struct gpiod_request_config *config);
 
 /**
- * @brief Set line offsets for this request.
+ * @brief Set the offsets of the lines to be requested.
  * @param config Request config object.
- * @param num_offsets Number of offsets.
- * @param offsets Array of line offsets.
+ * @param num_offsets Number of offsets to set.
+ * @param offsets Array of offsets, containing \p num_offsets entries.
  * @note If too many offsets were specified, the offsets above the limit
  *       accepted by the kernel (64 lines) are silently dropped.
  */
@@ -1153,29 +1154,31 @@ size_t
 gpiod_request_config_get_num_offsets(struct gpiod_request_config *config);
 
 /**
- * @brief Get the hardware offsets of lines in this request config.
+ * @brief Get the offsets of lines in the request config.
  * @param config Request config object.
- * @param offsets Array to store offsets. Must hold at least the number of
- *                lines returned by ::gpiod_request_config_get_num_offsets.
+ * @param offsets Array to store offsets. Must be sized to hold the number of
+ *		  lines returned by ::gpiod_request_config_get_num_offsets.
  */
 void gpiod_request_config_get_offsets(struct gpiod_request_config *config,
 				      unsigned int *offsets);
 
 /**
- * @brief Set the size of the kernel event buffer.
+ * @brief Set the size of the kernel event buffer for the request.
  * @param config Request config object.
  * @param event_buffer_size New event buffer size.
  * @note The kernel may adjust the value if it's too high. If set to 0, the
  *       default value will be used.
+ * @note The kernel buffer is distinct from and independent of the user space
+ *	 buffer (::gpiod_edge_event_buffer_new).
  */
 void
 gpiod_request_config_set_event_buffer_size(struct gpiod_request_config *config,
 					   size_t event_buffer_size);
 
 /**
- * @brief Get the edge event buffer size from this request config.
+ * @brief Get the edge event buffer size for the request config.
  * @param config Request config object.
- * @return Current edge event buffer size setting.
+ * @return Edge event buffer size setting from the request config.
  */
 size_t
 gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config);
