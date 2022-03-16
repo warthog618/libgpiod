@@ -85,7 +85,7 @@ static int offset_to_bit(struct gpiod_line_request *request,
 
 GPIOD_API int
 gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
-				     size_t num_lines,
+				     size_t num_values,
 				     const unsigned int *offsets, int *values)
 {
 	struct gpio_v2_line_values buf;
@@ -95,7 +95,7 @@ gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
 
 	buf.bits = 0;
 
-	for (i = 0; i < num_lines; i++) {
+	for (i = 0; i < num_values; i++) {
 		bit = offset_to_bit(request, offsets[i]);
 		if (bit < 0) {
 			errno = EINVAL;
@@ -112,9 +112,9 @@ gpiod_line_request_get_values_subset(struct gpiod_line_request *request,
 		return -1;
 
 	bits = buf.bits;
-	memset(values, 0, sizeof(*values) * num_lines);
+	memset(values, 0, sizeof(*values) * num_values);
 
-	for (i = 0; i < num_lines; i++) {
+	for (i = 0; i < num_values; i++) {
 		bit = offset_to_bit(request, offsets[i]);
 		values[i] = gpiod_line_mask_test_bit(&bits, bit) ? 1 : 0;
 	}
@@ -138,7 +138,7 @@ GPIOD_API int gpiod_line_request_set_value(struct gpiod_line_request *request,
 
 GPIOD_API int
 gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
-				     size_t num_lines,
+				     size_t num_values,
 				     const unsigned int *offsets,
 				     const int *values)
 {
@@ -147,7 +147,7 @@ gpiod_line_request_set_values_subset(struct gpiod_line_request *request,
 	size_t i;
 	int bit;
 
-	for (i = 0; i < num_lines; i++) {
+	for (i = 0; i < num_values; i++) {
 		bit = offset_to_bit(request, offsets[i]);
 		if (bit < 0) {
 			errno = EINVAL;
