@@ -19,21 +19,21 @@
 #define GPIOD_BIT(nr)	(1UL << (nr))
 
 struct gpiod_chip_info *
-gpiod_chip_info_from_kernel(struct gpiochip_info *infobuf);
+gpiod_chip_info_from_uapi(struct gpiochip_info *uapi_info);
 struct gpiod_line_info *
-gpiod_line_info_from_kernel(struct gpio_v2_line_info *infobuf);
-int gpiod_request_config_to_kernel(struct gpiod_request_config *config,
-				   struct gpio_v2_line_request *reqbuf);
-int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
-				struct gpio_v2_line_config *cfgbuf,
-				unsigned int num_lines,
-				const unsigned int *offsets);
+gpiod_line_info_from_uapi(struct gpio_v2_line_info *uapi_info);
+int gpiod_request_config_to_uapi(struct gpiod_request_config *config,
+				 struct gpio_v2_line_request *uapi_req);
+int gpiod_line_config_to_uapi(struct gpiod_line_config *config,
+			      struct gpio_v2_line_config *uapi_cfg,
+			      unsigned int num_lines,
+			      const unsigned int *offsets);
 struct gpiod_line_request *
-gpiod_line_request_from_kernel(struct gpio_v2_line_request *reqbuf);
+gpiod_line_request_from_uapi(struct gpio_v2_line_request *uapi_req);
 int gpiod_edge_event_buffer_read_fd(int fd, struct gpiod_edge_event_buffer *buffer,
 				    size_t max_events);
 struct gpiod_info_event *
-gpiod_info_event_from_kernel(struct gpio_v2_line_info_changed *evbuf);
+gpiod_info_event_from_uapi(struct gpio_v2_line_info_changed *uapi_evt);
 struct gpiod_info_event *gpiod_info_event_read_fd(int fd);
 
 int gpiod_poll_fd(int fd, uint64_t timeout);

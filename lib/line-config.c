@@ -1062,7 +1062,7 @@ static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
 }
 
 static int process_overrides(struct gpiod_line_config *config,
-			     struct gpio_v2_line_config *cfgbuf,
+			     struct gpio_v2_line_config *uapi_cfg,
 			     unsigned int *attr_idx,
 			     unsigned int num_lines,
 			     const unsigned int *offsets,
@@ -1113,7 +1113,7 @@ static int process_overrides(struct gpiod_line_config *config,
 			}
 		}
 
-		attr = &cfgbuf->attrs[(*attr_idx)++];
+		attr = &uapi_cfg->attrs[(*attr_idx)++];
 
 		set_kernel_attr_mask(&mask, &marked,
 				     num_lines, offsets, config);
@@ -1142,10 +1142,10 @@ static bool has_at_least_one_output_direction(struct gpiod_line_config *config)
 	return false;
 }
 
-int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
-				struct gpio_v2_line_config *cfgbuf,
-				unsigned int num_lines,
-				const unsigned int *offsets)
+int gpiod_line_config_to_uapi(struct gpiod_line_config *config,
+			      struct gpio_v2_line_config *uapi_cfg,
+			      unsigned int num_lines,
+			      const unsigned int *offsets)
 {
 	struct gpio_v2_line_config_attribute *attr;
 	unsigned int attr_idx = 0;
@@ -1160,7 +1160,7 @@ int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
 	 * If so, let's take one attribute for the default values.
 	 */
 	if (has_at_least_one_output_direction(config)) {
-		attr = &cfgbuf->attrs[attr_idx++];
+		attr = &uapi_cfg->attrs[attr_idx++];
 		attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
 
 		set_kernel_output_values(&mask, &values, config,
@@ -1173,7 +1173,7 @@ int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
 
 	/* If we have a default debounce period - use another attribute. */
 	if (config->defaults.debounce_period_us) {
-		attr = &cfgbuf->attrs[attr_idx++];
+		attr = &uapi_cfg->attrs[attr_idx++];
 		attr->attr.id = GPIO_V2_LINE_ATTR_ID_DEBOUNCE;
 		attr->attr.debounce_period_us =
 				config->defaults.debounce_period_us;
@@ -1193,22 +1193,22 @@ int gpiod_line_config_to_kernel(struct gpiod_line_config *config,
 	 * further processing.
 	 */
 
-	ret = process_overrides(config, cfgbuf, &attr_idx, num_lines, offsets,
+	ret = process_overrides(config, uapi_cfg, &attr_idx, num_lines, offsets,
 				base_config_flags_are_equal,
 				override_config_flags_are_equal,
 				set_base_config_flags);
 	if (ret)
 		return -1;
 
-	ret = process_overrides(config, cfgbuf, &attr_idx, num_lines, offsets,
+	ret = process_overrides(config, uapi_cfg, &attr_idx, num_lines, offsets,
 				base_debounce_period_is_equal,
 				override_config_debounce_period_is_equal,
 				set_base_config_debounce_period);
 	if (ret)
 		return -1;
 
-	cfgbuf->flags = make_kernel_flags(&config->defaults);
-	cfgbuf->num_attrs = attr_idx;
+	uapi_cfg->flags = make_kernel_flags(&config->defaults);
+	uapi_cfg->num_attrs = attr_idx;
 
 	return 0;
 

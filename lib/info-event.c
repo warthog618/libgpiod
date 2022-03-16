@@ -15,7 +15,7 @@ struct gpiod_info_event {
 };
 
 struct gpiod_info_event *
-gpiod_info_event_from_kernel(struct gpio_v2_line_info_changed *evbuf)
+gpiod_info_event_from_uapi(struct gpio_v2_line_info_changed *uapi_evt)
 {
 	struct gpiod_info_event *event;
 
@@ -24,9 +24,9 @@ gpiod_info_event_from_kernel(struct gpio_v2_line_info_changed *evbuf)
 		return NULL;
 
 	memset(event, 0, sizeof(*event));
-	event->timestamp = evbuf->timestamp_ns;
+	event->timestamp = uapi_evt->timestamp_ns;
 
-	switch (evbuf->event_type) {
+	switch (uapi_evt->event_type) {
 	case GPIOLINE_CHANGED_REQUESTED:
 		event->event_type = GPIOD_INFO_EVENT_LINE_REQUESTED;
 		break;
@@ -43,7 +43,7 @@ gpiod_info_event_from_kernel(struct gpio_v2_line_info_changed *evbuf)
 		return NULL;
 	}
 
-	event->info = gpiod_line_info_from_kernel(&evbuf->info);
+	event->info = gpiod_line_info_from_uapi(&uapi_evt->info);
 	if (!event->info) {
 		free(event);
 		return NULL;
@@ -80,18 +80,18 @@ gpiod_info_event_get_line_info(struct gpiod_info_event *event)
 
 struct gpiod_info_event *gpiod_info_event_read_fd(int fd)
 {
-	struct gpio_v2_line_info_changed evbuf;
+	struct gpio_v2_line_info_changed uapi_evt;
 	ssize_t rd;
 
-	memset(&evbuf, 0, sizeof(evbuf));
+	memset(&uapi_evt, 0, sizeof(uapi_evt));
 
-	rd = read(fd, &evbuf, sizeof(evbuf));
+	rd = read(fd, &uapi_evt, sizeof(uapi_evt));
 	if (rd < 0) {
 		return NULL;
-	} else if ((unsigned int)rd < sizeof(evbuf)) {
+	} else if ((unsigned int)rd < sizeof(uapi_evt)) {
 		errno = EIO;
 		return NULL;
 	}
 
-	return gpiod_info_event_from_kernel(&evbuf);
+	return gpiod_info_event_from_uapi(&uapi_evt);
 }

@@ -106,7 +106,7 @@ gpiod_line_info_get_debounce_period_us(struct gpiod_line_info *info)
 }
 
 struct gpiod_line_info *
-gpiod_line_info_from_kernel(struct gpio_v2_line_info *uapi_info)
+gpiod_line_info_from_uapi(struct gpio_v2_line_info *uapi_info)
 {
 	struct gpio_v2_line_attribute *attr;
 	struct gpiod_line_info *info;
