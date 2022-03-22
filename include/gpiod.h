@@ -493,7 +493,7 @@ int gpiod_info_event_get_event_type(struct gpiod_info_event *event);
  * @param event Line status watch event.
  * @return Timestamp in nanoseconds, read from the monotonic clock.
  */
-uint64_t gpiod_info_event_get_timestamp(struct gpiod_info_event *event);
+uint64_t gpiod_info_event_get_timestamp_ns(struct gpiod_info_event *event);
 
 /**
  * @brief Get the snapshot of line-info associated with the event.
@@ -1401,7 +1401,7 @@ int gpiod_edge_event_get_event_type(struct gpiod_edge_event *event);
  * @note The source clock for the timestamp depends on the event_clock
  *	 setting for the line.
  */
-uint64_t gpiod_edge_event_get_timestamp(struct gpiod_edge_event *event);
+uint64_t gpiod_edge_event_get_timestamp_ns(struct gpiod_edge_event *event);
 
 /**
  * @brief Get the offset of the line which triggered the event.

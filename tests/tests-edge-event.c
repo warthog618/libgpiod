@@ -145,7 +145,7 @@ GPIOD_TEST_CASE(read_both_events)
 	g_assert_cmpint(gpiod_edge_event_get_event_type(event),
 			==, GPIOD_EDGE_EVENT_RISING_EDGE);
 	g_assert_cmpuint(gpiod_edge_event_get_line_offset(event), ==, 2);
-	ts_rising = gpiod_edge_event_get_timestamp(event);
+	ts_rising = gpiod_edge_event_get_timestamp_ns(event);
 
 	/* Second event. */
 
@@ -165,7 +165,7 @@ GPIOD_TEST_CASE(read_both_events)
 	g_assert_cmpint(gpiod_edge_event_get_event_type(event),
 			==, GPIOD_EDGE_EVENT_FALLING_EDGE);
 	g_assert_cmpuint(gpiod_edge_event_get_line_offset(event), ==, 2);
-	ts_falling = gpiod_edge_event_get_timestamp(event);
+	ts_falling = gpiod_edge_event_get_timestamp_ns(event);
 
 	g_thread_join(thread);
 
