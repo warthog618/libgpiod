@@ -184,9 +184,9 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 
 	g_thread_join(thread);
 
-	request_ts = gpiod_info_event_get_timestamp(request_event);
-	reconfigure_ts = gpiod_info_event_get_timestamp(reconfigure_event);
-	release_ts = gpiod_info_event_get_timestamp(release_event);
+	request_ts = gpiod_info_event_get_timestamp_ns(request_event);
+	reconfigure_ts = gpiod_info_event_get_timestamp_ns(reconfigure_event);
+	release_ts = gpiod_info_event_get_timestamp_ns(release_event);
 
 	g_assert_cmpuint(request_ts, <, reconfigure_ts);
 	g_assert_cmpuint(reconfigure_ts, <, release_ts);

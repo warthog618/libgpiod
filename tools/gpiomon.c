@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 
 			handle_event(gpiod_edge_event_get_line_offset(event),
 				     gpiod_edge_event_get_event_type(event),
-				     gpiod_edge_event_get_timestamp(event),
+				     gpiod_edge_event_get_timestamp_ns(event),
 				     &ctx);
 
 			events_done++;

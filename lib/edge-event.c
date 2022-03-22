@@ -55,7 +55,7 @@ GPIOD_API int gpiod_edge_event_get_event_type(struct gpiod_edge_event *event)
 }
 
 GPIOD_API uint64_t
-gpiod_edge_event_get_timestamp(struct gpiod_edge_event *event)
+gpiod_edge_event_get_timestamp_ns(struct gpiod_edge_event *event)
 {
 	return event->timestamp;
 }
