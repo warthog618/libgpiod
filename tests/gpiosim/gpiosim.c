@@ -20,8 +20,7 @@
 
 #define GPIOSIM_API		__attribute__((visibility("default")))
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(*(x)))
-/* FIXME Change the minimum version to v5.17.0 once released. */
-#define MIN_KERNEL_VERSION	KERNEL_VERSION(5, 16, 0)
+#define MIN_KERNEL_VERSION	KERNEL_VERSION(5, 17, 0)
 
 struct refcount {
 	unsigned int cnt;
