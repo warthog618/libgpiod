@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 			die_perror("unable to open %s", entries[i]->d_name);
 		}
 
-		offset = gpiod_chip_find_line(chip, argv[0]);
+		offset = gpiod_chip_get_line_offset_from_name(chip, argv[0]);
 		if (offset >= 0) {
 			info = gpiod_chip_get_info(chip);
 			if (!info)

@@ -156,7 +156,8 @@ gpiod_chip_read_info_event(struct gpiod_chip *chip)
 	return gpiod_info_event_read_fd(chip->fd);
 }
 
-GPIOD_API int gpiod_chip_find_line(struct gpiod_chip *chip, const char *name)
+GPIOD_API int gpiod_chip_get_line_offset_from_name(struct gpiod_chip *chip,
+						   const char *name)
 {
 	struct gpio_v2_line_info linfo;
 	struct gpiochip_info chinfo;
