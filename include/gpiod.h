@@ -158,7 +158,8 @@ struct gpiod_info_event *gpiod_chip_read_info_event(struct gpiod_chip *chip);
  * @note If a line with given name is not exposed by the chip, the function
  *       sets errno to ENOENT.
  */
-int gpiod_chip_find_line(struct gpiod_chip *chip, const char *name);
+int gpiod_chip_get_line_offset_from_name(struct gpiod_chip *chip,
+					 const char *name);
 
 /**
  * @brief Request a set of lines for exclusive usage.

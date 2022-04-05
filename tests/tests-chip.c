@@ -88,7 +88,9 @@ GPIOD_TEST_CASE(find_line_bad)
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
 
-	g_assert_cmpint(gpiod_chip_find_line(chip, "nonexistent"), ==, -1);
+	g_assert_cmpint(
+		gpiod_chip_get_line_offset_from_name(chip,
+						     "nonexistent"), ==, -1);
 	gpiod_test_expect_errno(ENOENT);
 }
 
@@ -112,7 +114,8 @@ GPIOD_TEST_CASE(find_line_good)
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
 
-	g_assert_cmpint(gpiod_chip_find_line(chip, "baz"), ==, 4);
+	g_assert_cmpint(gpiod_chip_get_line_offset_from_name(chip, "baz"),
+			==, 4);
 }
 
 /* Verify that for duplicated line names, the first one is returned. */
@@ -136,5 +139,6 @@ GPIOD_TEST_CASE(find_line_duplicate)
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
 
-	g_assert_cmpint(gpiod_chip_find_line(chip, "baz"), ==, 2);
+	g_assert_cmpint(gpiod_chip_get_line_offset_from_name(chip, "baz"),
+			==, 2);
 }
