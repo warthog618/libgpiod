@@ -23,8 +23,6 @@ enum {
 };
 
 static struct gpiosim_ctx *sim_ctx;
-static pid_t pid;
-static guint sim_id;
 
 G_DEFINE_TYPE(GPIOSimChip, g_gpiosim_chip, G_TYPE_OBJECT);
 
@@ -41,7 +39,6 @@ static void g_gpiosim_ctx_init(void)
 			g_strerror(errno));
 
 	atexit(g_gpiosim_ctx_unref);
-	pid = getpid();
 }
 
 static void g_gpiosim_chip_constructed(GObject *obj)
@@ -175,7 +172,6 @@ static void g_gpiosim_chip_dispose(GObject *obj)
 	}
 
 	gpiosim_dev_unref(dev);
-	sim_id--;
 }
 
 static void g_gpiosim_chip_finalize(GObject *obj)
@@ -239,13 +235,12 @@ static void g_gpiosim_chip_init(GPIOSimChip *self)
 	if (!sim_ctx)
 		g_gpiosim_ctx_init();
 
-	dev_name = g_strdup_printf("gpiod-test-dev.%u.%u", pid, sim_id++);
-	dev = gpiosim_dev_new(sim_ctx, dev_name);
+	dev = gpiosim_dev_new(sim_ctx);
 	if (!dev)
 		g_error("Unable to instantiate new GPIO device: %s",
 			g_strerror(errno));
 
-	self->bank = gpiosim_bank_new(dev, "bank");
+	self->bank = gpiosim_bank_new(dev);
 	gpiosim_dev_unref(dev);
 	if (!self->bank)
 		g_error("Unable to instantiate new GPIO bank: %s",
