@@ -181,23 +181,6 @@ GPIOD_API int gpiod_chip_get_line_offset_from_name(struct gpiod_chip *chip,
 	return -1;
 }
 
-static int set_fd_noblock(int fd)
-{
-	int ret, flags;
-
-	flags = fcntl(fd, F_GETFL, 0);
-	if (flags < 0)
-		return -1;
-
-	flags |= O_NONBLOCK;
-
-	ret = fcntl(fd, F_SETFL, flags);
-	if (ret < 0)
-		return -1;
-
-	return 0;
-}
-
 GPIOD_API struct gpiod_line_request *
 gpiod_chip_request_lines(struct gpiod_chip *chip,
 			 struct gpiod_request_config *req_cfg,
@@ -221,12 +204,6 @@ gpiod_chip_request_lines(struct gpiod_chip *chip,
 	ret = ioctl(chip->fd, GPIO_V2_GET_LINE_IOCTL, &uapi_req);
 	if (ret < 0)
 		return NULL;
-
-	ret = set_fd_noblock(uapi_req.fd);
-	if (ret) {
-		close(uapi_req.fd);
-		return NULL;
-	}
 
 	request = gpiod_line_request_from_uapi(&uapi_req);
 	if (!request) {
