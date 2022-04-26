@@ -357,6 +357,75 @@ GPIOD_TEST_CASE(read_rising_edge_event_polled)
 	g_thread_join(thread);
 }
 
+GPIOD_TEST_CASE(read_both_events_blocking)
+{
+	/*
+	 * This time without polling so that the read gets a chance to block
+	 * and we can make sure it doesn't immediately return an error.
+	 */
+
+	static const guint offset = 2;
+
+	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
+	g_autoptr(struct_gpiod_chip) chip = NULL;
+	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_request) request = NULL;
+	g_autoptr(GThread) thread = NULL;
+	g_autoptr(struct_gpiod_edge_event_buffer) buffer = NULL;
+	struct gpiod_edge_event *event;
+	gint ret;
+
+	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
+	req_cfg = gpiod_test_create_request_config_or_fail();
+	line_cfg = gpiod_test_create_line_config_or_fail();
+	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
+
+	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
+	gpiod_line_config_set_direction_default(line_cfg,
+						GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_config_set_edge_detection_default(line_cfg,
+						     GPIOD_LINE_EDGE_BOTH);
+
+	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+
+	thread = g_thread_new("request-release",
+			      falling_and_rising_edge_events, sim);
+	g_thread_ref(thread);
+
+	/* First event. */
+
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
+	g_assert_cmpint(ret, ==, 1);
+	gpiod_test_join_thread_and_return_if_failed(thread);
+
+	g_assert_cmpuint(gpiod_edge_event_buffer_get_num_events(buffer), ==, 1);
+	event = gpiod_edge_event_buffer_get_event(buffer, 0);
+	g_assert_nonnull(event);
+	gpiod_test_join_thread_and_return_if_failed(thread);
+
+	g_assert_cmpint(gpiod_edge_event_get_event_type(event),
+			==, GPIOD_EDGE_EVENT_RISING_EDGE);
+	g_assert_cmpuint(gpiod_edge_event_get_line_offset(event), ==, 2);
+
+	/* Second event. */
+
+	ret = gpiod_line_request_read_edge_event(request, buffer, 1);
+	g_assert_cmpint(ret, ==, 1);
+	gpiod_test_join_thread_and_return_if_failed(thread);
+
+	g_assert_cmpuint(gpiod_edge_event_buffer_get_num_events(buffer), ==, 1);
+	event = gpiod_edge_event_buffer_get_event(buffer, 0);
+	g_assert_nonnull(event);
+	gpiod_test_join_thread_and_return_if_failed(thread);
+
+	g_assert_cmpint(gpiod_edge_event_get_event_type(event),
+			==, GPIOD_EDGE_EVENT_FALLING_EDGE);
+	g_assert_cmpuint(gpiod_edge_event_get_line_offset(event), ==, 2);
+
+	g_thread_join(thread);
+}
+
 static gpointer rising_edge_events_on_two_offsets(gpointer data)
 {
 	GPIOSimChip *sim = data;
@@ -487,4 +556,54 @@ GPIOD_TEST_CASE(event_copy)
 	copy = gpiod_edge_event_copy(event);
 	g_assert_nonnull(copy);
 	g_assert_true(copy != event);
+}
+
+GPIOD_TEST_CASE(reading_more_events_than_the_queue_contains_doesnt_block)
+{
+	static const guint offset = 2;
+
+	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
+	g_autoptr(struct_gpiod_chip) chip = NULL;
+	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_request) request = NULL;
+	g_autoptr(GThread) thread = NULL;
+	g_autoptr(struct_gpiod_edge_event_buffer) buffer = NULL;
+	gint ret;
+
+	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
+	req_cfg = gpiod_test_create_request_config_or_fail();
+	line_cfg = gpiod_test_create_line_config_or_fail();
+	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
+
+	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
+	gpiod_line_config_set_direction_default(line_cfg,
+						GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_config_set_edge_detection_default(line_cfg,
+						     GPIOD_LINE_EDGE_BOTH);
+
+	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_DOWN);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_DOWN);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_DOWN);
+	g_usleep(500);
+	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
+	g_usleep(500);
+
+	ret = gpiod_line_request_read_edge_event(request, buffer, 12);
+	g_assert_cmpint(ret, ==, 7);
+	gpiod_test_return_if_failed();
+
+	ret = gpiod_line_request_wait_edge_event(request, 1000);
+	g_assert_cmpint(ret, ==, 0);
+	gpiod_test_return_if_failed();
 }
