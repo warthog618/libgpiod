@@ -77,12 +77,12 @@ public:
 	 *        first member is the overridden line offset, the second is
 	 *        the property being overridden.
 	 */
-	using override = ::std::pair<line::offset, property>;
+	using prop_override = ::std::pair<line::offset, property>;
 
 	/**
 	 * @brief List of line configuration overrides.
 	 */
-	using override_list = ::std::vector<override>;
+	using override_list = ::std::vector<prop_override>;
 
 	/**
 	 * @brief Constructor.
