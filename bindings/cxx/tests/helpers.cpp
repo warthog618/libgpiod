@@ -9,7 +9,7 @@ system_error_matcher::system_error_matcher(int expected_errno)
 
 }
 
-::std::string system_error_matcher::describe(void) const
+::std::string system_error_matcher::describe() const
 {
 	return "matches: errno " + ::std::to_string(this->_m_cond.value());
 }
@@ -26,7 +26,7 @@ regex_matcher::regex_matcher(const ::std::string& pattern)
 
 }
 
-::std::string regex_matcher::describe(void) const
+::std::string regex_matcher::describe() const
 {
 	return this->_m_repr;
 }

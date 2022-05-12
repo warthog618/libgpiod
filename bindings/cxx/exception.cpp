@@ -37,7 +37,7 @@ GPIOD_CXX_API chip_closed& chip_closed::operator=(chip_closed&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API chip_closed::~chip_closed(void)
+GPIOD_CXX_API chip_closed::~chip_closed()
 {
 
 }
@@ -74,7 +74,7 @@ GPIOD_CXX_API request_released& request_released::operator=(request_released&& o
 	return *this;
 }
 
-GPIOD_CXX_API request_released::~request_released(void)
+GPIOD_CXX_API request_released::~request_released()
 {
 
 }
@@ -111,7 +111,7 @@ GPIOD_CXX_API bad_mapping& bad_mapping::operator=(bad_mapping&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API bad_mapping::~bad_mapping(void)
+GPIOD_CXX_API bad_mapping::~bad_mapping()
 {
 
 }

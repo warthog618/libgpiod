@@ -8,7 +8,7 @@
 
 namespace gpiod {
 
-void line_request::impl::throw_if_released(void) const
+void line_request::impl::throw_if_released() const
 {
 	if (!this->request)
 		throw request_released("GPIO lines have been released");
@@ -26,7 +26,7 @@ void line_request::impl::fill_offset_buf(const line::offsets& offsets)
 		this->offset_buf[i] = offsets[i];
 }
 
-line_request::line_request(void)
+line_request::line_request()
 	: _m_priv(new impl)
 {
 
@@ -38,7 +38,7 @@ GPIOD_CXX_API line_request::line_request(line_request&& other) noexcept
 
 }
 
-GPIOD_CXX_API line_request::~line_request(void)
+GPIOD_CXX_API line_request::~line_request()
 {
 
 }
@@ -50,26 +50,26 @@ GPIOD_CXX_API line_request& line_request::operator=(line_request&& other) noexce
 	return *this;
 }
 
-GPIOD_CXX_API line_request::operator bool(void) const noexcept
+GPIOD_CXX_API line_request::operator bool() const noexcept
 {
 	return this->_m_priv->request.get() != nullptr;
 }
 
-GPIOD_CXX_API void line_request::release(void)
+GPIOD_CXX_API void line_request::release()
 {
 	this->_m_priv->throw_if_released();
 
 	this->_m_priv->request.reset();
 }
 
-GPIOD_CXX_API ::std::size_t line_request::num_lines(void) const
+GPIOD_CXX_API ::std::size_t line_request::num_lines() const
 {
 	this->_m_priv->throw_if_released();
 
 	return ::gpiod_line_request_get_num_lines(this->_m_priv->request.get());
 }
 
-GPIOD_CXX_API line::offsets line_request::offsets(void) const
+GPIOD_CXX_API line::offsets line_request::offsets() const
 {
 	this->_m_priv->throw_if_released();
 
@@ -100,7 +100,7 @@ line_request::get_values(const line::offsets& offsets)
 	return vals;
 }
 
-GPIOD_CXX_API line::values line_request::get_values(void)
+GPIOD_CXX_API line::values line_request::get_values()
 {
 	return this->get_values(this->offsets());
 }
@@ -177,7 +177,7 @@ GPIOD_CXX_API void line_request::reconfigure_lines(const line_config& config)
 		throw_from_errno("unable to reconfigure GPIO lines");
 }
 
-GPIOD_CXX_API int line_request::fd(void) const
+GPIOD_CXX_API int line_request::fd() const
 {
 	this->_m_priv->throw_if_released();
 

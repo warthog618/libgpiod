@@ -25,7 +25,7 @@ public:
 		::std::filesystem::create_symlink(target, this->_m_link);
 	}
 
-	~symlink_guard(void)
+	~symlink_guard()
 	{
 		::std::filesystem::remove(this->_m_link);
 	}

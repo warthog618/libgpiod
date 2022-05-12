@@ -71,7 +71,7 @@ public:
 	 */
 	request_config(request_config&& other) noexcept;
 
-	~request_config(void);
+	~request_config();
 
 	request_config& operator=(const request_config& other) = delete;
 
@@ -103,7 +103,7 @@ public:
 	 * @brief Get the number of offsets configured in this request config.
 	 * @return Number of line offsets in this request config.
 	 */
-	::std::size_t num_offsets(void) const noexcept;
+	::std::size_t num_offsets() const noexcept;
 
 	/**
 	 * @brief Set the consumer name.
@@ -115,13 +115,13 @@ public:
 	 * @brief Get the consumer name.
 	 * @return Currently configured consumer name. May be an empty string.
 	 */
-	::std::string consumer(void) const noexcept;
+	::std::string consumer() const noexcept;
 
 	/**
 	 * @brief Get the hardware offsets of lines in this request config.
 	 * @return List of line offsets.
 	 */
-	line::offsets offsets(void) const;
+	line::offsets offsets() const;
 
 	/**
 	 * @brief Set the size of the kernel event buffer.
@@ -135,7 +135,7 @@ public:
 	 * @brief Get the edge event buffer size from this request config.
 	 * @return Current edge event buffer size setting.
 	 */
-	::std::size_t event_buffer_size(void) const noexcept;
+	::std::size_t event_buffer_size() const noexcept;
 
 private:
 

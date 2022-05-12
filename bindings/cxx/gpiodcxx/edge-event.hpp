@@ -57,7 +57,7 @@ public:
 	 */
 	edge_event(edge_event&& other) noexcept;
 
-	~edge_event(void);
+	~edge_event();
 
 	/**
 	 * @brief Copy assignment operator.
@@ -77,39 +77,39 @@ public:
 	 * @brief Retrieve the event type.
 	 * @return Event type (rising or falling edge).
 	 */
-	event_type type(void) const;
+	event_type type() const;
 
 	/**
 	 * @brief Retrieve the event time-stamp.
 	 * @return Time-stamp in nanoseconds as registered by the kernel using
 	 *         the configured edge event clock.
 	 */
-	timestamp timestamp_ns(void) const noexcept;
+	timestamp timestamp_ns() const noexcept;
 
 	/**
 	 * @brief Read the offset of the line on which this event was
 	 *        registered.
 	 * @return Line offset.
 	 */
-	line::offset line_offset(void) const noexcept;
+	line::offset line_offset() const noexcept;
 
 	/**
 	 * @brief Get the global sequence number of this event.
 	 * @return Sequence number of the event relative to all lines in the
 	 *         associated line request.
 	 */
-	unsigned long global_seqno(void) const noexcept;
+	unsigned long global_seqno() const noexcept;
 
 	/**
 	 * @brief Get the event sequence number specific to the concerned line.
 	 * @return Sequence number of the event relative to this line within
 	 *         the lifetime of the associated line request.
 	 */
-	unsigned long line_seqno(void) const noexcept;
+	unsigned long line_seqno() const noexcept;
 
 private:
 
-	edge_event(void);
+	edge_event();
 
 	struct impl;
 	struct impl_managed;

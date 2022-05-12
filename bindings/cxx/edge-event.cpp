@@ -21,7 +21,7 @@ const ::std::map<edge_event::event_type, ::std::string> event_type_names = {
 
 } /* namespace */
 
-::gpiod_edge_event* edge_event::impl_managed::get_event_ptr(void) const noexcept
+::gpiod_edge_event* edge_event::impl_managed::get_event_ptr() const noexcept
 {
 	return this->event.get();
 }
@@ -32,14 +32,14 @@ edge_event::impl_managed::copy(const ::std::shared_ptr<impl>& self) const
 	return self;
 }
 
-edge_event::impl_external::impl_external(void)
+edge_event::impl_external::impl_external()
 	: impl(),
 	  event(nullptr)
 {
 
 }
 
-::gpiod_edge_event* edge_event::impl_external::get_event_ptr(void) const noexcept
+::gpiod_edge_event* edge_event::impl_external::get_event_ptr() const noexcept
 {
 	return this->event;
 }
@@ -57,7 +57,7 @@ edge_event::impl_external::copy(const ::std::shared_ptr<impl>& self GPIOD_CXX_UN
 	return ret;
 }
 
-edge_event::edge_event(void)
+edge_event::edge_event()
 	: _m_priv()
 {
 
@@ -75,7 +75,7 @@ GPIOD_CXX_API edge_event::edge_event(edge_event&& other) noexcept
 
 }
 
-GPIOD_CXX_API edge_event::~edge_event(void)
+GPIOD_CXX_API edge_event::~edge_event()
 {
 
 }
@@ -94,29 +94,29 @@ GPIOD_CXX_API edge_event& edge_event::operator=(edge_event&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API edge_event::event_type edge_event::type(void) const
+GPIOD_CXX_API edge_event::event_type edge_event::type() const
 {
 	int evtype = ::gpiod_edge_event_get_event_type(this->_m_priv->get_event_ptr());
 
 	return map_int_to_enum(evtype, event_type_mapping);
 }
 
-GPIOD_CXX_API timestamp edge_event::timestamp_ns(void) const noexcept
+GPIOD_CXX_API timestamp edge_event::timestamp_ns() const noexcept
 {
 	return ::gpiod_edge_event_get_timestamp_ns(this->_m_priv->get_event_ptr());
 }
 
-GPIOD_CXX_API line::offset edge_event::line_offset(void) const noexcept
+GPIOD_CXX_API line::offset edge_event::line_offset() const noexcept
 {
 	return ::gpiod_edge_event_get_line_offset(this->_m_priv->get_event_ptr());
 }
 
-GPIOD_CXX_API unsigned long edge_event::global_seqno(void) const noexcept
+GPIOD_CXX_API unsigned long edge_event::global_seqno() const noexcept
 {
 	return ::gpiod_edge_event_get_global_seqno(this->_m_priv->get_event_ptr());
 }
 
-GPIOD_CXX_API unsigned long edge_event::line_seqno(void) const noexcept
+GPIOD_CXX_API unsigned long edge_event::line_seqno() const noexcept
 {
 	return ::gpiod_edge_event_get_line_seqno(this->_m_priv->get_event_ptr());
 }

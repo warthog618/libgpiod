@@ -46,13 +46,13 @@ public:
 	explicit chip(const properties& args = properties());
 	chip(const chip& other) = delete;
 	chip(chip&& other) = delete;
-	~chip(void);
+	~chip();
 
 	chip& operator=(const chip& other) = delete;
 	chip& operator=(chip&& other) = delete;
 
-	::std::filesystem::path dev_path(void) const;
-	::std::string name(void) const;
+	::std::filesystem::path dev_path() const;
+	::std::string name() const;
 
 	value get_value(unsigned int offset);
 	void set_pull(unsigned int offset, pull pull);

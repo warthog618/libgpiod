@@ -35,7 +35,7 @@ void info_event::impl::set_info_event_ptr(info_event_ptr& new_event)
 	this->info._m_priv->set_info_ptr(copy);
 }
 
-info_event::info_event(void)
+info_event::info_event()
 	: _m_priv(new impl)
 {
 
@@ -53,7 +53,7 @@ GPIOD_CXX_API info_event::info_event(info_event&& other) noexcept
 
 }
 
-GPIOD_CXX_API info_event::~info_event(void)
+GPIOD_CXX_API info_event::~info_event()
 {
 
 }
@@ -72,19 +72,19 @@ GPIOD_CXX_API info_event& info_event::operator=(info_event&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API info_event::event_type info_event::type(void) const
+GPIOD_CXX_API info_event::event_type info_event::type() const
 {
 	int type = ::gpiod_info_event_get_event_type(this->_m_priv->event.get());
 
 	return map_int_to_enum(type, event_type_mapping);
 }
 
-GPIOD_CXX_API ::std::uint64_t info_event::timestamp_ns(void) const noexcept
+GPIOD_CXX_API ::std::uint64_t info_event::timestamp_ns() const noexcept
 {
 	return ::gpiod_info_event_get_timestamp_ns(this->_m_priv->event.get());
 }
 
-GPIOD_CXX_API const line_info& info_event::get_line_info(void) const noexcept
+GPIOD_CXX_API const line_info& info_event::get_line_info() const noexcept
 {
 	return this->_m_priv->info;
 }

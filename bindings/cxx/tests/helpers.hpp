@@ -14,7 +14,7 @@ class system_error_matcher : public Catch::MatcherBase<::std::system_error>
 {
 public:
 	explicit system_error_matcher(int expected_errno);
-	::std::string describe(void) const override;
+	::std::string describe() const override;
 	bool match(const ::std::system_error& error) const override;
 
 private:
@@ -25,7 +25,7 @@ class regex_matcher : public Catch::MatcherBase<::std::string>
 {
 public:
 	explicit regex_matcher(const ::std::string& pattern);
-	::std::string describe(void) const override;
+	::std::string describe() const override;
 	bool match(const ::std::string& str) const override;
 
 private:
@@ -41,7 +41,7 @@ public:
 
 	}
 
-	::std::string describe(void) const override
+	::std::string describe() const override
 	{
 		return "equals " + this->_m_expected;
 	}

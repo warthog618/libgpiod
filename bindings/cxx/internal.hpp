@@ -62,7 +62,7 @@ using edge_event_buffer_ptr = ::std::unique_ptr<::gpiod_edge_event_buffer,
 
 struct chip_info::impl
 {
-	impl(void) = default;
+	impl() = default;
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
@@ -75,7 +75,7 @@ struct chip_info::impl
 
 struct line_info::impl
 {
-	impl(void) = default;
+	impl() = default;
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
@@ -88,7 +88,7 @@ struct line_info::impl
 
 struct info_event::impl
 {
-	impl(void) = default;
+	impl() = default;
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
@@ -102,7 +102,7 @@ struct info_event::impl
 
 struct line_config::impl
 {
-	impl(void);
+	impl();
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
@@ -113,7 +113,7 @@ struct line_config::impl
 
 struct request_config::impl
 {
-	impl(void);
+	impl();
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
@@ -124,13 +124,13 @@ struct request_config::impl
 
 struct line_request::impl
 {
-	impl(void) = default;
+	impl() = default;
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
 	impl& operator=(const impl& other) = delete;
 	impl& operator=(impl&& other) = delete;
 
-	void throw_if_released(void) const;
+	void throw_if_released() const;
 	void set_request_ptr(line_request_ptr& ptr);
 	void fill_offset_buf(const line::offsets& offsets);
 
@@ -147,27 +147,27 @@ struct line_request::impl
 
 struct edge_event::impl
 {
-	impl(void) = default;
+	impl() = default;
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
-	virtual ~impl(void) = default;
+	virtual ~impl() = default;
 	impl& operator=(const impl& other) = delete;
 	impl& operator=(impl&& other) = delete;
 
-	virtual ::gpiod_edge_event* get_event_ptr(void) const noexcept = 0;
+	virtual ::gpiod_edge_event* get_event_ptr() const noexcept = 0;
 	virtual ::std::shared_ptr<impl> copy(const ::std::shared_ptr<impl>& self) const = 0;
 };
 
 struct edge_event::impl_managed : public edge_event::impl
 {
-	impl_managed(void) = default;
+	impl_managed() = default;
 	impl_managed(const impl_managed& other) = delete;
 	impl_managed(impl_managed&& other) = delete;
-	virtual ~impl_managed(void) = default;
+	virtual ~impl_managed() = default;
 	impl_managed& operator=(const impl_managed& other) = delete;
 	impl_managed& operator=(impl_managed&& other) = delete;
 
-	::gpiod_edge_event* get_event_ptr(void) const noexcept override;
+	::gpiod_edge_event* get_event_ptr() const noexcept override;
 	::std::shared_ptr<impl> copy(const ::std::shared_ptr<impl>& self) const override;
 
 	edge_event_ptr event;
@@ -175,14 +175,14 @@ struct edge_event::impl_managed : public edge_event::impl
 
 struct edge_event::impl_external : public edge_event::impl
 {
-	impl_external(void);
+	impl_external();
 	impl_external(const impl_external& other) = delete;
 	impl_external(impl_external&& other) = delete;
-	virtual ~impl_external(void) = default;
+	virtual ~impl_external() = default;
 	impl_external& operator=(const impl_external& other) = delete;
 	impl_external& operator=(impl_external&& other) = delete;
 
-	::gpiod_edge_event* get_event_ptr(void) const noexcept override;
+	::gpiod_edge_event* get_event_ptr() const noexcept override;
 	::std::shared_ptr<impl> copy(const ::std::shared_ptr<impl>& self) const override;
 
 	::gpiod_edge_event *event;

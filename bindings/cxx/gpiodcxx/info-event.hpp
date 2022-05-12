@@ -60,7 +60,7 @@ public:
 	 */
 	info_event(info_event&& other) noexcept;
 
-	~info_event(void);
+	~info_event();
 
 	/**
 	 * @brief Copy assignment operator.
@@ -80,24 +80,24 @@ public:
 	 * @brief Type of this event.
 	 * @return Event type.
 	 */
-	event_type type(void) const;
+	event_type type() const;
 
 	/**
 	 * @brief Timestamp of the event as returned by the kernel.
 	 * @return Timestamp as a 64-bit unsigned integer.
 	 */
-	::std::uint64_t timestamp_ns(void) const noexcept;
+	::std::uint64_t timestamp_ns() const noexcept;
 
 	/**
 	 * @brief Get the new line information.
 	 * @return Constant reference to the line info object containing the
 	 *         line data as read at the time of the info event.
 	 */
-	const line_info& get_line_info(void) const noexcept;
+	const line_info& get_line_info() const noexcept;
 
 private:
 
-	info_event(void);
+	info_event();
 
 	struct impl;
 

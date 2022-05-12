@@ -61,7 +61,7 @@ public:
 	 */
 	chip_closed& operator=(chip_closed&& other) noexcept;
 
-	virtual ~chip_closed(void);
+	virtual ~chip_closed();
 };
 
 /**
@@ -103,7 +103,7 @@ public:
 	 */
 	request_released& operator=(request_released&& other) noexcept;
 
-	virtual ~request_released(void);
+	virtual ~request_released();
 };
 
 /**
@@ -146,7 +146,7 @@ public:
 	 */
 	bad_mapping& operator=(bad_mapping&& other) noexcept;
 
-	virtual ~bad_mapping(void);
+	virtual ~bad_mapping();
 };
 
 /**

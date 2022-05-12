@@ -46,7 +46,7 @@ public:
 	 */
 	line_request(line_request&& other) noexcept;
 
-	~line_request(void);
+	~line_request();
 
 	line_request& operator=(const line_request& other) = delete;
 
@@ -64,7 +64,7 @@ public:
 	 *         which this operator returned false, a logic_error will be
 	 *         thrown.
 	 */
-	explicit operator bool(void) const noexcept;
+	explicit operator bool() const noexcept;
 
 	/**
 	 * @brief Release the GPIO chip and free all associated resources.
@@ -72,19 +72,19 @@ public:
 	 *       using any of the mutators will result in throwing
 	 *       a logic_error exception.
 	 */
-	void release(void);
+	void release();
 
 	/**
 	 * @brief Get the number of requested lines.
 	 * @return Number of lines in this request.
 	 */
-	::std::size_t num_lines(void) const;
+	::std::size_t num_lines() const;
 
 	/**
 	 * @brief Get the list of offsets of requested lines.
 	 * @return List of hardware offsets of the lines in this request.
 	 */
-	line::offsets offsets(void) const;
+	line::offsets offsets() const;
 
 	/**
 	 * @brief Get the value of a single requested line.
@@ -105,7 +105,7 @@ public:
 	 * @brief Get the values of all requested lines.
 	 * @return List of read values.
 	 */
-	line::values get_values(void);
+	line::values get_values();
 
 	/**
 	 * @brief Get the values of a subset of requested lines into a vector
@@ -165,7 +165,7 @@ public:
 	 *        request.
 	 * @return File descriptor number.
 	 */
-	int fd(void) const;
+	int fd() const;
 
 	/**
 	 * @brief Wait for edge events on any of the lines requested with edge
@@ -195,7 +195,7 @@ public:
 
 private:
 
-	line_request(void);
+	line_request();
 
 	struct impl;
 

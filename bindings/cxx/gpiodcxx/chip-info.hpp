@@ -43,7 +43,7 @@ public:
 	 */
 	chip_info(chip_info&& other) noexcept;
 
-	~chip_info(void);
+	~chip_info();
 
 	/**
 	 * @brief Assignment operator.
@@ -63,23 +63,23 @@ public:
 	 * @brief Get the name of this GPIO chip.
 	 * @return String containing the chip name.
 	 */
-	::std::string name(void) const noexcept;
+	::std::string name() const noexcept;
 
 	/**
 	 * @brief Get the label of this GPIO chip.
 	 * @return String containing the chip name.
 	 */
-	::std::string label(void) const noexcept;
+	::std::string label() const noexcept;
 
 	/**
 	 * @brief Return the number of lines exposed by this chip.
 	 * @return Number of lines.
 	 */
-	::std::size_t num_lines(void) const noexcept;
+	::std::size_t num_lines() const noexcept;
 
 private:
 
-	chip_info(void);
+	chip_info();
 
 	struct impl;
 

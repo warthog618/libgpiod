@@ -47,7 +47,7 @@ void line_info::impl::set_info_ptr(line_info_ptr& new_info)
 	this->info = ::std::move(new_info);
 }
 
-line_info::line_info(void)
+line_info::line_info()
 	: _m_priv(new impl)
 {
 
@@ -65,7 +65,7 @@ GPIOD_CXX_API line_info::line_info(line_info&& other) noexcept
 
 }
 
-GPIOD_CXX_API line_info::~line_info(void)
+GPIOD_CXX_API line_info::~line_info()
 {
 
 }
@@ -84,76 +84,76 @@ GPIOD_CXX_API line_info& line_info::operator=(line_info&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API line::offset line_info::offset(void) const noexcept
+GPIOD_CXX_API line::offset line_info::offset() const noexcept
 {
 	return ::gpiod_line_info_get_offset(this->_m_priv->info.get());
 }
 
-GPIOD_CXX_API ::std::string line_info::name(void) const noexcept
+GPIOD_CXX_API ::std::string line_info::name() const noexcept
 {
 	const char* name = ::gpiod_line_info_get_name(this->_m_priv->info.get());
 
 	return name ?: "";
 }
 
-GPIOD_CXX_API bool line_info::used(void) const noexcept
+GPIOD_CXX_API bool line_info::used() const noexcept
 {
 	return ::gpiod_line_info_is_used(this->_m_priv->info.get());
 }
 
-GPIOD_CXX_API ::std::string line_info::consumer(void) const noexcept
+GPIOD_CXX_API ::std::string line_info::consumer() const noexcept
 {
 	const char* consumer = ::gpiod_line_info_get_consumer(this->_m_priv->info.get());
 
 	return consumer ?: "";
 }
 
-GPIOD_CXX_API line::direction line_info::direction(void) const
+GPIOD_CXX_API line::direction line_info::direction() const
 {
 	int direction = ::gpiod_line_info_get_direction(this->_m_priv->info.get());
 
 	return map_int_to_enum(direction, direction_mapping);
 }
 
-GPIOD_CXX_API bool line_info::active_low(void) const noexcept
+GPIOD_CXX_API bool line_info::active_low() const noexcept
 {
 	return ::gpiod_line_info_is_active_low(this->_m_priv->info.get());
 }
 
-GPIOD_CXX_API line::bias line_info::bias(void) const
+GPIOD_CXX_API line::bias line_info::bias() const
 {
 	int bias = ::gpiod_line_info_get_bias(this->_m_priv->info.get());
 
 	return bias_mapping.at(bias);
 }
 
-GPIOD_CXX_API line::drive line_info::drive(void) const
+GPIOD_CXX_API line::drive line_info::drive() const
 {
 	int drive = ::gpiod_line_info_get_drive(this->_m_priv->info.get());
 
 	return drive_mapping.at(drive);
 }
 
-GPIOD_CXX_API line::edge line_info::edge_detection(void) const
+GPIOD_CXX_API line::edge line_info::edge_detection() const
 {
 	int edge = ::gpiod_line_info_get_edge_detection(this->_m_priv->info.get());
 
 	return edge_mapping.at(edge);
 }
 
-GPIOD_CXX_API line::clock line_info::event_clock(void) const
+GPIOD_CXX_API line::clock line_info::event_clock() const
 {
 	int clock = ::gpiod_line_info_get_event_clock(this->_m_priv->info.get());
 
 	return clock_mapping.at(clock);
 }
 
-GPIOD_CXX_API bool line_info::debounced(void) const  noexcept
+GPIOD_CXX_API bool line_info::debounced() const  noexcept
 {
 	return ::gpiod_line_info_is_debounced(this->_m_priv->info.get());
 }
 
-GPIOD_CXX_API ::std::chrono::microseconds line_info::debounce_period(void) const  noexcept
+GPIOD_CXX_API ::std::chrono::microseconds line_info::debounce_period() const  noexcept
 {
 	return ::std::chrono::microseconds(
 			::gpiod_line_info_get_debounce_period_us(this->_m_priv->info.get()));

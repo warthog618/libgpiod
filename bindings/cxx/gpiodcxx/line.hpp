@@ -52,7 +52,7 @@ public:
 	 */
 	offset(offset&& other) = default;
 
-	~offset(void) = default;
+	~offset() = default;
 
 	/**
 	 * @brief Assignment operator.
@@ -71,7 +71,7 @@ public:
 	/**
 	 * @brief Conversion operator to `unsigned int`.
 	 */
-	operator unsigned int(void) const noexcept
+	operator unsigned int() const noexcept
 	{
 		return this->_m_offset;
 	}

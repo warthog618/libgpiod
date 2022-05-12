@@ -60,7 +60,7 @@ GPIOD_CXX_API edge_event_buffer::edge_event_buffer(edge_event_buffer&& other) no
 
 }
 
-GPIOD_CXX_API edge_event_buffer::~edge_event_buffer(void)
+GPIOD_CXX_API edge_event_buffer::~edge_event_buffer()
 {
 
 }
@@ -77,22 +77,22 @@ GPIOD_CXX_API const edge_event& edge_event_buffer::get_event(unsigned int index)
 	return this->_m_priv->events.at(index);
 }
 
-GPIOD_CXX_API ::std::size_t edge_event_buffer::num_events(void) const
+GPIOD_CXX_API ::std::size_t edge_event_buffer::num_events() const
 {
 	return ::gpiod_edge_event_buffer_get_num_events(this->_m_priv->buffer.get());
 }
 
-GPIOD_CXX_API ::std::size_t edge_event_buffer::capacity(void) const noexcept
+GPIOD_CXX_API ::std::size_t edge_event_buffer::capacity() const noexcept
 {
 	return ::gpiod_edge_event_buffer_get_capacity(this->_m_priv->buffer.get());
 }
 
-GPIOD_CXX_API edge_event_buffer::const_iterator edge_event_buffer::begin(void) const noexcept
+GPIOD_CXX_API edge_event_buffer::const_iterator edge_event_buffer::begin() const noexcept
 {
 	return this->_m_priv->events.begin();
 }
 
-GPIOD_CXX_API edge_event_buffer::const_iterator edge_event_buffer::end(void) const noexcept
+GPIOD_CXX_API edge_event_buffer::const_iterator edge_event_buffer::end() const noexcept
 {
 	return this->_m_priv->events.begin() + this->num_events();
 }

@@ -10,7 +10,7 @@ GPIOD_CXX_API bool is_gpiochip_device(const ::std::filesystem::path& path)
 	return ::gpiod_is_gpiochip_device(path.c_str());
 }
 
-GPIOD_CXX_API const ::std::string& version_string(void)
+GPIOD_CXX_API const ::std::string& version_string()
 {
 	static const ::std::string version(::gpiod_version_string());
 

@@ -104,7 +104,7 @@ public:
 	 */
 	line_config(line_config&& other) noexcept;
 
-	~line_config(void);
+	~line_config();
 
 	line_config& operator=(const line_config& other) = delete;
 
@@ -118,7 +118,7 @@ public:
 	/**
 	 * @brief Reset the line config object.
 	 */
-	void reset(void) noexcept;
+	void reset() noexcept;
 
 	/**
 	 * @brief Set the default value of a single configuration property.
@@ -162,7 +162,7 @@ public:
 	 * @return Direction setting that would have been used for any offset
 	 * 	   not assigned its own direction value.
 	 */
-	line::direction direction_default(void) const;
+	line::direction direction_default() const;
 
 	/**
 	 * @brief Get the direction setting for a given offset.
@@ -207,7 +207,7 @@ public:
 	 * @return Edge detection setting that would have been used for any
 	 *         offset not assigned its own direction value.
 	 */
-	line::edge edge_detection_default(void) const;
+	line::edge edge_detection_default() const;
 
 	/**
 	 * @brief Get the edge event detection setting for a given offset.
@@ -253,7 +253,7 @@ public:
 	 * @return Bias setting that would have been used for any offset not
 	 *         assigned its own direction value.
 	 */
-	line::bias bias_default(void) const;
+	line::bias bias_default() const;
 
 	/**
 	 * @brief Get the bias setting for a given offset.
@@ -303,7 +303,7 @@ public:
 	 * @return Drive setting that would have been used for any offset not
 	 *         assigned its own direction value.
 	 */
-	line::drive drive_default(void) const;
+	line::drive drive_default() const;
 
 	/**
 	 * @brief Get the drive setting for a given offset.
@@ -346,7 +346,7 @@ public:
 	 * @return Active-low setting that would have been used for any offset
          *         not assigned its own value.
 	 */
-	bool active_low_default(void) const noexcept;
+	bool active_low_default() const noexcept;
 
 	/**
 	 * @brief Check if the line at given offset was configured as
@@ -394,7 +394,7 @@ public:
 	 *         assigned its own debounce period. 0 if not debouncing is
 	 *         disabled.
 	 */
-	::std::chrono::microseconds debounce_period_default(void) const noexcept;
+	::std::chrono::microseconds debounce_period_default() const noexcept;
 
 	/**
 	 * @brief Get the debounce period for a given offset.
@@ -439,7 +439,7 @@ public:
 	 * @return Event clock setting that would have been used for any offset
 	 *         not assigned its own direction value.
 	 */
-	line::clock event_clock_default(void) const;
+	line::clock event_clock_default() const;
 
 	/**
 	 * @brief Get the event clock setting for a given offset.
@@ -498,7 +498,7 @@ public:
 	 * @return Output value that would have been used for any offset not
 	 *         assigned its own output value.
 	 */
-	line::value output_value_default(void) const noexcept;
+	line::value output_value_default() const noexcept;
 
 	/**
 	 * @brief Get the output value configured for a given line.
@@ -529,13 +529,13 @@ public:
 	 * @brief Get the number of configuration overrides.
 	 * @return Number of overrides held by this object.
 	 */
-	::std::size_t num_overrides(void) const noexcept;
+	::std::size_t num_overrides() const noexcept;
 
 	/**
 	 * @brief Get the list of property overrides.
 	 * @return List of configuration property overrides held by this object.
 	 */
-	override_list overrides(void) const;
+	override_list overrides() const;
 
 private:
 

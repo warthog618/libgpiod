@@ -9,12 +9,12 @@ namespace gpiod {
 
 namespace {
 
-GPIOD_CXX_NORETURN void throw_bad_value_type(void)
+GPIOD_CXX_NORETURN void throw_bad_value_type()
 {
 	throw ::std::invalid_argument("bad value type for property");
 }
 
-request_config_ptr make_request_config(void)
+request_config_ptr make_request_config()
 {
 	request_config_ptr config(::gpiod_request_config_new());
 	if (!config)
@@ -50,7 +50,7 @@ unsigned int get_unsigned_int_from_value(const ::std::any& val)
 
 } /* namespace */
 
-request_config::impl::impl(void)
+request_config::impl::impl()
 	: config(make_request_config())
 {
 
@@ -69,7 +69,7 @@ GPIOD_CXX_API request_config::request_config(request_config&& other) noexcept
 
 }
 
-GPIOD_CXX_API request_config::~request_config(void)
+GPIOD_CXX_API request_config::~request_config()
 {
 
 }
@@ -113,7 +113,7 @@ GPIOD_CXX_API void request_config::set_offsets(const line::offsets& offsets) noe
 					   buf.size(), buf.data());
 }
 
-GPIOD_CXX_API ::std::size_t request_config::num_offsets(void) const noexcept
+GPIOD_CXX_API ::std::size_t request_config::num_offsets() const noexcept
 {
 	return ::gpiod_request_config_get_num_offsets(this->_m_priv->config.get());
 }
@@ -124,14 +124,14 @@ request_config::set_consumer(const ::std::string& consumer) noexcept
 	::gpiod_request_config_set_consumer(this->_m_priv->config.get(), consumer.c_str());
 }
 
-GPIOD_CXX_API ::std::string request_config::consumer(void) const noexcept
+GPIOD_CXX_API ::std::string request_config::consumer() const noexcept
 {
 	const char* consumer = ::gpiod_request_config_get_consumer(this->_m_priv->config.get());
 
 	return consumer ?: "";
 }
 
-GPIOD_CXX_API line::offsets request_config::offsets(void) const
+GPIOD_CXX_API line::offsets request_config::offsets() const
 {
 	line::offsets ret(this->num_offsets());
 	::std::vector<unsigned int> buf(this->num_offsets());
@@ -151,7 +151,7 @@ request_config::set_event_buffer_size(::std::size_t event_buffer_size) noexcept
 						     event_buffer_size);
 }
 
-GPIOD_CXX_API ::std::size_t request_config::event_buffer_size(void) const noexcept
+GPIOD_CXX_API ::std::size_t request_config::event_buffer_size() const noexcept
 {
 	return ::gpiod_request_config_get_event_buffer_size(this->_m_priv->config.get());
 }

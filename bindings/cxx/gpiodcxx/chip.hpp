@@ -56,7 +56,7 @@ public:
 	 */
 	chip(chip&& other) noexcept;
 
-	~chip(void);
+	~chip();
 
 	chip& operator=(const chip& other) = delete;
 
@@ -74,26 +74,26 @@ public:
 	 *         any of the methods of this class on an object for which this
 	 *         operator returned false, a logic_error will be thrown.
 	 */
-	explicit operator bool(void) const noexcept;
+	explicit operator bool() const noexcept;
 
 	/**
 	 * @brief Close the GPIO chip device file and free associated resources.
 	 * @note The chip object can live after calling this method but any of
 	 *       the chip's mutators will throw a logic_error exception.
 	 */
-	void close(void);
+	void close();
 
 	/**
 	 * @brief Get the filesystem path that was used to open this GPIO chip.
 	 * @return Path to the underlying character device file.
 	 */
-	::std::filesystem::path path(void) const;
+	::std::filesystem::path path() const;
 
 	/**
 	 * @brief Get information about the chip.
 	 * @return New chip_info object.
 	 */
-	chip_info get_info(void) const;
+	chip_info get_info() const;
 
 	/**
 	 * @brief Retrieve the current snapshot of line information for a
@@ -121,7 +121,7 @@ public:
 	 * @brief Get the file descriptor associated with this chip.
 	 * @return File descriptor number.
 	 */
-	int fd(void) const;
+	int fd() const;
 
 	/**
 	 * @brief Wait for line status events on any of the watched lines
@@ -136,7 +136,7 @@ public:
 	 * @brief Read a single line status change event from this chip.
 	 * @return New info_event object.
 	 */
-	info_event read_info_event(void) const;
+	info_event read_info_event() const;
 
 	/**
 	 * @brief Map a GPIO line's name to its offset within the chip.
