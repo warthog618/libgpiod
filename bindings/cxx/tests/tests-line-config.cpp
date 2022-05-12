@@ -47,7 +47,7 @@ TEST_CASE("line_config constructor works", "[line-config]")
 		 */
 		::gpiod::line_config cfg({
 			{ lineprop::DIRECTION, direction::OUTPUT },
-			{ lineprop::EDGE, edge::FALLING },
+			{ lineprop::EDGE_DETECTION, edge::FALLING },
 			{ lineprop::BIAS, bias::DISABLED },
 			{ lineprop::DRIVE, drive::OPEN_DRAIN },
 			{ lineprop::ACTIVE_LOW, true },
@@ -206,7 +206,7 @@ TEST_CASE("line_config can be moved", "[line-config]")
 {
 	::gpiod::line_config cfg({
 		{ lineprop::DIRECTION, direction::INPUT },
-		{ lineprop::EDGE, edge::BOTH },
+		{ lineprop::EDGE_DETECTION, edge::BOTH },
 		{ lineprop::DEBOUNCE_PERIOD, 3000us },
 		{ lineprop::EVENT_CLOCK, clock_type::REALTIME },
 	});
@@ -245,7 +245,7 @@ TEST_CASE("line_config stream insertion operator works", "[line-config]")
 {
 	::gpiod::line_config cfg({
 		{ lineprop::DIRECTION, direction::INPUT },
-		{ lineprop::EDGE, edge::BOTH },
+		{ lineprop::EDGE_DETECTION, edge::BOTH },
 		{ lineprop::DEBOUNCE_PERIOD, 3000us },
 		{ lineprop::EVENT_CLOCK, clock_type::REALTIME },
 	});

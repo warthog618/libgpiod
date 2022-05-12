@@ -131,7 +131,7 @@ ret_type get_mapped_value_offset(::gpiod_line_config* config, line::offset offse
 
 const ::std::map<int, line_config::property> property_mapping = {
 	{ GPIOD_LINE_CONFIG_PROP_DIRECTION,		line_config::property::DIRECTION },
-	{ GPIOD_LINE_CONFIG_PROP_EDGE,			line_config::property::EDGE },
+	{ GPIOD_LINE_CONFIG_PROP_EDGE_DETECTION,	line_config::property::EDGE_DETECTION },
 	{ GPIOD_LINE_CONFIG_PROP_BIAS,			line_config::property::BIAS },
 	{ GPIOD_LINE_CONFIG_PROP_DRIVE,			line_config::property::DRIVE },
 	{ GPIOD_LINE_CONFIG_PROP_ACTIVE_LOW,		line_config::property::ACTIVE_LOW },
@@ -188,7 +188,7 @@ GPIOD_CXX_API void line_config::set_property_default(property prop, const ::std:
 	case property::DIRECTION:
 		this->set_direction_default(::std::any_cast<line::direction>(val));
 		break;
-	case property::EDGE:
+	case property::EDGE_DETECTION:
 		this->set_edge_detection_default(::std::any_cast<line::edge>(val));
 		break;
 	case property::BIAS:
@@ -221,7 +221,7 @@ GPIOD_CXX_API void line_config::set_property_offset(property prop, line::offset 
 	case property::DIRECTION:
 		this->set_direction_override(::std::any_cast<line::direction>(val), offset);
 		break;
-	case property::EDGE:
+	case property::EDGE_DETECTION:
 		this->set_edge_detection_override(::std::any_cast<line::edge>(val), offset);
 		break;
 	case property::BIAS:
@@ -637,7 +637,7 @@ GPIOD_CXX_API ::std::ostream& operator<<(::std::ostream& out, const line_config&
 			case line_config::property::DIRECTION:
 				out << "direction=" << config.direction_offset(offset);
 				break;
-			case line_config::property::EDGE:
+			case line_config::property::EDGE_DETECTION:
 				out << "edge_detection=" << config.edge_detection_offset(offset);
 				break;
 			case line_config::property::BIAS:

@@ -46,7 +46,7 @@ public:
 	enum class property {
 		DIRECTION = 1,
 		/**< Line direction. */
-		EDGE,
+		EDGE_DETECTION,
 		/**< Edge detection. */
 		BIAS,
 		/**< Bias. */
