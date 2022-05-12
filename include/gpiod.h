@@ -1044,9 +1044,7 @@ int gpiod_line_config_get_output_value_offset(struct gpiod_line_config *config,
  * Used when retrieving the overrides.
  */
 enum {
-	GPIOD_LINE_CONFIG_PROP_END = 0,
-	/**< Delimiter. */
-	GPIOD_LINE_CONFIG_PROP_DIRECTION,
+	GPIOD_LINE_CONFIG_PROP_DIRECTION = 1,
 	/**< Line direction. */
 	GPIOD_LINE_CONFIG_PROP_EDGE_DETECTION,
 	/**< Edge detection. */
