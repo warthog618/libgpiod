@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017-2021 Bartosz Golaszewski <bartekgola@gmail.com>
 
-AM_CPPFLAGS = -I$(top_srcdir)/bindings/cxx/ -I$(top_srcdir)/include
-AM_CPPFLAGS += -I$(top_srcdir)/tests/gpiosim/
-AM_CPPFLAGS += -Wall -Wextra -g -std=gnu++17 $(CATCH2_CFLAGS)
-AM_CPPFLAGS += $(PROFILING_CFLAGS)
+AM_CXXFLAGS = -I$(top_srcdir)/bindings/cxx/ -I$(top_srcdir)/include
+AM_CXXFLAGS += -I$(top_srcdir)/tests/gpiosim/
+AM_CXXFLAGS += -Wall -Wextra -g -std=gnu++17 $(CATCH2_CFLAGS)
+AM_CXXFLAGS += $(PROFILING_CFLAGS)
 AM_LDFLAGS = -lgpiodcxx -L$(top_builddir)/bindings/cxx/
 AM_LDFLAGS += -lgpiosim -L$(top_builddir)/tests/gpiosim/
 AM_LDFLAGS += $(PROFILING_LDFLAGS)
