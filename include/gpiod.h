@@ -237,7 +237,9 @@ size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info);
  */
 enum {
 	GPIOD_LINE_VALUE_INACTIVE = 0,
+	/**< Line is logically inactive. */
 	GPIOD_LINE_VALUE_ACTIVE = 1,
+	/**< Line is logically active. */
 };
 
 /**
