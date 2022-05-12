@@ -72,12 +72,12 @@ public:
 	 */
 	timestamp& operator=(timestamp&& other) noexcept = default;
 
-	~timestamp(void) = default;
+	~timestamp() = default;
 
 	/**
 	 * @brief Conversion operator to `std::uint64_t`.
 	 */
-	operator ::std::uint64_t(void) noexcept
+	operator ::std::uint64_t() noexcept
 	{
 		return this->ns();
 	}
@@ -86,7 +86,7 @@ public:
 	 * @brief Get the timestamp in nanoseconds.
 	 * @return Timestamp in nanoseconds.
 	 */
-	::std::uint64_t ns(void) const noexcept
+	::std::uint64_t ns() const noexcept
 	{
 		return this->_m_ns;
 	}
@@ -95,7 +95,7 @@ public:
 	 * @brief Convert the timestamp to a monotonic time_point.
 	 * @return time_point associated with the steady clock.
 	 */
-	time_point_monotonic to_time_point_monotonic(void) const
+	time_point_monotonic to_time_point_monotonic() const
 	{
 		return time_point_monotonic(::std::chrono::nanoseconds(this->ns()));
 	}
@@ -104,7 +104,7 @@ public:
 	 * @brief Convert the timestamp to a real-time time_point.
 	 * @return time_point associated with the system clock.
 	 */
-	time_point_realtime to_time_point_realtime(void) const
+	time_point_realtime to_time_point_realtime() const
 	{
 		return time_point_realtime(::std::chrono::nanoseconds(this->ns()));
 	}

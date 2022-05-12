@@ -51,7 +51,7 @@ ctx_ptr sim_ctx;
 class sim_ctx_initializer
 {
 public:
-	sim_ctx_initializer(void)
+	sim_ctx_initializer()
 	{
 		sim_ctx.reset(gpiosim_ctx_new());
 		if (!sim_ctx)
@@ -60,7 +60,7 @@ public:
 	}
 };
 
-dev_ptr make_sim_dev(void)
+dev_ptr make_sim_dev()
 {
 	static sim_ctx_initializer ctx_initializer;
 
@@ -82,7 +82,7 @@ bank_ptr make_sim_bank(const dev_ptr& dev)
 	return bank;
 }
 
-NORETURN void throw_invalid_type(void)
+NORETURN void throw_invalid_type()
 {
 	throw ::std::logic_error("invalid type for property");
 }
@@ -116,7 +116,7 @@ unsigned any_to_unsigned_int(const ::std::any& val)
 
 struct chip::impl
 {
-	impl(void)
+	impl()
 		: dev(make_sim_dev()),
 		  bank(make_sim_bank(this->dev)),
 		  has_num_lines(false),
@@ -127,7 +127,7 @@ struct chip::impl
 
 	impl(const impl& other) = delete;
 	impl(impl&& other) = delete;
-	~impl(void) = default;
+	~impl() = default;
 	impl& operator=(const impl& other) = delete;
 	impl& operator=(impl&& other) = delete;
 
@@ -221,17 +221,17 @@ chip::chip(const properties& args)
 					  "failed to enable the simulated GPIO chip");
 }
 
-chip::~chip(void)
+chip::~chip()
 {
 	this->_m_priv.reset(nullptr);
 }
 
-::std::filesystem::path chip::dev_path(void) const
+::std::filesystem::path chip::dev_path() const
 {
 	return ::gpiosim_bank_get_dev_path(this->_m_priv->bank.get());
 }
 
-::std::string chip::name(void) const
+::std::string chip::name() const
 {
 	return ::gpiosim_bank_get_chip_name(this->_m_priv->bank.get());
 }

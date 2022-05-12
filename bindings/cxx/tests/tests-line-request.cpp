@@ -32,7 +32,7 @@ public:
 
 	}
 
-	::std::string describe(void) const override
+	::std::string describe() const override
 	{
 		::std::string repr(this->_m_pull == pull::PULL_UP ? "PULL_UP" : "PULL_DOWN");
 		::std::string active_low = this->_m_active_low ? "(active-low) " : "";

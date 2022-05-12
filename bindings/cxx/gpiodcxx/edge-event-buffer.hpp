@@ -59,7 +59,7 @@ public:
 	 */
 	edge_event_buffer(edge_event_buffer&& other) noexcept;
 
-	~edge_event_buffer(void);
+	~edge_event_buffer();
 
 	edge_event_buffer& operator=(const edge_event_buffer& other) = delete;
 
@@ -81,27 +81,27 @@ public:
 	 * @brief Get the number of edge events currently stored in the buffer.
 	 * @return Number of edge events in the buffer.
 	 */
-	::std::size_t num_events(void) const;
+	::std::size_t num_events() const;
 
 	/**
 	 * @brief Maximum capacity of the buffer.
 	 * @return Buffer capacity.
 	 */
-	::std::size_t capacity(void) const noexcept;
+	::std::size_t capacity() const noexcept;
 
 	/**
 	 * @brief Get a constant iterator to the first edge event currently
 	 *        stored in the buffer.
 	 * @return Constant iterator to the first element.
 	 */
-	const_iterator begin(void) const noexcept;
+	const_iterator begin() const noexcept;
 
 	/**
 	 * @brief Get a constant iterator to the element after the last edge
 	 *        event in the buffer.
 	 * @return Constant iterator to the element after the last edge event.
 	 */
-	const_iterator end(void) const noexcept;
+	const_iterator end() const noexcept;
 
 private:
 

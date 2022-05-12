@@ -47,7 +47,7 @@ public:
 	 */
 	line_info(line_info&& other) noexcept;
 
-	~line_info(void);
+	~line_info();
 
 	/**
 	 * @brief Copy assignment operator.
@@ -67,14 +67,14 @@ public:
 	 * @brief Get the hardware offset of the line.
 	 * @return Offset of the line within the parent chip.
 	 */
-	line::offset offset(void) const noexcept;
+	line::offset offset() const noexcept;
 
 	/**
 	 * @brief Get the GPIO line name.
 	 * @return Name of the GPIO line as it is represented in the kernel.
 	 *         This routine returns an empty string if the line is unnamed.
 	 */
-	::std::string name(void) const noexcept;
+	::std::string name() const noexcept;
 
 	/**
 	 * @brief Check if the line is currently in use.
@@ -84,7 +84,7 @@ public:
 	 * been requested by another process or hogged by the kernel. It only
 	 * matters that the line is used and we can't request it.
 	 */
-	bool used(void) const noexcept;
+	bool used() const noexcept;
 
 	/**
 	 * @brief Read the GPIO line consumer name.
@@ -92,64 +92,64 @@ public:
 	 *         kernel. This routine returns an empty string if the line is
 	 *         not used.
 	 */
-	::std::string consumer(void) const noexcept;
+	::std::string consumer() const noexcept;
 
 	/**
 	 * @brief Read the GPIO line direction setting.
 	 * @return Returns DIRECTION_INPUT or DIRECTION_OUTPUT.
 	 */
-	line::direction direction(void) const;
+	line::direction direction() const;
 
 	/**
 	 * @brief Read the current edge detection setting of this line.
 	 * @return Returns EDGE_NONE, EDGE_RISING, EDGE_FALLING or EDGE_BOTH.
 	 */
-	line::edge edge_detection(void) const;
+	line::edge edge_detection() const;
 
 	/**
 	 * @brief Read the GPIO line bias setting.
 	 * @return Returns BIAS_PULL_UP, BIAS_PULL_DOWN, BIAS_DISABLE or
 	 *         BIAS_UNKNOWN.
 	 */
-	line::bias bias(void) const;
+	line::bias bias() const;
 
 	/**
 	 * @brief Read the GPIO line drive setting.
 	 * @return Returns DRIVE_PUSH_PULL, DRIVE_OPEN_DRAIN or
 	 *         DRIVE_OPEN_SOURCE.
 	 */
-	line::drive drive(void) const;
+	line::drive drive() const;
 
 	/**
 	 * @brief Check if the signal of this line is inverted.
 	 * @return True if this line is "active-low", false otherwise.
 	 */
-	bool active_low(void) const noexcept;
+	bool active_low() const noexcept;
 
 	/**
 	 * @brief Check if this line is debounced (either by hardware or by the
 	 *        kernel software debouncer).
 	 * @return True if the line is debounced, false otherwise.
 	 */
-	bool debounced(void) const noexcept;
+	bool debounced() const noexcept;
 
 	/**
 	 * @brief Read the current debounce period in microseconds.
 	 * @return Current debounce period in microseconds, 0 if the line is
 	 *         not debounced.
 	 */
-	::std::chrono::microseconds debounce_period(void) const noexcept;
+	::std::chrono::microseconds debounce_period() const noexcept;
 
 	/**
 	 * @brief Read the current event clock setting used for edge event
 	 *        timestamps.
 	 * @return Returns MONOTONIC or REALTIME.
 	 */
-	line::clock event_clock(void) const;
+	line::clock event_clock() const;
 
 private:
 
-	line_info(void);
+	line_info();
 
 	struct impl;
 

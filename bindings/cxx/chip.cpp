@@ -34,7 +34,7 @@ struct chip::impl
 	impl& operator=(const impl& other) = delete;
 	impl& operator=(impl&& other) = delete;
 
-	void throw_if_closed(void) const
+	void throw_if_closed() const
 	{
 		if (!this->chip)
 			throw chip_closed("GPIO chip has been closed");
@@ -55,7 +55,7 @@ GPIOD_CXX_API chip::chip(chip&& other) noexcept
 
 }
 
-GPIOD_CXX_API chip::~chip(void)
+GPIOD_CXX_API chip::~chip()
 {
 
 }
@@ -67,26 +67,26 @@ GPIOD_CXX_API chip& chip::operator=(chip&& other) noexcept
 	return *this;
 }
 
-GPIOD_CXX_API chip::operator bool(void) const noexcept
+GPIOD_CXX_API chip::operator bool() const noexcept
 {
 	return this->_m_priv->chip.get() != nullptr;
 }
 
-GPIOD_CXX_API void chip::close(void)
+GPIOD_CXX_API void chip::close()
 {
 	this->_m_priv->throw_if_closed();
 
 	this->_m_priv->chip.reset();
 }
 
-GPIOD_CXX_API ::std::filesystem::path chip::path(void) const
+GPIOD_CXX_API ::std::filesystem::path chip::path() const
 {
 	this->_m_priv->throw_if_closed();
 
 	return ::gpiod_chip_get_path(this->_m_priv->chip.get());
 }
 
-GPIOD_CXX_API chip_info chip::get_info(void) const
+GPIOD_CXX_API chip_info chip::get_info() const
 {
 	this->_m_priv->throw_if_closed();
 
@@ -140,7 +140,7 @@ GPIOD_CXX_API void chip::unwatch_line_info(line::offset offset) const
 		throw_from_errno("unable to unwatch line status changes");
 }
 
-GPIOD_CXX_API int chip::fd(void) const
+GPIOD_CXX_API int chip::fd() const
 {
 	this->_m_priv->throw_if_closed();
 
@@ -158,7 +158,7 @@ GPIOD_CXX_API bool chip::wait_info_event(const ::std::chrono::nanoseconds& timeo
 	return ret;
 }
 
-GPIOD_CXX_API info_event chip::read_info_event(void) const
+GPIOD_CXX_API info_event chip::read_info_event() const
 {
 	this->_m_priv->throw_if_closed();
 

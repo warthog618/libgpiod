@@ -78,7 +78,7 @@ value_type map_setting(const key_type& key, const ::std::map<key_type, value_typ
 	return ret;
 }
 
-::gpiod_line_config* make_line_config(void)
+::gpiod_line_config* make_line_config()
 {
 	::gpiod_line_config *config = ::gpiod_line_config_new();
 	if (!config)
@@ -142,7 +142,7 @@ const ::std::map<int, line_config::property> property_mapping = {
 
 } /* namespace */
 
-line_config::impl::impl(void)
+line_config::impl::impl()
 	: config(make_line_config())
 {
 
@@ -165,12 +165,12 @@ GPIOD_CXX_API line_config::line_config(line_config&& other) noexcept
 
 }
 
-GPIOD_CXX_API line_config::~line_config(void)
+GPIOD_CXX_API line_config::~line_config()
 {
 
 }
 
-GPIOD_CXX_API void line_config::reset(void) noexcept
+GPIOD_CXX_API void line_config::reset() noexcept
 {
 	::gpiod_line_config_reset(this->_m_priv->config.get());
 }
@@ -263,7 +263,7 @@ GPIOD_CXX_API void line_config::set_direction_override(line::direction direction
 									      direction_mapping);
 }
 
-GPIOD_CXX_API line::direction line_config::direction_default(void) const
+GPIOD_CXX_API line::direction line_config::direction_default() const
 {
 	return get_mapped_value_default<line::direction,
 					::gpiod_line_config_get_direction_default>(
@@ -305,7 +305,7 @@ GPIOD_CXX_API void line_config::set_edge_detection_override(line::edge edge, lin
 						edge, offset, edge_mapping);
 }
 
-GPIOD_CXX_API line::edge line_config::edge_detection_default(void) const
+GPIOD_CXX_API line::edge line_config::edge_detection_default() const
 {
 	return get_mapped_value_default<line::edge,
 					::gpiod_line_config_get_edge_detection_default>(
@@ -345,7 +345,7 @@ GPIOD_CXX_API void line_config::set_bias_override(line::bias bias, line::offset 
 									bias, offset, bias_mapping);
 }
 
-GPIOD_CXX_API line::bias line_config::bias_default(void) const
+GPIOD_CXX_API line::bias line_config::bias_default() const
 {
 	return get_mapped_value_default<line::bias,
 					::gpiod_line_config_get_bias_default>(this->_m_priv->config.get(),
@@ -383,7 +383,7 @@ GPIOD_CXX_API void line_config::set_drive_override(line::drive drive, line::offs
 									  drive, offset, drive_mapping);
 }
 
-GPIOD_CXX_API line::drive line_config::drive_default(void) const
+GPIOD_CXX_API line::drive line_config::drive_default() const
 {
 	return get_mapped_value_default<line::drive,
 					::gpiod_line_config_get_drive_default>(this->_m_priv->config.get(),
@@ -417,7 +417,7 @@ GPIOD_CXX_API void line_config::set_active_low_override(bool active_low, line::o
 	::gpiod_line_config_set_active_low_override(this->_m_priv->config.get(), active_low, offset);
 }
 
-GPIOD_CXX_API bool line_config::active_low_default(void) const noexcept
+GPIOD_CXX_API bool line_config::active_low_default() const noexcept
 {
 	return ::gpiod_line_config_get_active_low_default(this->_m_priv->config.get());
 }
@@ -451,7 +451,7 @@ line_config::set_debounce_period_override(const ::std::chrono::microseconds& per
 							    period.count(), offset);
 }
 
-GPIOD_CXX_API ::std::chrono::microseconds line_config::debounce_period_default(void) const noexcept
+GPIOD_CXX_API ::std::chrono::microseconds line_config::debounce_period_default() const noexcept
 {
 	return ::std::chrono::microseconds(
 			::gpiod_line_config_get_debounce_period_us_default(this->_m_priv->config.get()));
@@ -490,7 +490,7 @@ GPIOD_CXX_API void line_config::set_event_clock_override(line::clock clock, line
 										clock_mapping);
 }
 
-GPIOD_CXX_API line::clock line_config::event_clock_default(void) const
+GPIOD_CXX_API line::clock line_config::event_clock_default() const
 {
 	return get_mapped_value_default<line::clock,
 					::gpiod_line_config_get_event_clock_default>(
@@ -565,7 +565,7 @@ GPIOD_CXX_API void line_config::set_output_values(const line::offsets& offsets,
 					      reinterpret_cast<const int*>(values.data()));
 }
 
-GPIOD_CXX_API line::value line_config::output_value_default(void) const noexcept
+GPIOD_CXX_API line::value line_config::output_value_default() const noexcept
 {
 	return static_cast<line::value>(::gpiod_line_config_get_output_value_default(
 								this->_m_priv->config.get()));
@@ -588,12 +588,12 @@ GPIOD_CXX_API bool line_config::output_value_is_overridden(line::offset offset) 
 	return ::gpiod_line_config_output_value_is_overridden(this->_m_priv->config.get(), offset);
 }
 
-GPIOD_CXX_API ::std::size_t line_config::num_overrides(void) const noexcept
+GPIOD_CXX_API ::std::size_t line_config::num_overrides() const noexcept
 {
 	return ::gpiod_line_config_get_num_overrides(this->_m_priv->config.get());
 }
 
-GPIOD_CXX_API line_config::override_list line_config::overrides(void) const
+GPIOD_CXX_API line_config::override_list line_config::overrides() const
 {
 	unsigned int num_overrides = this->num_overrides();
 	override_list ret(num_overrides);
