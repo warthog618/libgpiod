@@ -50,7 +50,7 @@ TEST_CASE("edge_event wait timeout", "[edge-event]")
 			{ reqprop::OFFSETS, offsets({ 0 })}
 		}),
 		::gpiod::line_config({
-			{ lineprop::EDGE, edge::BOTH }
+			{ lineprop::EDGE_DETECTION, edge::BOTH }
 		})
 	);
 
@@ -69,7 +69,7 @@ TEST_CASE("output mode and edge detection don't work together", "[edge-event]")
 			}),
 			::gpiod::line_config({
 				{ lineprop::DIRECTION, direction::OUTPUT },
-				{ lineprop::EDGE, edge::BOTH }
+				{ lineprop::EDGE_DETECTION, edge::BOTH }
 			})
 		),
 		::std::invalid_argument
@@ -106,7 +106,7 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 				{ reqprop::OFFSETS, offsets({ 2 })}
 			}),
 			::gpiod::line_config({
-				{ lineprop::EDGE, edge::BOTH }
+				{ lineprop::EDGE_DETECTION, edge::BOTH }
 			})
 		);
 
@@ -144,7 +144,7 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 				{ reqprop::OFFSETS, offsets({ 6 })}
 			}),
 			::gpiod::line_config({
-				{ lineprop::EDGE, edge::RISING }
+				{ lineprop::EDGE_DETECTION, edge::RISING }
 			})
 		);
 
@@ -169,7 +169,7 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 				{ reqprop::OFFSETS, offsets({ 7 })}
 			}),
 			::gpiod::line_config({
-				{ lineprop::EDGE, edge::FALLING }
+				{ lineprop::EDGE_DETECTION, edge::FALLING }
 			})
 		);
 
@@ -194,7 +194,7 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 				{ reqprop::OFFSETS, offsets({ 0, 1 })}
 			}),
 			::gpiod::line_config({
-				{ lineprop::EDGE, edge::BOTH }
+				{ lineprop::EDGE_DETECTION, edge::BOTH }
 			})
 		);
 
@@ -232,7 +232,7 @@ TEST_CASE("reading multiple events", "[edge-event]")
 			{ reqprop::OFFSETS, offsets({ 1 })}
 		}),
 		::gpiod::line_config({
-			{ lineprop::EDGE, edge::BOTH }
+			{ lineprop::EDGE_DETECTION, edge::BOTH }
 		})
 	);
 
@@ -282,7 +282,7 @@ TEST_CASE("edge_event_buffer can be moved", "[edge-event]")
 			{ reqprop::OFFSETS, offsets({ 1 })}
 		}),
 		::gpiod::line_config({
-			{ lineprop::EDGE, edge::BOTH }
+			{ lineprop::EDGE_DETECTION, edge::BOTH }
 		})
 	);
 
@@ -326,7 +326,7 @@ TEST_CASE("edge_event can be copied and moved", "[edge-event]")
 			{ reqprop::OFFSETS, offsets({ 0 })}
 		}),
 		::gpiod::line_config({
-			{ lineprop::EDGE, edge::BOTH }
+			{ lineprop::EDGE_DETECTION, edge::BOTH }
 		})
 	);
 
@@ -392,7 +392,7 @@ TEST_CASE("stream insertion operators work for edge_event and edge_event_buffer"
 			{ reqprop::OFFSETS, offsets({ 0 })}
 		}),
 		::gpiod::line_config({
-			{ lineprop::EDGE, edge::BOTH }
+			{ lineprop::EDGE_DETECTION, edge::BOTH }
 		})
 	);
 

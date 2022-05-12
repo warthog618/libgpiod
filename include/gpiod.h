@@ -1048,7 +1048,7 @@ enum {
 	/**< Delimiter. */
 	GPIOD_LINE_CONFIG_PROP_DIRECTION,
 	/**< Line direction. */
-	GPIOD_LINE_CONFIG_PROP_EDGE,
+	GPIOD_LINE_CONFIG_PROP_EDGE_DETECTION,
 	/**< Edge detection. */
 	GPIOD_LINE_CONFIG_PROP_BIAS,
 	/**< Bias. */

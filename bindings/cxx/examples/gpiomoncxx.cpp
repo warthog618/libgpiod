@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 					::gpiod::line::direction::INPUT
 				},
 				{
-					::gpiod::line_config::property::EDGE,
+					::gpiod::line_config::property::EDGE_DETECTION,
 					::gpiod::line::edge::BOTH
 				}
 			}
