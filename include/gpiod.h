@@ -255,6 +255,20 @@ enum {
 };
 
 /**
+ * @brief Edge detection settings.
+ */
+enum {
+	GPIOD_LINE_EDGE_NONE = 1,
+	/**< Line edge detection is disabled. */
+	GPIOD_LINE_EDGE_RISING,
+	/**< Line detects rising edge events. */
+	GPIOD_LINE_EDGE_FALLING,
+	/**< Line detects falling edge events. */
+	GPIOD_LINE_EDGE_BOTH
+	/**< Line detects both rising and falling edge events. */
+};
+
+/**
  * @brief Internal bias settings.
  */
 enum {
@@ -280,20 +294,6 @@ enum {
 	/**< Line output is open-drain. */
 	GPIOD_LINE_DRIVE_OPEN_SOURCE
 	/**< Line output is open-source. */
-};
-
-/**
- * @brief Edge detection settings.
- */
-enum {
-	GPIOD_LINE_EDGE_NONE = 1,
-	/**< Line edge detection is disabled. */
-	GPIOD_LINE_EDGE_RISING,
-	/**< Line detects rising edge events. */
-	GPIOD_LINE_EDGE_FALLING,
-	/**< Line detects falling edge events. */
-	GPIOD_LINE_EDGE_BOTH
-	/**< Line detects both rising and falling edge events. */
 };
 
 /**
@@ -392,12 +392,12 @@ const char *gpiod_line_info_get_consumer(struct gpiod_line_info *info);
 int gpiod_line_info_get_direction(struct gpiod_line_info *info);
 
 /**
- * @brief Check if the logical value of the line is inverted compared to the
- *	  physical.
- * @param info GPIO line object.
- * @return True if the line is "active-low", false otherwise.
+ * @brief Get the edge detection setting of the line.
+ * @param info GPIO line info object.
+ * @return Returns ::GPIOD_LINE_EDGE_NONE, ::GPIOD_LINE_EDGE_RISING,
+ *	   ::GPIOD_LINE_EDGE_FALLING or ::GPIOD_LINE_EDGE_BOTH.
  */
-bool gpiod_line_info_is_active_low(struct gpiod_line_info *info);
+int gpiod_line_info_get_edge_detection(struct gpiod_line_info *info);
 
 /**
  * @brief Get the bias setting of the line.
@@ -416,21 +416,12 @@ int gpiod_line_info_get_bias(struct gpiod_line_info *info);
 int gpiod_line_info_get_drive(struct gpiod_line_info *info);
 
 /**
- * @brief Get the edge detection setting of the line.
- * @param info GPIO line info object.
- * @return Returns ::GPIOD_LINE_EDGE_NONE, ::GPIOD_LINE_EDGE_RISING,
- *	   ::GPIOD_LINE_EDGE_FALLING or ::GPIOD_LINE_EDGE_BOTH.
+ * @brief Check if the logical value of the line is inverted compared to the
+ *	  physical.
+ * @param info GPIO line object.
+ * @return True if the line is "active-low", false otherwise.
  */
-int gpiod_line_info_get_edge_detection(struct gpiod_line_info *info);
-
-/**
- * @brief Get the event clock setting used for edge event timestamps for the
- *	  line.
- * @param info GPIO line info object.
- * @return Returns ::GPIOD_LINE_EVENT_CLOCK_MONOTONIC or
- *	   ::GPIOD_LINE_EVENT_CLOCK_REALTIME.
- */
-int gpiod_line_info_get_event_clock(struct gpiod_line_info *info);
+bool gpiod_line_info_is_active_low(struct gpiod_line_info *info);
 
 /**
  * @brief Check if the line is debounced (either by hardware or by the kernel
@@ -448,6 +439,15 @@ bool gpiod_line_info_is_debounced(struct gpiod_line_info *info);
  */
 unsigned long
 gpiod_line_info_get_debounce_period_us(struct gpiod_line_info *info);
+
+/**
+ * @brief Get the event clock setting used for edge event timestamps for the
+ *	  line.
+ * @param info GPIO line info object.
+ * @return Returns ::GPIOD_LINE_EVENT_CLOCK_MONOTONIC or
+ *	   ::GPIOD_LINE_EVENT_CLOCK_REALTIME.
+ */
+int gpiod_line_info_get_event_clock(struct gpiod_line_info *info);
 
 /**
  * @}
