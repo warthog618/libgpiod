@@ -22,7 +22,7 @@
 
 #define GPIOSIM_API		__attribute__((visibility("default")))
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(*(x)))
-#define MIN_KERNEL_VERSION	KERNEL_VERSION(5, 17, 0)
+#define MIN_KERNEL_VERSION	KERNEL_VERSION(5, 17, 4)
 
 static pthread_mutex_t id_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_once_t id_init_once = PTHREAD_ONCE_INIT;
