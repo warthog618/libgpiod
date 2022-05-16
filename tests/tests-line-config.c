@@ -283,8 +283,8 @@ GPIOD_TEST_CASE(set_and_clear_output_value_override)
 
 	g_assert_cmpint(gpiod_line_config_get_output_value_default(config),
 			==, GPIOD_LINE_VALUE_INACTIVE);
-	gpiod_line_config_set_output_value_override(config, 3,
-						    GPIOD_LINE_VALUE_ACTIVE);
+	gpiod_line_config_set_output_value_override(config,
+						GPIOD_LINE_VALUE_ACTIVE, 3);
 
 	g_assert_cmpint(gpiod_line_config_get_output_value_default(config),
 			==, GPIOD_LINE_VALUE_INACTIVE);
@@ -374,8 +374,8 @@ GPIOD_TEST_CASE(config_too_complex)
 					    GPIOD_LINE_BIAS_PULL_DOWN, 5);
 	gpiod_line_config_set_event_clock_override(line_cfg,
 					GPIOD_LINE_EVENT_CLOCK_REALTIME, 6);
-	gpiod_line_config_set_output_value_override(line_cfg, 7,
-						    GPIOD_LINE_VALUE_ACTIVE);
+	gpiod_line_config_set_output_value_override(line_cfg,
+						GPIOD_LINE_VALUE_ACTIVE, 7);
 
 	gpiod_request_config_set_offsets(req_cfg, 12, offsets);
 

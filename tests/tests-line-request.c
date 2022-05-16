@@ -176,7 +176,8 @@ GPIOD_TEST_CASE(default_and_overridden_output_value)
 	gpiod_line_config_set_direction_default(line_cfg,
 						GPIOD_LINE_DIRECTION_OUTPUT);
 	gpiod_line_config_set_output_value_default(line_cfg, 1);
-	gpiod_line_config_set_output_value_override(line_cfg, 2, 0);
+	gpiod_line_config_set_output_value_override(line_cfg,
+						GPIOD_LINE_VALUE_INACTIVE, 2);
 
 	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
 
