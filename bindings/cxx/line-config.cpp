@@ -524,7 +524,7 @@ GPIOD_CXX_API void line_config::set_output_value_default(line::value value) noex
 GPIOD_CXX_API void line_config::set_output_value_override(line::value value, line::offset offset) noexcept
 {
 	::gpiod_line_config_set_output_value_override(this->_m_priv->config.get(),
-						      offset, static_cast<int>(value));
+						      static_cast<int>(value), offset);
 }
 
 GPIOD_CXX_API void line_config::set_output_values(const line::value_mappings& values)

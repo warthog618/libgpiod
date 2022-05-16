@@ -655,7 +655,7 @@ gpiod_line_config_set_output_value_default(struct gpiod_line_config *config,
 
 GPIOD_API void
 gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
-					  unsigned int offset, int value)
+					    int value, unsigned int offset)
 {
 	struct override_config *override;
 
@@ -677,8 +677,8 @@ gpiod_line_config_set_output_values(struct gpiod_line_config *config,
 
 	for (i = 0; i < num_values; i++)
 		gpiod_line_config_set_output_value_override(config,
-							    offsets[i],
-							    values[i]);
+							    values[i],
+							    offsets[i]);
 }
 
 GPIOD_API void

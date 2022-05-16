@@ -986,7 +986,7 @@ gpiod_line_config_set_output_value_default(struct gpiod_line_config *config,
  */
 void
 gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
-					    unsigned int offset, int value);
+					    int value, unsigned int offset);
 
 /**
  * @brief Override the output values for multiple lines.
