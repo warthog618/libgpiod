@@ -7,7 +7,7 @@ AM_CFLAGS += -Wall -Wextra -g -std=gnu89
 noinst_LTLIBRARIES = libtools-common.la
 libtools_common_la_SOURCES = tools-common.c tools-common.h
 
-LDADD = libtools-common.la $(top_builddir)/lib/libgpiod.la
+LDADD = libtools-common.la $(top_builddir)/lib/libgpiod.la $(LIBEDIT_LIBS)
 
 bin_PROGRAMS = gpiodetect gpioinfo gpioget gpioset gpiomon
 
