@@ -12,65 +12,6 @@
 
 #include "tools-common.h"
 
-typedef bool (*is_set_func)(struct gpiod_line_info *);
-
-struct flag {
-	const char *name;
-	is_set_func is_set;
-};
-
-static bool line_bias_is_pullup(struct gpiod_line_info *info)
-{
-	return gpiod_line_info_get_bias(info) == GPIOD_LINE_BIAS_PULL_UP;
-}
-
-static bool line_bias_is_pulldown(struct gpiod_line_info *info)
-{
-	return gpiod_line_info_get_bias(info) == GPIOD_LINE_BIAS_PULL_DOWN;
-}
-
-static bool line_bias_is_disabled(struct gpiod_line_info *info)
-{
-	return gpiod_line_info_get_bias(info) == GPIOD_LINE_BIAS_DISABLED;
-}
-
-static bool line_drive_is_open_drain(struct gpiod_line_info *info)
-{
-	return gpiod_line_info_get_drive(info) == GPIOD_LINE_DRIVE_OPEN_DRAIN;
-}
-
-static bool line_drive_is_open_source(struct gpiod_line_info *info)
-{
-	return gpiod_line_info_get_drive(info) == GPIOD_LINE_DRIVE_OPEN_SOURCE;
-}
-
-static const struct flag flags[] = {
-	{
-		.name = "used",
-		.is_set = gpiod_line_info_is_used,
-	},
-	{
-		.name = "open-drain",
-		.is_set = line_drive_is_open_drain,
-	},
-	{
-		.name = "open-source",
-		.is_set = line_drive_is_open_source,
-	},
-	{
-		.name = "pull-up",
-		.is_set = line_bias_is_pullup,
-	},
-	{
-		.name = "pull-down",
-		.is_set = line_bias_is_pulldown,
-	},
-	{
-		.name = "bias-disabled",
-		.is_set = line_bias_is_disabled,
-	},
-};
-
 static const struct option longopts[] = {
 	{ "help",	no_argument,	NULL,	'h' },
 	{ "version",	no_argument,	NULL,	'v' },
@@ -90,46 +31,11 @@ static void print_help(void)
 	printf("  -v, --version:\tdisplay the version and exit\n");
 }
 
-static PRINTF(3, 4) void prinfo(bool *of,
-				unsigned int prlen, const char *fmt, ...)
-{
-	char *buf, *buffmt = NULL;
-	size_t len;
-	va_list va;
-	int rv;
-
-	va_start(va, fmt);
-	rv = vasprintf(&buf, fmt, va);
-	va_end(va);
-	if (rv < 0)
-		die("vasprintf: %s\n", strerror(errno));
-
-	len = strlen(buf) - 1;
-
-	if (len >= prlen || *of) {
-		*of = true;
-		printf("%s", buf);
-	} else {
-		rv = asprintf(&buffmt, "%%%us", prlen);
-		if (rv < 0)
-			die("asprintf: %s\n", strerror(errno));
-
-		printf(buffmt, buf);
-	}
-
-	free(buf);
-	if (fmt)
-		free(buffmt);
-}
-
 static void list_lines(struct gpiod_chip *chip)
 {
-	bool flag_printed, of, active_low;
 	struct gpiod_chip_info *chip_info;
 	struct gpiod_line_info *info;
-	const char *name, *consumer;
-	size_t i, offset, num_lines;
-	int direction;
+	size_t offset, num_lines;
 
 	chip_info = gpiod_chip_get_info(chip);
 	if (!chip_info)
@@ -143,50 +49,7 @@ static void list_lines(struct gpiod_chip *chip)
 		info = gpiod_chip_get_line_info(chip, offset);
 		if (!info)
 			die_perror("unable to retrieve the line info from chip");
-		name = gpiod_line_info_get_name(info);
-		consumer = gpiod_line_info_get_consumer(info);
-		direction = gpiod_line_info_get_direction(info);
-		active_low = gpiod_line_info_is_active_low(info);
-
-		of = false;
-
-		printf("\tline ");
-		prinfo(&of, 3, "%zu", offset);
-		printf(": ");
-
-		name ? prinfo(&of, 12, "\"%s\"", name)
-		     : prinfo(&of, 12, "unnamed");
-		printf(" ");
-
-		if (!gpiod_line_info_is_used(info))
-			prinfo(&of, 12, "unused");
-		else
-			consumer ? prinfo(&of, 12, "\"%s\"", consumer)
-				 : prinfo(&of, 12, "kernel");
-
-		printf(" ");
-
-		prinfo(&of, 8, "%s ", direction == GPIOD_LINE_DIRECTION_INPUT
-							? "input" : "output");
-		prinfo(&of, 13, "%s ",
-		       active_low ? "active-low" : "active-high");
-
-		flag_printed = false;
-		for (i = 0; i < ARRAY_SIZE(flags); i++) {
-			if (flags[i].is_set(info)) {
-				if (flag_printed)
-					printf(" ");
-				else
-					printf("[");
-				printf("%s", flags[i].name);
-				flag_printed = true;
-			}
-		}
-		if (flag_printed)
-			printf("]");
-
-		printf("\n");
-
+		print_line_info(info);
 		gpiod_line_info_free(info);
 	}
 	gpiod_chip_info_free(chip_info);
