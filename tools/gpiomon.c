@@ -1,79 +1,197 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017-2021 Bartosz Golaszewski <bartekgola@gmail.com>
 
-#include <errno.h>
 #include <getopt.h>
 #include <gpiod.h>
 #include <inttypes.h>
-#include <limits.h>
 #include <poll.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "tools-common.h"
 
 #define EVENT_BUF_SIZE 32
 
+static int by_name = 0;
+static int event_clock_mode = 0;
+static int banner = 0;
+
 static const struct option longopts[] = {
-	{ "help",		no_argument,		NULL,	'h' },
-	{ "version",		no_argument,		NULL,	'v' },
 	{ "active-low",		no_argument,		NULL,	'l' },
-	{ "bias",		required_argument,	NULL,	'B' },
-	{ "num-events",		required_argument,	NULL,	'n' },
-	{ "silent",		no_argument,		NULL,	's' },
-	{ "rising-edge",	no_argument,		NULL,	'r' },
-	{ "falling-edge",	no_argument,		NULL,	'f' },
-	{ "line-buffered",	no_argument,		NULL,	'b' },
+	{ "banner",		no_argument,		&banner,	1 },
+	{ "bias",		required_argument,	NULL,	'b' },
+	{ "by-name",		no_argument,		&by_name,	1 },
+	{ "chip",		required_argument,	NULL,	'c' },
+	{ "debounce-period",	required_argument,	NULL,	'p' },
+	{ "edge",		required_argument,	NULL,	'e' },
 	{ "format",		required_argument,	NULL,	'F' },
+	{ "help",		no_argument,		NULL,	'h' },
+	{ "localtime",		no_argument,		&event_clock_mode,	2 },
+	{ "num-events",		required_argument,	NULL,	'n' },
+	{ "quiet",		no_argument,		NULL,	'q' },
+	{ "silent",		no_argument,		NULL,	'q' },
+	{ "strict",		no_argument,		NULL,	's' },
+	{ "utc",		no_argument,		&event_clock_mode,	1 },
+	{ "version",		no_argument,		NULL,	'v' },
 	{ GETOPT_NULL_LONGOPT },
 };
 
-static const char *const shortopts = "+hvlB:n:srfbF:";
+static const char *const shortopts = "+b:c:e:hF:ln:p:qshv";
 
 static void print_help(void)
 {
-	printf("Usage: %s [OPTIONS] <chip name/number> <offset 1> <offset 2> ...\n",
-	       get_progname());
+	printf("Usage: %s [OPTIONS] <line> ...\n", get_progname());
 	printf("\n");
-	printf("Wait for events on GPIO lines and print them to standard output\n");
+	printf("Wait for events on GPIO lines and print them to standard output.\n");
+	printf("\n");
+	printf("Lines are specified by name, or optionally by offset if the chip option\n");
+	printf("is provided.\n");
 	printf("\n");
 	printf("Options:\n");
-	printf("  -h, --help:\t\tdisplay this message and exit\n");
-	printf("  -v, --version:\tdisplay the version and exit\n");
-	printf("  -l, --active-low:\tset the line active state to low\n");
-	printf("  -B, --bias=[as-is|disable|pull-down|pull-up] (defaults to 'as-is'):\n");
-	printf("		set the line bias\n");
-	printf("  -n, --num-events=NUM:\texit after processing NUM events\n");
-	printf("  -s, --silent:\t\tdon't print event info\n");
-	printf("  -r, --rising-edge:\tonly process rising edge events\n");
-	printf("  -f, --falling-edge:\tonly process falling edge events\n");
-	printf("  -b, --line-buffered:\tset standard output as line buffered\n");
-	printf("  -F, --format=FMT\tspecify custom output format\n");
-	printf("\n");
+	printf("      --banner          display a banner on successful startup\n");
 	print_bias_help();
+	printf("      --by-name         treat lines as names even if they would parse as an offset\n");
+	printf("  -c, --chip <chip>\trestrict scope to a particular chip\n");
+	printf("  -e, --edge <edge>     specify the edges to monitor\n");
+	printf("                        (possible values: falling, rising, both)\n");
+	printf("                        (defaults to 'both')\n");
+	printf("  -h, --help            display this help and exit\n");
+	printf("  -F, --format FMT      specify a custom output format\n");
+	printf("  -l, --active-low      treat the line as active low, flipping the sense of\n");
+	printf("                        rising and falling edges\n");
+	printf("      --localtime       report event time as a local time (default is monotonic)\n");
+	printf("  -n, --num-events <NUM>\n");
+	printf("                        exit after processing NUM events\n");
+	printf("  -p, --debounce-period <period>\n");
+	printf("                        debounce the line(s) with the specified period\n");
+	printf("  -q, --quiet           don't generate any output\n");
+	printf("  -s, --strict          abort if requested line names are not unique\n");
+	printf("      --utc             report event time as UTC (default is monotonic)\n");
+	printf("  -v, --version         output version information and exit\n");
+	print_chip_help();
+	print_period_help();
 	printf("\n");
 	printf("Format specifiers:\n");
-	printf("  %%o:  GPIO line offset\n");
-	printf("  %%e:  event type (0 - falling edge, 1 rising edge)\n");
-	printf("  %%s:  seconds part of the event timestamp\n");
-	printf("  %%n:  nanoseconds part of the event timestamp\n");
+	printf("  %%o   GPIO line offset\n");
+	printf("  %%l   GPIO line name\n");
+	printf("  %%c   GPIO chip path\n");
+	printf("  %%e   event type (0 - falling edge or 1 - rising edge)\n");
+	printf("  %%E   event type (falling or rising)\n");
+	printf("  %%s   seconds part of the event timestamp\n");
+	printf("  %%n   nanoseconds part of the event timestamp\n");
+	printf("  %%T   event timestamp as datetime (UTC if --utc or localtime if --localtime)\n");
 }
 
-struct mon_ctx {
-	unsigned int offset;
-	bool silent;
-	char *fmt;
+static int parse_edge_or_die(const char *option)
+{
+	if (strcmp(option, "rising") == 0)
+		return GPIOD_LINE_EDGE_RISING;
+	if (strcmp(option, "falling") == 0)
+		return GPIOD_LINE_EDGE_FALLING;
+	if (strcmp(option, "both") != 0)
+		die("invalid edge: %s", option);
+	return GPIOD_LINE_EDGE_BOTH;
+}
+
+struct config {
+	bool active_low;
+	bool quiet;
+	bool strict;
+	int bias;
+	int edge;
+	int events_wanted;
+	unsigned int debounce_period_us;
+	const char * chip_id;
+	const char * fmt;
 };
 
-static void event_print_custom(unsigned int offset, uint64_t timeout,
-			       int event_type, struct mon_ctx *ctx)
+int parse_config(int argc, char **argv, struct config *cfg)
 {
-	char *prev, *curr, fmt;
+	int opti, optc;
 
-	for (prev = curr = ctx->fmt;;) {
+	memset(cfg, 0, sizeof(*cfg));
+	cfg->edge = GPIOD_LINE_EDGE_BOTH;
+
+	for (;;) {
+		optc = getopt_long(argc, argv, shortopts, longopts, &opti);
+		if (optc < 0)
+			break;
+
+		switch (optc) {
+		case 'b':
+			cfg->bias = parse_bias_or_die(optarg);
+			break;
+		case 'c':
+			cfg->chip_id = optarg;
+			break;
+		case 'e':
+			cfg->edge = parse_edge_or_die(optarg);
+			break;
+		case 'F':
+			cfg->fmt = optarg;
+			break;
+		case 'l':
+			cfg->active_low = true;
+			break;
+		case 'n':
+			cfg->events_wanted = parse_uint_or_die(optarg);
+			break;
+		case 'p':
+			cfg->debounce_period_us = parse_period_or_die(optarg);
+			break;
+		case 'q':
+			cfg->quiet = true;
+			break;
+		case 's':
+			cfg->strict = true;
+			break;
+		case 'h':
+			print_help();
+			exit(EXIT_SUCCESS);
+		case 'v':
+			print_version();
+			exit(EXIT_SUCCESS);
+		case '?':
+			die("try %s --help", get_progname());
+		case 0:
+			break;
+		default:
+			abort();
+		}
+	}
+
+	return optind;
+}
+
+static void print_banner(int num_lines, char **lines)
+{
+	int i;
+
+	if (num_lines > 1) {
+		printf("Monitoring lines ");
+		for (i = 0; i < num_lines - 1; i++)
+			printf("%s, ", lines[i]);
+		printf("and %s...\n", lines[i]);
+	} else {
+		printf("Monitoring line %s ...\n", lines[0]);
+	}
+}
+
+static void event_print_custom(struct gpiod_edge_event *event, const char * chip_path,
+			       struct line_resolver *resolver, const char *evt_fmt)
+{
+	const char *lname, *prev, *curr;
+	char  fmt;
+	uint64_t evtime;
+	int evtype;
+	unsigned int offset;
+
+	offset = gpiod_edge_event_get_line_offset(event);
+	evtime = gpiod_edge_event_get_timestamp_ns(event);
+	evtype = gpiod_edge_event_get_event_type(event);
+
+	for (prev = curr = evt_fmt;;) {
 		curr = strchr(curr, '%');
 		if (!curr) {
 			fputs(prev, stdout);
@@ -86,20 +204,38 @@ static void event_print_custom(unsigned int offset, uint64_t timeout,
 		fmt = *(curr + 1);
 
 		switch (fmt) {
-		case 'o':
-			printf("%u", offset);
+		case 'c':
+			printf("%s", chip_path);
 			break;
 		case 'e':
-			if (event_type == GPIOD_EDGE_EVENT_RISING_EDGE)
+			if (evtype == GPIOD_EDGE_EVENT_RISING_EDGE)
 				fputc('1', stdout);
 			else
 				fputc('0', stdout);
 			break;
-		case 's':
-			printf("%"PRIu64, timeout / 1000000000);
+		case 'E':
+			if (evtype == GPIOD_EDGE_EVENT_RISING_EDGE)
+				fputs("rising", stdout);
+			else
+				fputs("falling", stdout);
+			break;
+		case 'l':
+			lname = get_line_name(resolver, chip_path, offset);
+			if (!lname)
+				lname = "??";
+			printf("%s", lname);
+			break;
+		case 'o':
+			printf("%u", offset);
 			break;
 		case 'n':
-			printf("%"PRIu64, timeout % 1000000000);
+			printf("%"PRIu64, evtime % 1000000000);
+			break;
+		case 's':
+			printf("%"PRIu64, evtime / 1000000000);
+			break;
+		case 'T':
+			print_event_time(evtime, event_clock_mode);
 			break;
 		case '%':
 			fputc('%', stdout);
@@ -120,201 +256,161 @@ end:
 	fputc('\n', stdout);
 }
 
-static void event_print_human_readable(unsigned int offset,
-				       uint64_t timeout, int event_type)
+static void event_print_human_readable(struct gpiod_edge_event *event,
+				       const char *chip_id,
+				       const char * chip_path,
+				       struct line_resolver *resolver)
 {
+	unsigned int offset;
+	uint64_t evtime;
 	char *evname;
+	const char *lname;
 
-	if (event_type == GPIOD_EDGE_EVENT_RISING_EDGE)
-		evname = " RISING EDGE";
+	offset = gpiod_edge_event_get_line_offset(event);
+	evtime = gpiod_edge_event_get_timestamp_ns(event);
+
+	if (gpiod_edge_event_get_event_type(event) == GPIOD_EDGE_EVENT_RISING_EDGE)
+		evname = "RISING ";
 	else
-		evname = "FALLING EDGE";
-
-	printf("event: %s offset: %u timestamp: [%8"PRIu64".%09"PRIu64"]\n",
-	       evname, offset, timeout / 1000000000, timeout % 1000000000);
-}
-
-static void handle_event(unsigned int line_offset, unsigned int event_type,
-			 uint64_t timestamp, struct mon_ctx *ctx)
-{
-	if (!ctx->silent) {
-		if (ctx->fmt)
-			event_print_custom(line_offset, timestamp,
-					   event_type, ctx);
+		evname = "FALLING";
+	lname = get_line_name(resolver, chip_path, offset);
+	print_event_time(evtime, event_clock_mode);
+	if (lname)
+		if (chip_id)
+			printf(" %s chip: %s offset: %u name: %s\n",
+			       evname, chip_id, offset, lname);
 		else
-			event_print_human_readable(line_offset,
-						   timestamp, event_type);
-	}
+			printf(" %s %s\n", evname, lname);
+	else
+		printf(" %s chip: %s offset: %u\n", evname, chip_id, offset);
 }
 
-static void handle_signal(int signum UNUSED)
+static void event_print(struct gpiod_edge_event *event, const char *chip_id,
+			const char *chip_path,	struct line_resolver *resolver,
+			const char *fmt)
 {
-	exit(EXIT_SUCCESS);
+	if (fmt)
+		event_print_custom(event, chip_path, resolver, fmt);
+	else
+		event_print_human_readable(event, chip_id, chip_path, resolver);
 }
 
 int main(int argc, char **argv)
 {
-	bool watch_rising = false, watch_falling = false, active_low = false;
-	size_t num_lines = 0, events_wanted = 0, events_done = 0;
+	int num_lines, events_done = 0;
 	struct gpiod_edge_event_buffer *event_buffer;
-	int optc, opti, ret, i, edge, bias = 0;
-	uint64_t timeout = 10 * 1000000000LLU;
+	int ret, i, j;
 	struct gpiod_request_config *req_cfg;
-	struct gpiod_line_request *request;
+	struct gpiod_line_request **requests;
+	struct pollfd *pollfds;
 	struct gpiod_line_config *line_cfg;
-	unsigned int offsets[64], offset;
+	unsigned int *offsets;
 	struct gpiod_edge_event *event;
 	struct gpiod_chip *chip;
-	struct mon_ctx ctx;
-	char *end;
+	struct line_resolver *resolver;
+	const char * chip_path;
+	struct config cfg;
 
-	/*
-	 * FIXME: use signalfd once the API has been converted to using a single file
-	 * descriptor as provided by uAPI v2.
-	 */
-	signal(SIGINT, handle_signal);
-	signal(SIGTERM, handle_signal);
-
-	memset(&ctx, 0, sizeof(ctx));
-
-	for (;;) {
-		optc = getopt_long(argc, argv, shortopts, longopts, &opti);
-		if (optc < 0)
-			break;
-
-		switch (optc) {
-		case 'h':
-			print_help();
-			return EXIT_SUCCESS;
-		case 'v':
-			print_version();
-			return EXIT_SUCCESS;
-		case 'l':
-			active_low = true;
-			break;
-		case 'B':
-			bias = parse_bias(optarg);
-			break;
-		case 'n':
-			events_wanted = strtoul(optarg, &end, 10);
-			if (*end != '\0')
-				die("invalid number: %s", optarg);
-			break;
-		case 's':
-			ctx.silent = true;
-			break;
-		case 'r':
-			watch_rising = true;
-			break;
-		case 'f':
-			watch_falling = true;
-			break;
-		case 'b':
-			setlinebuf(stdout);
-			break;
-		case 'F':
-			ctx.fmt = optarg;
-			break;
-		case '?':
-			die("try %s --help", get_progname());
-		default:
-			abort();
-		}
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (watch_rising && !watch_falling)
-		edge = GPIOD_LINE_EDGE_RISING;
-	else if (watch_falling && !watch_rising)
-		edge = GPIOD_LINE_EDGE_FALLING;
-	else
-		edge = GPIOD_LINE_EDGE_BOTH;
+	i = parse_config(argc, argv, &cfg);
+	argc -= i;
+	argv += i;
 
 	if (argc < 1)
-		die("gpiochip must be specified");
+		die("at least one GPIO line must be specified");
 
-	if (argc < 2)
-		die("at least one GPIO line offset must be specified");
-
-	if (argc > 65)
-		die("too many offsets given");
-
-	for (i = 1; i < argc; i++) {
-		offset = strtoul(argv[i], &end, 10);
-		if (*end != '\0' || offset > INT_MAX)
-			die("invalid GPIO offset: %s", argv[i]);
-
-		offsets[i - 1] = offset;
-		num_lines++;
-	}
-
-	chip = chip_open_lookup(argv[0]);
-	if (!chip)
-		die_perror("unable to open %s", argv[0]);
+	if (argc > 64)
+		die("too many lines given");
 
 	line_cfg = gpiod_line_config_new();
 	if (!line_cfg)
 		die_perror("unable to allocate the line config structure");
 
-	if (bias)
-		gpiod_line_config_set_bias_default(line_cfg, bias);
-	if (active_low)
+	if (cfg.bias)
+		gpiod_line_config_set_bias_default(line_cfg, cfg.bias);
+	if (cfg.active_low)
 		gpiod_line_config_set_active_low_default(line_cfg, true);
-	gpiod_line_config_set_edge_detection_default(line_cfg, edge);
+	if (cfg.debounce_period_us)
+		gpiod_line_config_set_debounce_period_us_default(line_cfg, cfg.debounce_period_us);
+	if (event_clock_mode)
+		gpiod_line_config_set_event_clock_default(line_cfg,
+							  GPIOD_LINE_EVENT_CLOCK_REALTIME);
+	gpiod_line_config_set_edge_detection_default(line_cfg, cfg.edge);
 
 	req_cfg = gpiod_request_config_new();
 	if (!req_cfg)
 		die_perror("unable to allocate the request config structure");
 
 	gpiod_request_config_set_consumer(req_cfg, "gpiomon");
-	gpiod_request_config_set_offsets(req_cfg, num_lines, offsets);
-
-	request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
-	if (!request)
-		die_perror("unable to request lines");
 
 	event_buffer = gpiod_edge_event_buffer_new(EVENT_BUF_SIZE);
 	if (!event_buffer)
 		die_perror("unable to allocate the line event buffer");
 
-	for (;;) {
-		ret = gpiod_line_request_wait_edge_event(request, timeout);
-		if (ret < 0)
-			die_perror("error waiting for events");
-		if (ret == 0)
-			continue;
+	resolver = resolve_lines(argc, argv, cfg.chip_id, cfg.strict, by_name);
+	requests = calloc(resolver->num_chips, sizeof(*requests));
+	pollfds = calloc(resolver->num_chips, sizeof(*pollfds));
+	offsets = calloc(resolver->num_lines, sizeof(*offsets));
+	if (!requests || !pollfds || !offsets)
+		die("out of memory");
+	for (i = 0; i < resolver->num_chips; i++) {
+		chip_path = resolver->chip_paths[i];
+		num_lines = get_line_offsets_and_values(resolver, chip_path, offsets, NULL);
+		gpiod_request_config_set_offsets(req_cfg, num_lines, offsets);
 
-		ret = gpiod_line_request_read_edge_event(request, event_buffer,
-							 EVENT_BUF_SIZE);
-		if (ret < 0)
-			die_perror("error reading line events");
+		chip = gpiod_chip_open(chip_path);
+		if (!chip)
+			die_perror("unable to open chip %s", chip_path);
 
-		for (i = 0; i < ret; i++) {
-			event = gpiod_edge_event_buffer_get_event(event_buffer,
-								  i);
-			if (!event)
-				die_perror("unable to retrieve the event from the buffer");
+		requests[i] = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
+		if (!requests[i])
+			die_perror("unable to request lines on chip %s", chip_path);
 
-			handle_event(gpiod_edge_event_get_line_offset(event),
-				     gpiod_edge_event_get_event_type(event),
-				     gpiod_edge_event_get_timestamp_ns(event),
-				     &ctx);
-
-			events_done++;
-
-			if (events_wanted && events_done >= events_wanted)
-				goto done;
-		}
+		pollfds[i].fd = gpiod_line_request_get_fd(requests[i]);
+		pollfds[i].events = POLLIN;
+		gpiod_chip_close(chip);
 	}
-
-done:
-	gpiod_edge_event_buffer_free(event_buffer);
-	gpiod_line_request_release(request);
 	gpiod_request_config_free(req_cfg);
 	gpiod_line_config_free(line_cfg);
-	gpiod_chip_close(chip);
+
+	if (banner)
+		print_banner(argc, argv);
+
+	for (;;) {
+		if (poll(pollfds, resolver->num_chips, -1) < 0)
+			die_perror("error polling for events");
+
+		for (i = 0; i < resolver->num_chips; i++) {
+			if (pollfds[i].revents == 0)
+				continue;
+
+			ret = gpiod_line_request_read_edge_event(requests[i], event_buffer,
+								 EVENT_BUF_SIZE);
+			if (ret < 0)
+				die_perror("error reading line events");
+
+			for (j = 0; j < ret; j++) {
+				event = gpiod_edge_event_buffer_get_event(event_buffer, j);
+				if (!event)
+					die_perror("unable to retrieve event from buffer");
+
+				if (!cfg.quiet)
+					event_print(event, cfg.chip_id, resolver->chip_paths[i],
+						    resolver, cfg.fmt);
+
+				events_done++;
+
+				if (cfg.events_wanted && events_done >= cfg.events_wanted)
+					goto done;
+			}
+		}
+	}
+done:
+	for (i = 0; i < resolver->num_chips; i++)
+		gpiod_line_request_release(requests[i]);
+	free(requests);
+	free_line_resolver(resolver);
+	gpiod_edge_event_buffer_free(event_buffer);
+	free(offsets);
 
 	return EXIT_SUCCESS;
 }
