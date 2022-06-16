@@ -9,7 +9,7 @@ libtools_common_la_SOURCES = tools-common.c tools-common.h
 
 LDADD = libtools-common.la $(top_builddir)/lib/libgpiod.la $(LIBEDIT_LIBS)
 
-bin_PROGRAMS = gpiodetect gpioinfo gpioget gpioset gpiomon gpiofind
+bin_PROGRAMS = gpiodetect gpioinfo gpioget gpioset gpiomon gpiofind gpiowatch
 
 gpiodetect_SOURCES = gpiodetect.c
 
@@ -22,6 +22,8 @@ gpioset_SOURCES = gpioset.c
 gpiomon_SOURCES = gpiomon.c
 
 gpiofind_SOURCES = gpiofind.c
+
+gpiowatch_SOURCES = gpiowatch.c
 
 EXTRA_DIST = gpio-tools-test gpio-tools-test.bats
 
