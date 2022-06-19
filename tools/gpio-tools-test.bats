@@ -11,7 +11,7 @@ COPROC_OUTPUT=$BATS_TMPDIR/gpio-tools-test-output
 COPROC_SAVED_PID=""
 
 GPIOSIM_CHIPS=""
-GPIOSIM_CONFIGFS="/sys/kernel/config/gpio-sim/"
+GPIOSIM_CONFIGFS="/sys/kernel/config/gpio-sim"
 GPIOSIM_SYSFS="/sys/devices/platform/"
 
 # Run the command in $* and return 0 if the command failed. The way we do it
@@ -54,15 +54,11 @@ output_regex_match() {
 	return 1
 }
 
-random_name() {
-	cat /proc/sys/kernel/random/uuid
-}
-
 gpiosim_chip() {
 	local VAR=$1
-	local NAME=$(random_name)
+	local NAME=gpio-tools-test-$$-${VAR}
 	local DEVPATH=$GPIOSIM_CONFIGFS/$NAME
-	local BANKPATH=$DEVPATH/$NAME
+	local BANKPATH=$DEVPATH/bank0
 
 	mkdir -p $BANKPATH
 
@@ -109,7 +105,7 @@ gpiosim_chip_name() {
 	local VAR=$1
 	local NAME=$(gpiosim_chip_map_name $VAR)
 
-	cat $GPIOSIM_CONFIGFS/$NAME/$NAME/chip_name
+	cat $GPIOSIM_CONFIGFS/$NAME/bank0/chip_name
 }
 
 gpiosim_dev_name() {
@@ -151,11 +147,11 @@ gpiosim_cleanup() {
 		local NAME=$(echo $CHIP | cut -d":" -f2)
 
 		local DEVPATH=$GPIOSIM_CONFIGFS/$NAME
-		local BANKPATH=$DEVPATH/$NAME
+		local BANKPATH=$DEVPATH/bank0
 
 		echo 0 > $DEVPATH/live
 
-		ls $BANKPATH/line* 2> /dev/null
+		ls $BANKPATH/line* > /dev/null 2>&1
 		if [ "$?" = "0" ]
 		then
 			for LINE in $(find $BANKPATH/ | egrep "line[0-9]+$")
@@ -180,7 +176,7 @@ run_tool() {
 
 coproc_run_tool() {
 	rm -f $BR_PROC_OUTPUT
-	coproc timeout 10s $BATS_TEST_DIRNAME/"$@" > $COPROC_OUTPUT 2> $COPROC_OUTPUT
+	coproc timeout 10s $BATS_TEST_DIRNAME/"$@" > $COPROC_OUTPUT 2>&1
 	COPROC_SAVED_PID=$COPROC_PID
 	# FIXME We're giving the background process some time to get up, but really this
 	# should be more reliable...
@@ -210,21 +206,20 @@ coproc_tool_wait() {
 }
 
 teardown() {
-	if [ -n "$BG_PROC_PID" ]
-	then
-		kill -9 $BG_PROC_PID
-		run wait $BG_PROC_PID
-		BG_PROC_PID=""
-	fi
-
 	gpiosim_cleanup
+}
+
+request_release_line() {
+	local CHIP=$1
+	local LINE=$2
+	$BATS_TEST_DIRNAME/gpioget -c $CHIP $LINE
 }
 
 #
 # gpiodetect test cases
 #
 
-@test "gpiodetect: list chips" {
+@test "gpiodetect: list all chips" {
 	gpiosim_chip sim0 num_lines=4
 	gpiosim_chip sim1 num_lines=8
 	gpiosim_chip sim2 num_lines=16
@@ -237,8 +232,36 @@ teardown() {
 	output_contains_line "$(gpiosim_chip_name sim2) [$(gpiosim_dev_name sim2)-node0] (16 lines)"
 }
 
-@test "gpiodetect: invalid args" {
-	run_tool gpiodetect unimplemented-arg
+@test "gpiodetect: list some chips" {
+	gpiosim_chip sim0 num_lines=4
+	gpiosim_chip sim1 num_lines=8
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiodetect $(gpiosim_chip_name sim0)
+
+	test "$status" -eq 0
+	output_contains_line "$(gpiosim_chip_name sim0) [$(gpiosim_dev_name sim0)-node0] (4 lines)"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim1) [$(gpiosim_dev_name sim1)-node0] (8 lines)"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim2) [$(gpiosim_dev_name sim2)-node0] (16 lines)"
+
+	run_tool gpiodetect $(gpiosim_chip_name sim1)
+
+	test "$status" -eq 0
+	assert_fail output_contains_line "$(gpiosim_chip_name sim0)\\s+"
+	output_contains_line "$(gpiosim_chip_name sim1) [$(gpiosim_dev_name sim1)-node0] (8 lines)"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim2)\\s+"
+
+	run_tool gpiodetect $(gpiosim_chip_name sim2)
+
+	test "$status" -eq 0
+	assert_fail output_contains_line "$(gpiosim_chip_name sim0)\\s+"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim1)\\s+"
+	output_contains_line "$(gpiosim_chip_name sim2) [$(gpiosim_dev_name sim2)-node0] (16 lines)"
+}
+
+@test "gpiodetect: nonexistent chip" {
+	run_tool gpiodetect "nonexistent"
+
 	test "$status" -eq 1
 }
 
@@ -256,24 +279,23 @@ teardown() {
 	output_contains_line "$(gpiosim_chip_name sim0) - 4 lines:"
 	output_contains_line "$(gpiosim_chip_name sim1) - 8 lines:"
 
-	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+input\\s+active-high"
-	output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+unused\\s+input\\s+active-high"
+	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+unused\\s+\\[input\\]"
 }
 
-@test "gpioinfo: dump all chips with one line exported" {
+@test "gpioinfo: dump all chips with one line requested" {
 	gpiosim_chip sim0 num_lines=4
 	gpiosim_chip sim1 num_lines=8
 
-	coproc_run_tool gpioset --mode=signal --active-low "$(gpiosim_chip_name sim1)" 7=1
+	coproc_run_tool gpioset -i --active-low --chip "$(gpiosim_chip_name sim1)" 7=1
 
 	run_tool gpioinfo
 
 	test "$status" -eq 0
 	output_contains_line "$(gpiosim_chip_name sim0) - 4 lines:"
 	output_contains_line "$(gpiosim_chip_name sim1) - 8 lines:"
-	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+input\\s+active-high"
-	output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+\\\"gpioset\\\"\\s+output\\s+active-low"
-
+	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+gpioset\\s+\\[output\\s+active-low\\s+used\\]"
 	coproc_tool_kill
 	coproc_tool_wait
 }
@@ -282,37 +304,135 @@ teardown() {
 	gpiosim_chip sim0 num_lines=8
 	gpiosim_chip sim1 num_lines=4
 
-	run_tool gpioinfo "$(gpiosim_chip_name sim1)"
+	run_tool gpioinfo --chip "$(gpiosim_chip_name sim1)"
+
+	test "$status" -eq 0
+	assert_fail output_contains_line "$(gpiosim_chip_name sim0)\\s+"
+	output_contains_line "$(gpiosim_chip_name sim1) - 4 lines:"
+	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+1:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+2:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+3:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "\\s+line\\s+4:\\s"
+}
+
+@test "gpioinfo: dump select line" {
+	gpiosim_chip sim0 num_lines=8
+	gpiosim_chip sim1 num_lines=4
+
+	run_tool gpioinfo --chip "$(gpiosim_chip_name sim1)" 2
 
 	test "$status" -eq 0
 	assert_fail output_contains_line "$(gpiosim_chip_name sim0) - 8 lines:"
-	output_contains_line "$(gpiosim_chip_name sim1) - 4 lines:"
-	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+input\\s+active-high"
-	assert_fail output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+unused\\s+input\\s+active-high"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim1) - 4 lines:"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+0\\s+"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+1\\s+"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+2\\s+unnamed\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+3\\s+"
+	assert_fail output_regex_match "\\s+line\\s+4:\\s+unnamed\\s+unused\\s+\\[input\\]"
 }
 
-@test "gpioinfo: dump all but one chip" {
-	gpiosim_chip sim0 num_lines=4
+@test "gpioinfo: dump select lines" {
+	gpiosim_chip sim0 num_lines=8
 	gpiosim_chip sim1 num_lines=4
-	gpiosim_chip sim2 num_lines=8
-	gpiosim_chip sim3 num_lines=4
 
-	run_tool gpioinfo "$(gpiosim_chip_name sim0)" \
-			"$(gpiosim_chip_name sim1)" "$(gpiosim_chip_name sim3)"
+	run_tool gpioinfo --chip "$(gpiosim_chip_name sim1)" 1 3
 
 	test "$status" -eq 0
-	output_contains_line "$(gpiosim_chip_name sim0) - 4 lines:"
-	output_contains_line "$(gpiosim_chip_name sim1) - 4 lines:"
-	assert_fail output_contains_line "$(gpiosim_chip_name sim2) - 8 lines:"
-	output_contains_line "$(gpiosim_chip_name sim3) - 4 lines:"
-	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+input\\s+active-high"
-	assert_fail output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+unused\\s+input\\s+active-high"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim0)\\s+"
+	assert_fail output_contains_line "$(gpiosim_chip_name sim1) - 4 lines:"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+0\\s+"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+1\\s+unnamed\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+2\\s+"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+3\\s+unnamed\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+4\\s+"
 }
 
-@test "gpioinfo: inexistent chip" {
-	run_tool gpioinfo "inexistent"
+@test "gpioinfo: line by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioinfo foo
+
+	test "$status" -eq 0
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+1\\s+foo\\s+unused\\s+\\[input\\]"
+}
+
+@test "gpioinfo: line by offset" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioinfo --chip $(gpiosim_chip_name sim0) 1
+
+	test "$status" -eq 0
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+1\\s+foo\\s+unused\\s+\\[input\\]"
+}
+
+@test "gpioinfo: line by chip and name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioinfo --chip $(gpiosim_chip_name sim0) foo
+
+	test "$status" -eq 0
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+1\\s+foo\\s+unused\\s+\\[input\\]"
+}
+
+@test "gpioinfo: nonexistent chip" {
+	run_tool gpioinfo --chip "nonexistent"
 
 	test "$status" -eq 1
+}
+
+@test "gpioinfo: nonexistent line" {
+	gpiosim_chip sim0 num_lines=8
+
+	run_tool gpioinfo "nonexistent"
+
+	test "$status" -eq 1
+
+	run_tool gpioinfo --chip "$(gpiosim_chip_name sim0)" "nonexistent"
+
+	test "$status" -eq 1
+}
+
+@test "gpioinfo: offset out of range" {
+	gpiosim_chip sim0 num_lines=4
+
+	run_tool gpioinfo --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5
+
+	test "$status" -eq "1"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+0\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+1\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+2\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+3\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match ".*cannot find line 4.*"
+	output_regex_match ".*cannot find line 5.*"
+}
+
+@test "gpioinfo: first non-unique line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpioinfo foobar
+
+	test "$status" -eq 0
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+3\\s+foobar\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)\\s+"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim2)\\s+"
+}
+
+
+@test "gpioinfo: all lines matching name" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpioinfo --strict foobar
+
+	test "$status" -eq 1
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+3\\s+foobar\\s+unused\\s+\\[input\\]"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+2\\s+foobar\\s+unused\\s+\\[input\\]"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+7\\s+foobar\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim2)\\s+"
 }
 
 #
@@ -330,6 +450,47 @@ teardown() {
 	test "$output" = "$(gpiosim_chip_name sim1) 7"
 }
 
+@test "gpiofind: line found with info" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=3:bar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiofind --info foobar
+
+	test "$status" -eq "0"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim0)"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+7\\s+foobar\\s+unused\\s+\\[input\\]"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim2)"
+}
+
+@test "gpiofind: non-unique lines found" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiofind foobar
+
+	test "$status" -eq "0"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+3"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim1)"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim2)"
+}
+
+@test "gpiofind: strict lines found" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiofind --strict foobar
+
+	test "$status" -eq "1"
+	output_regex_match "$(gpiosim_chip_name sim0)\\s+3"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+2"
+	output_regex_match "$(gpiosim_chip_name sim1)\\s+7"
+	assert_fail output_regex_match "$(gpiosim_chip_name sim2)"
+}
+
+
 @test "gpiofind: line not found" {
 	gpiosim_chip sim0 num_lines=4
 	gpiosim_chip sim1 num_lines=8
@@ -338,11 +499,6 @@ teardown() {
 	run_tool gpiofind nonexistent-line
 
 	test "$status" -eq "1"
-}
-
-@test "gpiofind: invalid args" {
-	run_tool gpiodetect unimplemented-arg
-	test "$status" -eq 1
 }
 
 #
@@ -357,7 +513,21 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	run_tool gpioget "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
+
+	test "$status" -eq "0"
+	test "$output" = "0=inactive 1=inactive 2=active 3=active 4=inactive 5=active 6=inactive 7=active"
+}
+
+@test "gpioget: read all lines numerically" {
+	gpiosim_chip sim0 num_lines=8
+
+	gpiosim_set_pull sim0 2 pull-up
+	gpiosim_set_pull sim0 3 pull-up
+	gpiosim_set_pull sim0 5 pull-up
+	gpiosim_set_pull sim0 7 pull-up
+
+	run_tool gpioget --numeric --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
 
 	test "$status" -eq "0"
 	test "$output" = "0 0 1 1 0 1 0 1"
@@ -371,10 +541,10 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	run_tool gpioget --active-low "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
+	run_tool gpioget --active-low --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
 
 	test "$status" -eq "0"
-	test "$output" = "1 1 0 0 1 0 1 0"
+	test "$output" = "0=active 1=active 2=inactive 3=inactive 4=active 5=inactive 6=active 7=inactive"
 }
 
 @test "gpioget: read all lines (pull-up)" {
@@ -385,10 +555,10 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	run_tool gpioget --bias=pull-up "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
+	run_tool gpioget --bias=pull-up --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
 
 	test "$status" -eq "0"
-	test "$output" = "1 1 1 1 1 1 1 1"
+	test "$output" = "0=active 1=active 2=active 3=active 4=active 5=active 6=active 7=active"
 }
 
 @test "gpioget: read all lines (pull-down)" {
@@ -399,10 +569,10 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	run_tool gpioget --bias=pull-down "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
+	run_tool gpioget --bias=pull-down --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5 6 7
 
 	test "$status" -eq "0"
-	test "$output" = "0 0 0 0 0 0 0 0"
+	test "$output" = "0=inactive 1=inactive 2=inactive 3=inactive 4=inactive 5=inactive 6=inactive 7=inactive"
 }
 
 @test "gpioget: read some lines" {
@@ -412,50 +582,105 @@ teardown() {
 	gpiosim_set_pull sim0 4 pull-up
 	gpiosim_set_pull sim0 6 pull-up
 
-	run_tool gpioget "$(gpiosim_chip_name sim0)" 0 1 4 6
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" 0 1 4 6
 
 	test "$status" -eq "0"
-	test "$output" = "0 1 1 1"
+	test "$output" = "0=inactive 1=active 4=active 6=active"
+}
+
+@test "gpioget: read some lines by name" {
+	gpiosim_chip sim0 num_lines=8  line_name=1:foo line_name=6:bar
+
+	gpiosim_set_pull sim0 1 pull-up
+	gpiosim_set_pull sim0 4 pull-up
+	gpiosim_set_pull sim0 6 pull-down
+
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" 0 foo 4 bar
+
+	test "$status" -eq "0"
+	test "$output" = "0=inactive foo=active 4=active bar=inactive"
+}
+
+@test "gpioget: read some lines strictly by name" {
+	# not suggesting this setup is in any way a good idea - just test that we can deal with it
+	gpiosim_chip sim0 num_lines=8 line_name=1:42 line_name=6:13
+
+	gpiosim_set_pull sim0 1 pull-up
+	gpiosim_set_pull sim0 6 pull-down
+
+	run_tool gpioget --by-name --chip "$(gpiosim_chip_name sim0)" 42 13
+
+	test "$status" -eq "0"
+	test "$output" = "42=active 13=inactive"
 }
 
 @test "gpioget: no arguments" {
 	run_tool gpioget
 
 	test "$status" -eq "1"
-	output_regex_match ".*gpiochip must be specified"
+	output_regex_match ".*at least one GPIO line must be specified"
 }
 
 @test "gpioget: no lines specified" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioget "$(gpiosim_chip_name sim0)"
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)"
 
 	test "$status" -eq "1"
-	output_regex_match ".*at least one GPIO line offset must be specified"
+	output_regex_match ".*at least one GPIO line must be specified"
 }
 
-@test "gpioget: too many lines specified" {
+@test "gpioget: offset out of range" {
 	gpiosim_chip sim0 num_lines=4
 
-	run_tool gpioget "$(gpiosim_chip_name sim0)" 0 1 2 3 4
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" 0 1 2 3 4 5
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines.*"
+	output_regex_match ".*cannot find line 4.*"
+	output_regex_match ".*cannot find line 5.*"
+}
+
+@test "gpioget: unknown line specified by name" {
+	gpiosim_chip sim0 num_lines=4
+
+	run_tool gpioget foobar
+
+	test "$status" -eq "1"
+	output_regex_match ".*cannot find line foobar"
+
 }
 
 @test "gpioget: same line twice" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioget "$(gpiosim_chip_name sim0)" 0 0
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" 0 0
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*lines 0 and 0 are the same"
+}
+
+@test "gpioget: same line twice by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" foo foo
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and foo are the same"
+}
+
+@test "gpioget: same line by name and offset" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioget --chip "$(gpiosim_chip_name sim0)" foo 1
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and 1 are the same"
 }
 
 @test "gpioget: invalid bias" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioget --bias=bad "$(gpiosim_chip_name sim0)" 0 1
+	run_tool gpioget --bias=bad --chip "$(gpiosim_chip_name sim0)" 0 1
 
 	test "$status" -eq "1"
 	output_regex_match ".*invalid bias.*"
@@ -465,10 +690,43 @@ teardown() {
 # gpioset test cases
 #
 
-@test "gpioset: set lines and wait for SIGTERM" {
+@test "gpioset: line by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	coproc_run_tool gpioset -i foo=1
+
+	gpiosim_check_value sim0 1 1
+
+	coproc_tool_kill
+	coproc_tool_wait
+}
+
+@test "gpioset: line by offset" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpioset --mode=signal "$(gpiosim_chip_name sim0)" \
+	coproc_run_tool gpioset -i --chip "$(gpiosim_chip_name sim0)" 1=1
+
+	gpiosim_check_value sim0 1 1
+
+	coproc_tool_kill
+	coproc_tool_wait
+}
+
+@test "gpioset: line by chip and name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	coproc_run_tool gpioset -i --chip "$(gpiosim_chip_name sim0)" foo=1
+
+	gpiosim_check_value sim0 1 1
+
+	coproc_tool_kill
+	coproc_tool_wait
+}
+
+@test "gpioset: set lines" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpioset -i --chip "$(gpiosim_chip_name sim0)" \
 					0=0 1=0 2=1 3=1 4=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 0 0
@@ -482,14 +740,12 @@ teardown() {
 
 	coproc_tool_kill
 	coproc_tool_wait
-
-	test "$status" -eq "0"
 }
 
-@test "gpioset: set lines and wait for SIGTERM (active-low)" {
+@test "gpioset: set lines (active-low)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpioset --active-low --mode=signal "$(gpiosim_chip_name sim0)" \
+	coproc_run_tool gpioset -i --active-low --chip "$(gpiosim_chip_name sim0)" \
 					0=0 1=0 2=1 3=1 4=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 0 1
@@ -503,14 +759,12 @@ teardown() {
 
 	coproc_tool_kill
 	coproc_tool_wait
-
-	test "$status" -eq "0"
 }
 
-@test "gpioset: set lines and wait for SIGTERM (push-pull)" {
+@test "gpioset: set lines (push-pull)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpioset --drive=push-pull --mode=signal "$(gpiosim_chip_name sim0)" \
+	coproc_run_tool gpioset -i --drive=push-pull --chip "$(gpiosim_chip_name sim0)" \
 					0=0 1=0 2=1 3=1 4=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 0 0
@@ -524,11 +778,9 @@ teardown() {
 
 	coproc_tool_kill
 	coproc_tool_wait
-
-	test "$status" -eq "0"
 }
 
-@test "gpioset: set lines and wait for SIGTERM (open-drain)" {
+@test "gpioset: set lines (open-drain)" {
 	gpiosim_chip sim0 num_lines=8
 
 	gpiosim_set_pull sim0 2 pull-up
@@ -536,7 +788,7 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	coproc_run_tool gpioset --drive=open-drain --mode=signal "$(gpiosim_chip_name sim0)" \
+	coproc_run_tool gpioset -i --drive=open-drain --chip "$(gpiosim_chip_name sim0)" \
 					0=0 1=0 2=1 3=1 4=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 0 0
@@ -550,11 +802,9 @@ teardown() {
 
 	coproc_tool_kill
 	coproc_tool_wait
-
-	test "$status" -eq "0"
 }
 
-@test "gpioset: set lines and wait for SIGTERM (open-source)" {
+@test "gpioset: set lines (open-source)" {
 	gpiosim_chip sim0 num_lines=8
 
 	gpiosim_set_pull sim0 2 pull-up
@@ -562,7 +812,7 @@ teardown() {
 	gpiosim_set_pull sim0 5 pull-up
 	gpiosim_set_pull sim0 7 pull-up
 
-	coproc_run_tool gpioset --drive=open-source --mode=signal "$(gpiosim_chip_name sim0)" \
+	coproc_run_tool gpioset -i --drive=open-source --chip "$(gpiosim_chip_name sim0)" \
 					0=0 1=0 2=1 3=0 4=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 0 0
@@ -576,14 +826,40 @@ teardown() {
 
 	coproc_tool_kill
 	coproc_tool_wait
-
-	test "$status" -eq "0"
 }
 
-@test "gpioset: set some lines and wait for ENTER" {
+@test "gpioset: set lines with value variants" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpioset --mode=wait "$(gpiosim_chip_name sim0)" \
+	gpiosim_set_pull sim0 0 pull-up
+	gpiosim_set_pull sim0 1 pull-down
+	gpiosim_set_pull sim0 2 pull-down
+	gpiosim_set_pull sim0 3 pull-up
+	gpiosim_set_pull sim0 4 pull-down
+	gpiosim_set_pull sim0 5 pull-up
+	gpiosim_set_pull sim0 6 pull-up
+	gpiosim_set_pull sim0 7 pull-down
+
+	coproc_run_tool gpioset -i --chip "$(gpiosim_chip_name sim0)" \
+					0=0 1=1 2=active 3=inactive 4=on 5=off 6=false 7=true
+
+	gpiosim_check_value sim0 0 0
+	gpiosim_check_value sim0 1 1
+	gpiosim_check_value sim0 2 1
+	gpiosim_check_value sim0 3 0
+	gpiosim_check_value sim0 4 1
+	gpiosim_check_value sim0 5 0
+	gpiosim_check_value sim0 6 0
+	gpiosim_check_value sim0 7 1
+
+	coproc_tool_kill
+	coproc_tool_wait
+}
+
+@test "gpioset: set some lines interactive and wait for exit" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpioset --interactive --chip "$(gpiosim_chip_name sim0)" \
 					1=0 2=1 5=1 6=0 7=1
 
 	gpiosim_check_value sim0 1 0
@@ -592,30 +868,43 @@ teardown() {
 	gpiosim_check_value sim0 6 0
 	gpiosim_check_value sim0 7 1
 
-	coproc_tool_stdin_write ""
+	coproc_tool_stdin_write "exit"
 	coproc_tool_wait
 
 	test "$status" -eq "0"
 }
 
-@test "gpioset: set some lines and wait for SIGINT" {
+@test "gpioset: set some lines interactive and wait for SIGTERM" {
 	gpiosim_chip sim0 num_lines=4
 
-	coproc_run_tool gpioset --mode=signal "$(gpiosim_chip_name sim0)" 0=1
+	coproc_run_tool gpioset --interactive --chip "$(gpiosim_chip_name sim0)" 0=1
+
+	gpiosim_check_value sim0 0 1
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	test "$status" -eq "143"
+}
+
+@test "gpioset: set some lines interactive and wait for SIGINT" {
+	gpiosim_chip sim0 num_lines=4
+
+	coproc_run_tool gpioset --interactive --chip "$(gpiosim_chip_name sim0)" 0=1
 
 	gpiosim_check_value sim0 0 1
 
 	coproc_tool_kill -SIGINT
 	coproc_tool_wait
 
-	test "$status" -eq "0"
+	test "$status" -eq "130"
 }
 
-@test "gpioset: set some lines and wait with --mode=time" {
+@test "gpioset: set some lines with hold-period" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpioset --mode=time --sec=1 --usec=200000 \
-				"$(gpiosim_chip_name sim0)" 0=1 5=0 7=1
+	coproc_run_tool gpioset --hold-period=1200ms \
+				--chip "$(gpiosim_chip_name sim0)" 0=1 5=0 7=1
 
 	gpiosim_check_value sim0 0 1
 	gpiosim_check_value sim0 5 0
@@ -630,84 +919,68 @@ teardown() {
 	run_tool gpioset
 
 	test "$status" -eq "1"
-	output_regex_match ".*gpiochip must be specified"
+	output_regex_match ".*at least one GPIO line value must be specified"
 }
 
 @test "gpioset: no lines specified" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset "$(gpiosim_chip_name sim1)"
+	run_tool gpioset --chip "$(gpiosim_chip_name sim1)"
 
 	test "$status" -eq "1"
-	output_regex_match ".*at least one GPIO line offset to value mapping must be specified"
+	output_regex_match ".*at least one GPIO line value must be specified"
 }
 
-@test "gpioset: too many lines specified" {
+@test "gpioset: offset out of range" {
 	gpiosim_chip sim0 num_lines=4
 
-	run_tool gpioset "$(gpiosim_chip_name sim0)" 0=1 1=1 2=1 3=1 4=1 5=1
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" 0=1 1=1 2=1 3=1 4=1 5=1
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines.*"
+	output_regex_match ".*cannot find line 4.*"
+	output_regex_match ".*cannot find line 5.*"
 }
 
-@test "gpioset: use --sec without --mode=time" {
+@test "gpioset: with bad hold-period" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset --mode=exit --sec=1 "$(gpiosim_chip_name sim0)" 0=1
+	run_tool gpioset --hold-period=bad --chip "$(gpiosim_chip_name sim0)" 0=1
 
 	test "$status" -eq "1"
-	output_regex_match ".*can't specify wait time in this mode"
+	output_regex_match ".*invalid period.*"
 }
 
-@test "gpioset: use --usec without --mode=time" {
+@test "gpioset: invalid value name" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset --mode=exit --usec=1 "$(gpiosim_chip_name sim1)" 0=1
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" 0=c
 
 	test "$status" -eq "1"
-	output_regex_match ".*can't specify wait time in this mode"
-}
-
-@test "gpioset: default mode" {
-	gpiosim_chip sim0 num_lines=8
-
-	run_tool gpioset "$(gpiosim_chip_name sim0)" 0=1
-
-	test "$status" -eq "0"
-}
-
-@test "gpioset: invalid mapping" {
-	gpiosim_chip sim0 num_lines=8
-
-	run_tool gpioset "$(gpiosim_chip_name sim1)" 0=c
-
-	test "$status" -eq "1"
-	output_regex_match ".*invalid offset<->value mapping"
+	output_regex_match ".*invalid line value.*"
 }
 
 @test "gpioset: invalid value" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset "$(gpiosim_chip_name sim1)" 0=3
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" 0=3
 
 	test "$status" -eq "1"
-	output_regex_match ".*value must be 0 or 1"
+	output_regex_match ".*invalid line value.*"
 }
 
 @test "gpioset: invalid offset" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset "$(gpiosim_chip_name sim1)" 4000000000=0
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" 4000000000=0
 
 	test "$status" -eq "1"
-	output_regex_match ".*invalid offset"
+	output_regex_match ".*cannot find line.*"
 }
 
 @test "gpioset: invalid bias" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset --bias=bad "$(gpiosim_chip_name sim1)" 0=1 1=1
+	run_tool gpioset --bias=bad --chip "$(gpiosim_chip_name sim0)" 0=1 1=1
 
 	test "$status" -eq "1"
 	output_regex_match ".*invalid bias.*"
@@ -716,55 +989,69 @@ teardown() {
 @test "gpioset: invalid drive" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset --drive=bad "$(gpiosim_chip_name sim1)" 0=1 1=1
+	run_tool gpioset --drive=bad --chip "$(gpiosim_chip_name sim0)" 0=1 1=1
 
 	test "$status" -eq "1"
 	output_regex_match ".*invalid drive.*"
 }
 
-@test "gpioset: daemonize in invalid mode" {
+@test "gpioset: daemonize with interactive" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset --background "$(gpiosim_chip_name sim1)" 0=1
+	run_tool gpioset --interactive --daemonize --chip "$(gpiosim_chip_name sim1)" 0=1
 
 	test "$status" -eq "1"
-	output_regex_match ".*can't daemonize in this mode"
+	output_regex_match ".*can't combine daemonize with interactive"
+}
+
+@test "gpioset: interactive with toggle" {
+	gpiosim_chip sim0 num_lines=8
+
+	run_tool gpioset --interactive --toggle 1s --chip "$(gpiosim_chip_name sim1)" 0=1
+
+	test "$status" -eq "1"
+	output_regex_match ".*can't combine interactive with toggle"
 }
 
 @test "gpioset: same line twice" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpioset "$(gpiosim_chip_name sim0)" 0=1 0=1
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" 0=1 0=1
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*lines 0 and 0 are the same"
+}
+
+@test "gpioset: same line by name and offset" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" foo=1 1=1
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and 1 are the same"
+}
+
+@test "gpioset: same line twice by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpioset --chip "$(gpiosim_chip_name sim0)" foo=1 foo=1
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and foo are the same"
 }
 
 #
 # gpiomon test cases
 #
 
-@test "gpiomon: single rising edge event" {
+@test "gpiomon: line by offset" {
 	gpiosim_chip sim0 num_lines=8
-
-	coproc_run_tool gpiomon --rising-edge "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
-	sleep 0.2
 
-	coproc_tool_kill
-	coproc_tool_wait
+	coproc_run_tool gpiomon --edge=rising --chip "$(gpiosim_chip_name sim0)" 4
 
-	test "$status" -eq "0"
-	output_regex_match \
-"event:\\s+RISING\\s+EDGE\\s+offset:\\s+4\\s+timestamp:\\s+\[\s*[0-9]+\.[0-9]+\]"
-}
-
-@test "gpiomon: single falling edge event" {
-	gpiosim_chip sim0 num_lines=8
-
-	coproc_run_tool gpiomon --falling-edge "$(gpiosim_chip_name sim0)" 4
-
+	gpiosim_set_pull sim0 4 pull-down
 	gpiosim_set_pull sim0 4 pull-up
 	gpiosim_set_pull sim0 4 pull-down
 	sleep 0.2
@@ -772,9 +1059,68 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match \
-"event:\\s+FALLING\\s+EDGE\\s+offset:\\s+4\\s+timestamp:\\s+\[\s*[0-9]+\.[0-9]+\]"
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
+	assert_fail output_regex_match ".*FALLING.*"
+}
+
+@test "gpiomon: line by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	gpiosim_set_pull sim0 4 pull-up
+
+	coproc_run_tool gpiomon --edge=rising foo
+
+	gpiosim_set_pull sim0 4 pull-down
+	gpiosim_set_pull sim0 4 pull-up
+	gpiosim_set_pull sim0 4 pull-down
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+RISING\\s+foo"
+	assert_fail output_regex_match ".*FALLING.*"
+}
+
+@test "gpiomon: line by chip and name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	gpiosim_set_pull sim0 4 pull-up
+
+	coproc_run_tool gpiomon --edge=rising --chip "$(gpiosim_chip_name sim0)" foo
+
+	gpiosim_set_pull sim0 4 pull-down
+	gpiosim_set_pull sim0 4 pull-up
+	gpiosim_set_pull sim0 4 pull-down
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4\\s+name:\\s+foo"
+	assert_fail output_regex_match ".*FALLING.*"
+}
+
+@test "gpiomon: single falling edge event" {
+	gpiosim_chip sim0 num_lines=8
+
+	gpiosim_set_pull sim0 4 pull-down
+
+	coproc_run_tool gpiomon --edge=falling --chip "$(gpiosim_chip_name sim0)" 4
+
+	gpiosim_set_pull sim0 4 pull-up
+	gpiosim_set_pull sim0 4 pull-down
+	gpiosim_set_pull sim0 4 pull-up
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+FALLING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
+	assert_fail output_regex_match ".*RISING.*"
 }
 
 @test "gpiomon: single falling edge event (pull-up)" {
@@ -782,7 +1128,7 @@ teardown() {
 
 	gpiosim_set_pull sim0 4 pull-down
 
-	coproc_run_tool gpiomon --bias=pull-up "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --bias=pull-up --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-down
 	sleep 0.2
@@ -790,9 +1136,9 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match \
-"event:\\s+FALLING\\s+EDGE\\s+offset:\\s+4\\s+timestamp:\\s+\[\s*[0-9]+\.[0-9]+\]"
+"\\s*[0-9]+\.[0-9]+\\s+FALLING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
+	assert_fail output_regex_match ".*RISING.*"
 }
 
 @test "gpiomon: single rising edge event (pull-down)" {
@@ -800,7 +1146,7 @@ teardown() {
 
 	gpiosim_set_pull sim0 4 pull-up
 
-	coproc_run_tool gpiomon --bias=pull-down "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --bias=pull-down --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -808,9 +1154,9 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match \
-"event:\\s+RISING\\s+EDGE\\s+offset:\\s+4\\s+timestamp:\\s+\[\s*[0-9]+\.[0-9]+\]"
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
+	assert_fail output_regex_match ".*FALLING.*"
 }
 
 @test "gpiomon: single rising edge event (active-low)" {
@@ -818,7 +1164,7 @@ teardown() {
 
 	gpiosim_set_pull sim0 4 pull-up
 
-	coproc_run_tool gpiomon --rising-edge --active-low "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --edge=rising --active-low --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-down
 	sleep 0.2
@@ -826,15 +1172,15 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match \
-"event:\\s+RISING\\s+EDGE\\s+offset:\\s+4\\s+timestamp:\\s+\[\s*[0-9]+\.[0-9]+\]"
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
+	assert_fail output_regex_match ".*FALLING.*"
 }
 
-@test "gpiomon: single rising edge event (silent mode)" {
+@test "gpiomon: single rising edge event (quiet mode)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon --rising-edge --silent "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --edge=rising --quiet --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -842,14 +1188,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test -z "$output"
 }
 
 @test "gpiomon: four alternating events" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon --num-events=4 "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --num-events=4 --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -864,39 +1209,39 @@ teardown() {
 
 	test "$status" -eq "0"
 	output_regex_match \
-"event\\:\\s+FALLING\\s+EDGE\\s+offset\\:\\s+4\\s+timestamp:\\s+\\[\s*[0-9]+\\.[0-9]+\\]"
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
 	output_regex_match \
-"event\\:\\s+RISING\\s+EDGE\\s+offset\\:\\s+4\\s+timestamp:\\s+\\[\s*[0-9]+\\.[0-9]+\\]"
+"\\s*[0-9]+\.[0-9]+\\s+FALLING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
 }
 
 @test "gpiomon: exit after SIGINT" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" 4
 
 	coproc_tool_kill -SIGINT
 	coproc_tool_wait
 
-	test "$status" -eq "0"
+	test "$status" -eq "130"
 	test -z "$output"
 }
 
 @test "gpiomon: exit after SIGTERM" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" 4
 
 	coproc_tool_kill -SIGTERM
 	coproc_tool_wait
 
-	test "$status" -eq "0"
+	test "$status" -eq "143"
 	test -z "$output"
 }
 
-@test "gpiomon: both event flags" {
+@test "gpiomon: both edges" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon --falling-edge --rising-edge "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon --edge=both --chip "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -906,17 +1251,16 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match \
-"event\\:\\s+FALLING\\s+EDGE\\s+offset\\:\\s+4\\s+timestamp:\\s+\\[\s*[0-9]+\\.[0-9]+\\]"
+"\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
 	output_regex_match \
-"event\\:\\s+RISING\\s+EDGE\\s+offset\\:\\s+4\\s+timestamp:\\s+\\[\s*[0-9]+\\.[0-9]+\\]"
+"\\s*[0-9]+\.[0-9]+\\s+FALLING\\s+chip: $(gpiosim_chip_name sim0)\\s+offset:\\s+4"
 }
 
 @test "gpiomon: watch multiple lines" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon --format=%o "$(gpiosim_chip_name sim0)" 1 2 3 4 5
+	coproc_run_tool gpiomon --format=%o --chip "$(gpiosim_chip_name sim0)" 1 2 3 4 5
 
 	gpiosim_set_pull sim0 2 pull-up
 	gpiosim_set_pull sim0 3 pull-up
@@ -926,7 +1270,6 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "${lines[0]}" = "2"
 	test "${lines[1]}" = "3"
 	test "${lines[2]}" = "4"
@@ -935,7 +1278,7 @@ teardown() {
 @test "gpiomon: watch multiple lines (lines in mixed-up order)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon --format=%o "$(gpiosim_chip_name sim0)" 5 2 7 1 6
+	coproc_run_tool gpiomon --format=%o --chip "$(gpiosim_chip_name sim0)" 5 2 7 1 6
 
 	gpiosim_set_pull sim0 2 pull-up
 	gpiosim_set_pull sim0 1 pull-up
@@ -945,7 +1288,6 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "${lines[0]}" = "2"
 	test "${lines[1]}" = "1"
 	test "${lines[2]}" = "6"
@@ -954,41 +1296,87 @@ teardown() {
 @test "gpiomon: same line twice" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpiomon "$(gpiosim_chip_name sim0)" 0 0
+	run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" 0 0
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*lines 0 and 0 are the same"
+}
+
+@test "gpiomon: same line by name and offset" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" 4 foo
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines 4 and foo are the same"
+}
+
+@test "gpiomon: same line twice by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" foo foo
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and foo are the same"
+}
+
+@test "gpiomon: first non-unique line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	coproc_run_tool gpiomon foobar
+
+	gpiosim_set_pull sim0 3 pull-up
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+RISING\\s+foobar"
+	assert_fail output_regex_match ".*FALLING.*"
+}
+
+@test "gpiomon: strictly unique line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiomon --strict foobar
+
+	test "$status" -eq "1"
+	output_regex_match ".*line foobar is not unique"
 }
 
 @test "gpiomon: no arguments" {
 	run_tool gpiomon
 
 	test "$status" -eq "1"
-	output_regex_match ".*gpiochip must be specified"
+	output_regex_match ".*at least one GPIO line must be specified"
 }
 
 @test "gpiomon: line not specified" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpiomon "$(gpiosim_chip_name sim0)"
+	run_tool gpiomon --chip "$(gpiosim_chip_name sim0)"
 
 	test "$status" -eq "1"
-	output_regex_match ".*GPIO line offset must be specified"
+	output_regex_match ".*at least one GPIO line must be specified"
 }
 
-@test "gpiomon: line out of range" {
+@test "gpiomon: offset out of range" {
 	gpiosim_chip sim0 num_lines=4
 
-	run_tool gpiomon "$(gpiosim_chip_name sim0)" 5
+	run_tool gpiomon --chip "$(gpiosim_chip_name sim0)" 5
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*cannot find line 5"
 }
 
 @test "gpiomon: invalid bias" {
 	gpiosim_chip sim0 num_lines=8
 
-	run_tool gpiomon --bias=bad "$(gpiosim_chip_name sim0)" 0 1
+	run_tool gpiomon --bias=bad -c "$(gpiosim_chip_name sim0)" 0 1
 
 	test "$status" -eq "1"
 	output_regex_match ".*invalid bias.*"
@@ -997,7 +1385,7 @@ teardown() {
 @test "gpiomon: custom format (event type + offset)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%e %o" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%e %o" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1005,14 +1393,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "1 4"
 }
 
 @test "gpiomon: custom format (event type + offset joined)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%e%o" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%e%o" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1020,14 +1407,28 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "14"
+}
+
+@test "gpiomon: custom format (format menagerie)" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:baz
+
+	coproc_run_tool gpiomon "--format=%e %o %E %l %c %u" --utc -c "$(gpiosim_chip_name sim0)" baz
+
+	gpiosim_set_pull sim0 4 pull-up
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"1 4 rising baz /dev/gpiochip[0-9]+ [0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]T[0-1][0-9]:[0-5][0-9]:[0-5][0-9]\\.[0-9]+Z"
 }
 
 @test "gpiomon: custom format (timestamp)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%e %o %s.%n" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%e %o %s.%n" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1035,14 +1436,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	output_regex_match "1 4 [0-9]+\\.[0-9]+"
 }
 
 @test "gpiomon: custom format (double percent sign)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%%" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=start%%end" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1050,14 +1450,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
-	test "$output" = "%"
+	test "$output" = "start%end"
 }
 
 @test "gpiomon: custom format (double percent sign + event type specifier)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%%e" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%%e" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1065,14 +1464,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "%e"
 }
 
 @test "gpiomon: custom format (single percent sign)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1080,14 +1478,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "%"
 }
 
 @test "gpiomon: custom format (single percent sign between other characters)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=foo % bar" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=foo % bar" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1095,14 +1492,13 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "foo % bar"
 }
 
 @test "gpiomon: custom format (unknown specifier)" {
 	gpiosim_chip sim0 num_lines=8
 
-	coproc_run_tool gpiomon "--format=%x" "$(gpiosim_chip_name sim0)" 4
+	coproc_run_tool gpiomon "--format=%x" -c "$(gpiosim_chip_name sim0)" 4
 
 	gpiosim_set_pull sim0 4 pull-up
 	sleep 0.2
@@ -1110,6 +1506,217 @@ teardown() {
 	coproc_tool_kill
 	coproc_tool_wait
 
-	test "$status" -eq "0"
 	test "$output" = "%x"
+}
+
+#
+# gpiowatch test cases
+#
+
+@test "gpiowatch: line by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	coproc_run_tool gpiowatch -L foo
+
+	request_release_line "$(gpiosim_chip_name sim0)" 4
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+foo\\s+.*"
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+foo\\s+.*"
+}
+
+@test "gpiowatch: line by offset" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpiowatch -L --chip "$(gpiosim_chip_name sim0)" 4
+
+	request_release_line "$(gpiosim_chip_name sim0)" 4
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+4\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+4\\s+.*"
+}
+
+@test "gpiowatch: line by chip and name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	coproc_run_tool gpiowatch -L --chip "$(gpiosim_chip_name sim0)" foo
+
+	request_release_line "$(gpiosim_chip_name sim0)" 4
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$(gpiosim_chip_name sim0)\\s+4\\s+foo\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$(gpiosim_chip_name sim0)\\s+4\\s+foo\\s+.*"
+}
+
+
+@test "gpiowatch: exit after SIGINT" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" 4
+
+	coproc_tool_kill -SIGINT
+	coproc_tool_wait
+
+	test "$status" -eq "130"
+	test -z "$output"
+}
+
+@test "gpiowatch: exit after SIGTERM" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" 4
+
+	coproc_tool_kill -SIGTERM
+	coproc_tool_wait
+
+	test "$status" -eq "143"
+	test -z "$output"
+}
+
+@test "gpiowatch: watch multiple lines" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpiowatch -L --chip "$(gpiosim_chip_name sim0)" 1 2 3 4 5
+
+	request_release_line "$(gpiosim_chip_name sim0)" 2
+	request_release_line "$(gpiosim_chip_name sim0)" 3
+	request_release_line "$(gpiosim_chip_name sim0)" 4
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+2\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+2\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+3\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+3\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+4\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+4\\s+.*"
+}
+
+@test "gpiowatch: watch multiple lines (lines in mixed-up order)" {
+	gpiosim_chip sim0 num_lines=8
+
+	coproc_run_tool gpiowatch -L --chip "$(gpiosim_chip_name sim0)" 5 2 7 1 6
+
+	request_release_line "$(gpiosim_chip_name sim0)" 2
+	request_release_line "$(gpiosim_chip_name sim0)" 1
+	request_release_line "$(gpiosim_chip_name sim0)" 6
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+2\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+2\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+1\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+1\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+"$(gpiosim_chip_name sim0)"\\s+6\\s+.*"
+	output_regex_match \
+"\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+"$(gpiosim_chip_name sim0)"\\s+6\\s+.*"
+}
+
+@test "gpiowatch: same line twice" {
+	gpiosim_chip sim0 num_lines=8
+
+	run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" 0 0
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines 0 and 0 are the same"
+}
+
+@test "gpiowatch: same line by name and offset" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" 4 foo
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines 4 and foo are the same"
+}
+
+@test "gpiowatch: same line twice by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+
+	run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" foo foo
+
+	test "$status" -eq "1"
+	output_regex_match ".*lines foo and foo are the same"
+}
+
+@test "gpiowatch: first non-unique line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	coproc_run_tool gpiowatch -L foobar
+
+	request_release_line "$(gpiosim_chip_name sim0)" 3
+	sleep 0.2
+
+	coproc_tool_kill
+	coproc_tool_wait
+
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+foobar\\s+.*"
+	output_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+foobar\\s+.*"
+}
+
+@test "gpiowatch: strictly unique line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiowatch -L --strict foobar
+
+	test "$status" -eq "1"
+	output_regex_match ".*line foobar is not unique"
+}
+
+@test "gpiowatch: no arguments" {
+	run_tool gpiowatch
+
+	test "$status" -eq "1"
+	output_regex_match ".*at least one GPIO line must be specified"
+}
+
+@test "gpiowatch: line not specified" {
+	gpiosim_chip sim0 num_lines=8
+
+	run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)"
+
+	test "$status" -eq "1"
+	output_regex_match ".*at least one GPIO line must be specified"
+}
+
+@test "gpiowatch: offset out of range" {
+	gpiosim_chip sim0 num_lines=4
+
+	run_tool gpiowatch --chip "$(gpiosim_chip_name sim0)" 5
+
+	test "$status" -eq "1"
+	output_regex_match ".*cannot find line 5"
 }
