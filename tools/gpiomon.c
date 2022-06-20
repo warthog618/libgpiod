@@ -5,6 +5,7 @@
 #include <gpiod.h>
 #include <inttypes.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,8 +54,8 @@ static void print_help(void)
 	print_bias_help();
 	printf("\t\t\tto be applied to the line(s)\n");
 	printf("  -e, --edge <edge>\tspecify the edges to monitor\n");
-	printf("\t\t\t(possible values: falling-edge, rising-edge, both-edges)\n");
-	printf("\t\t\t(defaults to 'both-edges')\n");
+	printf("\t\t\t(possible values: falling, rising, both)\n");
+	printf("\t\t\t(defaults to 'both')\n");
 	printf("  -p, --debounce-period <period>\n");
 	printf("\t\t\tdebounce the line(s) with the specified period\n");
 	printf("  -L, --line-buffered\tset standard output as line buffered\n");
@@ -199,13 +200,20 @@ static void event_print(struct gpiod_edge_event *event, const char *chip_id, int
 
 static int parse_edge_or_die(const char *option)
 {
-	if (strcmp(option, "rising-edge") == 0)
+	if (strcmp(option, "rising") == 0)
 		return GPIOD_LINE_EDGE_RISING;
-	if (strcmp(option, "falling-edge") == 0)
+	if (strcmp(option, "falling") == 0)
 		return GPIOD_LINE_EDGE_FALLING;
-	if (strcmp(option, "both-edges") != 0)
+	if (strcmp(option, "both") != 0)
 		die("invalid edge: %s", option);
 	return GPIOD_LINE_EDGE_BOTH;
+}
+
+static void handle_signal(int signum UNUSED)
+{
+	// mimic not catching the signal
+        exit(128+signum);
+	// exit will flush stdout
 }
 
 int main(int argc, char **argv)
@@ -223,6 +231,11 @@ int main(int argc, char **argv)
 	struct gpiod_chip *chip;
 	char *chip_id = NULL, *fmt = NULL;
 	struct line_resolver *resolver;
+
+	// Hmmm, catching these allows flushing of stdout on exit...
+	// and consider adding signalfd in poll.  Benefit??
+	signal(SIGINT, handle_signal);
+        signal(SIGTERM, handle_signal);
 
 	for (;;) {
 		optc = getopt_long(argc, argv, shortopts, longopts, &opti);
