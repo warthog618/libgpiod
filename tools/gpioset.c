@@ -463,7 +463,7 @@ static void interact(struct gpiod_line_request **requests,
 		die("out of memory");
 	for(done = false; !done;) {
 		line = readline("gpioset> ");
-		if (!line)
+		if (!line || line[0] == '\0')
 			continue;
 		for (i = strlen(line) - 1; (i > 0) && isspace(line[i]); i--)
 			line[i] = '\0';

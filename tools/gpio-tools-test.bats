@@ -175,7 +175,7 @@ run_tool() {
 }
 
 coproc_run_tool() {
-	rm -f $BR_PROC_OUTPUT
+	rm -f $COPROC_OUTPUT
 	coproc timeout 10s $BATS_TEST_DIRNAME/"$@" > $COPROC_OUTPUT 2>&1
 	COPROC_SAVED_PID=$COPROC_PID
 	# FIXME We're giving the background process some time to get up, but really this
@@ -203,9 +203,20 @@ coproc_tool_wait() {
 	IFS=$'\n' lines=($output)
 	IFS="$ORIG_IFS"
 	rm -f $COPROC_OUTPUT
+	unset COPROC_SAVED_PID
+}
+
+coproc_tool_cleanup() {
+        if [ -n "$COPROC_SAVED_PID" ]
+        then
+                kill -9 $COPROC_SAVED_PID
+                wait $COPROC_SAVED_PID
+                unset COPROC_SAVED_PID
+        fi
 }
 
 teardown() {
+	coproc_tool_cleanup
 	gpiosim_cleanup
 }
 
