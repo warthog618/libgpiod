@@ -52,10 +52,10 @@ static void print_help(void)
 	printf("      --banner          display a banner on successful startup\n");
 	print_bias_help();
 	printf("      --by-name         treat lines as names even if they would parse as an offset\n");
-	printf("  -c, --chip <chip>\trestrict scope to a particular chip\n");
+	printf("  -c, --chip <chip>     restrict scope to a particular chip\n");
 	printf("  -e, --edge <edge>     specify the edges to monitor\n");
-	printf("                        (possible values: falling, rising, both)\n");
-	printf("                        (defaults to 'both')\n");
+	printf("                        Possible values: 'falling', 'rising', 'both'.\n");
+	printf("                        (default is 'both')\n");
 	printf("  -h, --help            display this help and exit\n");
 	printf("  -F, --format FMT      specify a custom output format\n");
 	printf("  -l, --active-low      treat the line as active low, flipping the sense of\n");
@@ -80,7 +80,7 @@ static void print_help(void)
 	printf("  %%E   event type (falling or rising)\n");
 	printf("  %%s   seconds part of the event timestamp\n");
 	printf("  %%n   nanoseconds part of the event timestamp\n");
-	printf("  %%T   event timestamp as datetime (UTC if --utc or localtime if --localtime)\n");
+	printf("  %%T   event timestamp as datetime (UTC if --utc or local time if --localtime)\n");
 }
 
 static int parse_edge_or_die(const char *option)

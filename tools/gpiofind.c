@@ -30,7 +30,7 @@ static void print_help(void)
 	printf("The output of this command can be used as input for gpioget/set.\n");
 	printf("\n");
 	printf("Options:\n");
-	printf("  -c, --chip <chip>\trestrict scope to a particular chip\n");
+	printf("  -c, --chip <chip>     restrict scope to a particular chip\n");
 	printf("  -h, --help            display this help and exit\n");
 	printf("  -i, --info            display info for found lines\n");
 	printf("  -s, --strict          check all lines - don't assume line names are unique\n");

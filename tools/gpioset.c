@@ -52,8 +52,8 @@ static void print_help(void)
 	printf("      --by-name         treat lines as names even if they would parse as an offset\n");
 	printf("  -c, --chip <chip>     restrict scope to a particular chip\n");
 	printf("  -d, --drive <drive>   specify the line drive mode.\n");
-	printf("                        (possible values: 'push-pull', 'open-drain', 'open-source')\n");
-	printf("                        (defaults to 'push-pull')\n");
+	printf("                        Possible values: 'push-pull', 'open-drain', 'open-source'.\n");
+	printf("                        (default is 'push-pull')\n");
 	printf("  -h, --help            display this help and exit\n");
 	printf("  -i, --interactive     set the lines then wait for additional set commands.\n");
 	printf("                        Use the 'help' command at the interactive prompt to get help\n");

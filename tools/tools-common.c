@@ -188,8 +188,8 @@ unsigned int parse_uint_or_die(const char *option)
 void print_bias_help(void)
 {
 	printf("  -b, --bias <bias>     specify the line bias\n");
-	printf("                        (possible values: 'as-is', 'pull-down', 'pull-up', 'disabled')\n");
-	printf("                        (defaults to 'as-is')\n");
+	printf("                        Possible values: 'as-is', 'pull-down', 'pull-up', 'disabled'.\n");
+	printf("                        (default is 'as-is')\n");
 }
 
 void print_chip_help(void)
