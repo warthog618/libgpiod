@@ -2069,3 +2069,252 @@ request_release_line() {
 	dut_read
 	output_is "%x"
 }
+
+#
+# gpiowatch test cases
+#
+
+@test "gpiowatch: by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner foo
+	dut_regex_match "Watching line .*"
+
+	request_release_line $sim0 4
+
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+foo\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+foo\\s+.*"
+	# tools currently have no way to generate a RECONFIG event
+}
+
+@test "gpiowatch: by offset" {
+	gpiosim_chip sim0 num_lines=8
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner --chip $sim0 4
+	dut_regex_match "Watching line .*"
+
+	request_release_line $sim0 4
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+4\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+4\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: by chip and name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+	gpiosim_chip sim1 num_lines=8 line_name=2:foo
+	local sim1=$(gpiosim_chip_name sim1)
+
+	dut_run gpiowatch --banner --chip $sim1 foo
+	dut_regex_match "Watching line .*"
+
+	request_release_line $sim1 2
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim1\\s+2\\s+foo\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim1\\s+2\\s+foo\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: first matching named line" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar \
+				      line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	dut_run gpiowatch --banner foobar
+	dut_regex_match "Watching line .*"
+
+	request_release_line $(gpiosim_chip_name sim0) 3
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+foobar\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+foobar\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: multiple lines" {
+	gpiosim_chip sim0 num_lines=8
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner --chip $sim0 1 2 3 4 5
+	dut_regex_match "Watching lines .*"
+
+	request_release_line $sim0 2
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+2\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+2\\s+.*"
+
+	request_release_line $sim0 3
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+3\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+3\\s+.*"
+
+	request_release_line $sim0 4
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+4\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+4\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: multiple lines by name and offset" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner --chip $sim0 bar foo 3
+	dut_regex_match "Watching lines .*"
+
+	request_release_line $sim0 2
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+2\\s+bar\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+2\\s+bar\\s+.*"
+
+	request_release_line $sim0 1
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+1\\s+foo\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+1\\s+foo\\s+.*"
+
+	request_release_line $sim0 3
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+3\\s+unnamed\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+3\\s+unnamed\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: multiple lines across multiple chips" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=4:xyz
+	local sim0=$(gpiosim_chip_name sim0)
+	local sim1=$(gpiosim_chip_name sim1)
+
+	dut_run gpiowatch --banner baz bar foo xyz
+	dut_regex_match "Watching lines .*"
+
+	request_release_line $sim0 2
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+bar\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+bar\\s+.*"
+
+	request_release_line $sim0 1
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+foo\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+foo\\s+.*"
+
+	request_release_line $sim1 4
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+xyz\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+xyz\\s+.*"
+
+	request_release_line $sim1 0
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+baz\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+baz\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: exit after SIGINT" {
+	gpiosim_chip sim0 num_lines=8
+
+	dut_run gpiowatch --banner --chip $(gpiosim_chip_name sim0) 4
+	dut_regex_match "Watching line .*"
+
+	dut_kill -SIGINT
+	dut_wait
+
+	status_is 130
+}
+
+@test "gpiowatch: exit after SIGTERM" {
+	gpiosim_chip sim0 num_lines=8
+
+	dut_run gpiowatch --banner --chip $(gpiosim_chip_name sim0) 4
+	dut_regex_match "Watching line .*"
+
+	dut_kill -SIGTERM
+	dut_wait
+
+	status_is 143
+}
+
+@test "gpiowatch: with nonexistent line" {
+	run_tool gpiowatch nonexistent-line
+
+	status_is 1
+	output_regex_match ".*cannot find line nonexistent-line"
+}
+
+@test "gpiowatch: with same line twice" {
+	gpiosim_chip sim0 num_lines=8 line_name=1:foo
+	local sim0=$(gpiosim_chip_name sim0)
+
+	# by offset
+	run_tool gpiowatch --chip $sim0 0 0
+
+	status_is 1
+	num_lines_is 1
+	output_regex_match ".*lines 0 and 0 are the same"
+
+	# by name
+	run_tool gpiowatch --chip $sim0 foo foo
+
+	status_is 1
+	num_lines_is 1
+	output_regex_match ".*lines foo and foo are the same"
+
+	# by name and offset
+	run_tool gpiowatch --chip $sim0 1 foo
+
+	status_is 1
+	num_lines_is 1
+	output_regex_match ".*lines 1 and foo are the same"
+}
+
+@test "gpiowatch: with strict named line check" {
+	gpiosim_chip sim0 num_lines=4 line_name=1:foo line_name=2:bar line_name=3:foobar
+	gpiosim_chip sim1 num_lines=8 line_name=0:baz line_name=2:foobar \
+				      line_name=4:xyz line_name=7:foobar
+	gpiosim_chip sim2 num_lines=16
+
+	run_tool gpiowatch --strict foobar
+
+	status_is 1
+	output_regex_match ".*line foobar is not unique"
+}
+
+@test "gpiowatch: with lines strictly by name" {
+	# not suggesting this setup makes sense - just test that we can deal with it
+	gpiosim_chip sim0 num_lines=8 line_name=1:42 line_name=6:13
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner --by-name --chip $sim0 42 13
+	dut_flush
+
+	request_release_line $sim0 1
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+1\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+1\\s+.*"
+
+	request_release_line $sim0 6
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+6\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+6\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: with no arguments" {
+	run_tool gpiowatch
+
+	status_is 1
+	output_regex_match ".*at least one GPIO line must be specified"
+}
+
+@test "gpiowatch: with no line specified" {
+	gpiosim_chip sim0 num_lines=8
+
+	run_tool gpiowatch --chip $(gpiosim_chip_name sim0)
+
+	status_is 1
+	output_regex_match ".*at least one GPIO line must be specified"
+}
+
+@test "gpiowatch: with offset out of range" {
+	gpiosim_chip sim0 num_lines=4
+	local sim0=$(gpiosim_chip_name sim0)
+
+	run_tool gpiowatch --chip $sim0 5
+
+	status_is 1
+	output_regex_match ".*offset 5 is out of range on chip $sim0"
+}
