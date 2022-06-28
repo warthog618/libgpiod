@@ -15,7 +15,9 @@
 GPIOD_TEST_CASE(is_gpiochip_bad)
 {
 	g_assert_false(gpiod_is_gpiochip_device("/dev/null"));
+	g_assert_cmpint(errno, ==, 0);
 	g_assert_false(gpiod_is_gpiochip_device("/dev/nonexistent"));
+	g_assert_cmpint(errno, ==, 0);
 }
 
 GPIOD_TEST_CASE(is_gpiochip_good)
