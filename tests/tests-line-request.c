@@ -555,3 +555,28 @@ GPIOD_TEST_CASE(request_lines_with_unordered_offsets)
 	g_assert_cmpint(g_gpiosim_chip_get_value(sim, 7), ==,
 			GPIOD_LINE_VALUE_INACTIVE);
 }
+
+GPIOD_TEST_CASE(request_with_bias_set_to_pull_up)
+{
+	static const guint offsets[] = { 3 };
+
+	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
+	g_autoptr(struct_gpiod_chip) chip = NULL;
+	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_request) request = NULL;
+
+	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
+	req_cfg = gpiod_test_create_request_config_or_fail();
+	line_cfg = gpiod_test_create_line_config_or_fail();
+
+	gpiod_request_config_set_offsets(req_cfg, 1, offsets);
+	gpiod_line_config_set_direction_default(line_cfg,
+						GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_config_set_bias_default(line_cfg, GPIOD_LINE_BIAS_PULL_UP);
+
+	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+
+	g_assert_cmpint(g_gpiosim_chip_get_value(sim, 3), ==,
+			GPIOD_LINE_VALUE_ACTIVE);
+}
