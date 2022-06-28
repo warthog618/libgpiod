@@ -18,6 +18,8 @@
 
 #define GPIOD_BIT(nr)	(1UL << (nr))
 
+bool gpiod_check_gpiochip_device(const char *path, bool set_errno);
+
 struct gpiod_chip_info *
 gpiod_chip_info_from_uapi(struct gpiochip_info *uapi_info);
 struct gpiod_line_info *
