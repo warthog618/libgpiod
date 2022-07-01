@@ -109,6 +109,19 @@ gpiosim_chip_number() {
 	echo ${NAME#"gpiochip"}
 }
 
+gpiosim_chip_symlink() {
+	GPIOSIM_CHIP_LINK="$2/${GPIOSIM_APP_NAME}-$$-lnk"
+	ln -s $(gpiosim_chip_path $1) "$GPIOSIM_CHIP_LINK"
+}
+
+gpiosim_chip_symlink_cleanup() {
+        if [ -n "$GPIOSIM_CHIP_LINK" ]
+        then
+		rm "$GPIOSIM_CHIP_LINK"
+	fi
+	unset GPIOSIM_CHIP_LINK
+}
+
 gpiosim_dev_name() {
 	echo $(<$GPIOSIM_CONFIGFS/${GPIOSIM_APP_NAME}-$$-$1/dev_name)
 }
@@ -157,6 +170,8 @@ gpiosim_cleanup() {
 		rmdir $BANKPATH
 		rmdir $DEVPATH
 	done
+
+	gpiosim_chip_symlink_cleanup
 
 	GPIOSIM_CHIPS=""
 }
@@ -282,6 +297,15 @@ request_release_line() {
 	output_contains_line "$(gpiosim_chip_name sim0) [$(gpiosim_dev_name sim0)-node0] (4 lines)"
 	output_contains_line "$(gpiosim_chip_name sim1) [$(gpiosim_dev_name sim1)-node0] (8 lines)"
 	output_contains_line "$(gpiosim_chip_name sim2) [$(gpiosim_dev_name sim2)-node0] (16 lines)"
+
+	# ignoring symlinks
+	local initial_output=$output
+	gpiosim_chip_symlink sim1 /dev
+
+	run_tool gpiodetect
+
+	status_is 0
+	output_is "$initial_output"
 }
 
 @test "gpiodetect: a chip" {
@@ -305,6 +329,14 @@ request_release_line() {
 
 	# by number
 	run_tool gpiodetect $(gpiosim_chip_number sim2)
+
+	status_is 0
+	num_lines_is 1
+	output_contains_line "$(gpiosim_chip_name sim2) [$(gpiosim_dev_name sim2)-node0] (16 lines)"
+
+	# by symlink
+	gpiosim_chip_symlink sim2 .
+	run_tool gpiodetect $GPIOSIM_CHIP_LINK
 
 	status_is 0
 	num_lines_is 1
@@ -351,6 +383,15 @@ request_release_line() {
 	output_contains_line "$(gpiosim_chip_name sim1) - 8 lines:"
 	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+\\[input\\]"
 	output_regex_match "\\s+line\\s+7:\\s+unnamed\\s+unused\\s+\\[input\\]"
+
+	# ignoring symlinks
+	local initial_output=$output
+	gpiosim_chip_symlink sim1 /dev
+
+	run_tool gpioinfo
+
+	status_is 0
+	output_is "$initial_output"
 }
 
 @test "gpioinfo: all chips with some used lines" {
@@ -398,6 +439,18 @@ request_release_line() {
 
 	# by number
 	run_tool gpioinfo --chip $sim1
+
+	status_is 0
+	num_lines_is 5
+	output_contains_line "$sim1 - 4 lines:"
+	output_regex_match "\\s+line\\s+0:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+1:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+2:\\s+unnamed\\s+unused\\s+\\[input\\]"
+	output_regex_match "\\s+line\\s+3:\\s+unnamed\\s+unused\\s+\\[input\\]"
+
+	# by symlink
+	gpiosim_chip_symlink sim1 .
+	run_tool gpioinfo --chip $GPIOSIM_CHIP_LINK
 
 	status_is 0
 	num_lines_is 5
@@ -760,6 +813,18 @@ request_release_line() {
 	output_is "1=active"
 }
 
+@test "gpioget: by symlink" {
+	gpiosim_chip sim0 num_lines=8
+	gpiosim_chip_symlink sim0 .
+
+	gpiosim_set_pull sim0 1 pull-up
+
+	run_tool gpioget --chip $GPIOSIM_CHIP_LINK 1
+
+	status_is 0
+	output_is "1=active"
+}
+
 @test "gpioget: by chip and name" {
 	gpiosim_chip sim0 num_lines=8 line_name=1:foo
 	gpiosim_chip sim1 num_lines=8 line_name=3:foo
@@ -1043,6 +1108,15 @@ request_release_line() {
 	gpiosim_chip sim0 num_lines=8
 
 	dut_run gpioset -i --chip $(gpiosim_chip_name sim0) 1=1
+
+	gpiosim_check_value sim0 1 1
+}
+
+@test "gpioset: by symlink" {
+	gpiosim_chip sim0 num_lines=8
+	gpiosim_chip_symlink sim0 .
+
+	dut_run gpioset -i --chip $GPIOSIM_CHIP_LINK 1=1
 
 	gpiosim_check_value sim0 1 1
 }
@@ -1615,6 +1689,21 @@ request_release_line() {
 # gpiomon test cases
 #
 
+@test "gpiomon: by name" {
+	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+
+	gpiosim_set_pull sim0 4 pull-up
+
+	dut_run gpiomon --banner --edge=rising foo
+	dut_flush
+
+	gpiosim_set_pull sim0 4 pull-down
+	gpiosim_set_pull sim0 4 pull-up
+	gpiosim_set_pull sim0 4 pull-down
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RISING\\s+foo"
+	assert_fail dut_readable
+}
+
 @test "gpiomon: by offset" {
 	gpiosim_chip sim0 num_lines=8
 	local sim0=$(gpiosim_chip_name sim0)
@@ -1631,20 +1720,22 @@ request_release_line() {
 	assert_fail dut_readable
 }
 
-@test "gpiomon: by name" {
-	gpiosim_chip sim0 num_lines=8 line_name=4:foo
+@test "gpiomon: by symlink" {
+	gpiosim_chip sim0 num_lines=8
+	gpiosim_chip_symlink sim0 .
 
 	gpiosim_set_pull sim0 4 pull-up
 
-	dut_run gpiomon --banner --edge=rising foo
-	dut_flush
+	dut_run gpiomon --banner --edge=rising --chip $GPIOSIM_CHIP_LINK 4
+	dut_regex_match "Monitoring line .*"
 
 	gpiosim_set_pull sim0 4 pull-down
 	gpiosim_set_pull sim0 4 pull-up
 	gpiosim_set_pull sim0 4 pull-down
-	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RISING\\s+foo"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RISING\\s+chip: $GPIOSIM_CHIP_LINK\\s+offset:\\s+4"
 	assert_fail dut_readable
 }
+
 
 @test "gpiomon: by chip and name" {
 	gpiosim_chip sim0 num_lines=8 line_name=0:foo
@@ -2098,6 +2189,21 @@ request_release_line() {
 	request_release_line $sim0 4
 	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$sim0\\s+4\\s+.*"
 	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$sim0\\s+4\\s+.*"
+
+	assert_fail dut_readable
+}
+
+@test "gpiowatch: by symlink" {
+	gpiosim_chip sim0 num_lines=8
+	gpiosim_chip_symlink sim0 .
+	local sim0=$(gpiosim_chip_name sim0)
+
+	dut_run gpiowatch --banner --chip $GPIOSIM_CHIP_LINK 4
+	dut_regex_match "Watching line .*"
+
+	request_release_line $sim0 4
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+REQUESTED\\s+$GPIOSIM_CHIP_LINK\\s+4\\s+.*"
+	dut_regex_match "\\s*[0-9]+\.[0-9]+\\s+RELEASED\\s+$GPIOSIM_CHIP_LINK\\s+4\\s+.*"
 
 	assert_fail dut_readable
 }
