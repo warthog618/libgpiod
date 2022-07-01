@@ -145,7 +145,7 @@ GPIOD_API int gpiod_chip_get_fd(struct gpiod_chip *chip)
 }
 
 GPIOD_API int gpiod_chip_wait_info_event(struct gpiod_chip *chip,
-					 uint64_t timeout_ns)
+					 int64_t timeout_ns)
 {
 	return gpiod_poll_fd(chip->fd, timeout_ns);
 }

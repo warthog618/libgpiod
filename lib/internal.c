@@ -70,7 +70,7 @@ out:
 	return ret;
 }
 
-int gpiod_poll_fd(int fd, uint64_t timeout_ns)
+int gpiod_poll_fd(int fd, int64_t timeout_ns)
 {
 	struct timespec ts;
 	struct pollfd pfd;
@@ -80,10 +80,12 @@ int gpiod_poll_fd(int fd, uint64_t timeout_ns)
 	pfd.fd = fd;
 	pfd.events = POLLIN | POLLPRI;
 
-	ts.tv_sec = timeout_ns / 1000000000ULL;
-	ts.tv_nsec = timeout_ns % 1000000000ULL;
+	if (timeout_ns >= 0) {
+		ts.tv_sec = timeout_ns / 1000000000ULL;
+		ts.tv_nsec = timeout_ns % 1000000000ULL;
+	}
 
-	ret = ppoll(&pfd, 1, &ts, NULL);
+	ret = ppoll(&pfd, 1, timeout_ns < 0 ? NULL : &ts, NULL);
 	if (ret < 0)
 		return -1;
 	else if (ret == 0)

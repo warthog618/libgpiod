@@ -135,11 +135,14 @@ int gpiod_chip_get_fd(struct gpiod_chip *chip);
  * @brief Wait for line status change events on any of the watched lines
  *	  on the chip.
  * @param chip GPIO chip object.
- * @param timeout_ns Wait time limit in nanoseconds.
+ * @param timeout_ns Wait time limit in nanoseconds. If set to 0, the function
+ *		     returns immediatelly. If set to a negative number, the
+ *		     function blocks indefinitely until an event becomes
+ *		     available.
  * @return 0 if wait timed out, -1 if an error occurred, 1 if an event is
  *	   pending.
  */
-int gpiod_chip_wait_info_event(struct gpiod_chip *chip, uint64_t timeout_ns);
+int gpiod_chip_wait_info_event(struct gpiod_chip *chip, int64_t timeout_ns);
 
 /**
  * @brief Read a single line status change event from the chip.
@@ -1320,7 +1323,10 @@ int gpiod_line_request_get_fd(struct gpiod_line_request *request);
 /**
  * @brief Wait for edge events on any of the requested lines.
  * @param request GPIO line request.
- * @param timeout_ns Wait time limit in nanoseconds.
+ * @param timeout_ns Wait time limit in nanoseconds. If set to 0, the function
+ *		     returns immediatelly. If set to a negative number, the
+ *		     function blocks indefinitely until an event becomes
+ *		     available.
  * @return 0 if wait timed out, -1 if an error occurred, 1 if an event is
  *	   pending.
  *q
@@ -1328,7 +1334,7 @@ int gpiod_line_request_get_fd(struct gpiod_line_request *request);
  * By default edge detection is disabled.
  */
 int gpiod_line_request_wait_edge_event(struct gpiod_line_request *request,
-				       uint64_t timeout_ns);
+				       int64_t timeout_ns);
 
 /**
  * @brief Read a number of edge events from a line request.
