@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017-2022 Bartosz Golaszewski <bartekgola@gmail.com>
 
-#include <errno.h>
 #include <getopt.h>
 #include <gpiod.h>
 #include <stdio.h>
@@ -106,14 +105,12 @@ int main(int argc, char **argv)
 	}
 	for (i = 0; i < argc; i++) {
 		if (chip_path_lookup(argv[i], &path)) {
-			print_chip_info(path);
+			if (print_chip_info(path))
+				ret = EXIT_FAILURE;
 			free(path);
-		} else if (errno == ENOENT) {
+		} else {
 			print_error("cannot find a GPIO chip character device corresponding to %s",
 				    argv[i]);
-			ret = EXIT_FAILURE;
-		} else {
-			print_perror("unable to open chip %s", path);
 			ret = EXIT_FAILURE;
 		}
 	}
