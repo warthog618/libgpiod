@@ -66,7 +66,8 @@ struct gpiod_edge_event_buffer;
 /**
  * @brief Open a chip by path.
  * @param path Path to the gpiochip device file.
- * @return GPIO chip request or NULL if an error occurred.
+ * @return GPIO chip object or NULL if an error occurred.  The returned object
+ *	   must be closed by the caller using ::gpiod_chip_close.
  */
 struct gpiod_chip *gpiod_chip_open(const char *path);
 
@@ -87,7 +88,9 @@ struct gpiod_chip_info *gpiod_chip_get_info(struct gpiod_chip *chip);
 /**
  * @brief Get the path used to open the chip.
  * @param chip GPIO chip object.
- * @return Path to the file passed as argument to ::gpiod_chip_open.
+ * @return Path to the file passed as argument to ::gpiod_chip_open.  The
+ *	   returned pointer is valid for the lifetime of the chip object and
+ *	   must not be freed by the caller.
  */
 const char *gpiod_chip_get_path(struct gpiod_chip *chip);
 
@@ -207,14 +210,18 @@ void gpiod_chip_info_free(struct gpiod_chip_info *info);
 /**
  * @brief Get the name of the chip as represented in the kernel.
  * @param info GPIO chip info object.
- * @return Pointer to a human-readable string containing the chip name.
+ * @return Valid pointer to a human-readable string containing the chip name.
+ *	   The string lifetime is tied to the chip info object so the pointer
+ *	   must not be freed by the caller.
  */
 const char *gpiod_chip_info_get_name(struct gpiod_chip_info *info);
 
 /**
  * @brief Get the label of the chip as represented in the kernel.
  * @param info GPIO chip info object.
- * @return Pointer to a human-readable string containing the chip label.
+ * @return Valid pointer to a human-readable string containing the chip label.
+ *	   The string lifetime is tied to the chip info object so the pointer
+ *	   must not be freed by the caller.
  */
 const char *gpiod_chip_info_get_label(struct gpiod_chip_info *info);
 
@@ -361,8 +368,10 @@ unsigned int gpiod_line_info_get_offset(struct gpiod_line_info *info);
  * @brief Get the name of the line.
  * @param info GPIO line info object.
  * @return Name of the GPIO line as it is represented in the kernel.
- *	   This function returns a pointer to a null-terminated string
+ *	   This function returns a valid pointer to a null-terminated string
  *	   or NULL if the line is unnamed.
+ *	   The string lifetime is tied to the line info object so the pointer
+ *	   must not be freed.
  */
 const char *gpiod_line_info_get_name(struct gpiod_line_info *info);
 
@@ -382,8 +391,10 @@ bool gpiod_line_info_is_used(struct gpiod_line_info *info);
  * @brief Get the name of the consumer of the line.
  * @param info GPIO line info object.
  * @return Name of the GPIO consumer as it is represented in the kernel.
- *	   This function returns a pointer to a null-terminated string
+ *	   This function returns a valid pointer to a null-terminated string
  *	   or NULL if the consumer name is not set.
+ *	   The string lifetime is tied to the line info object so the pointer
+ *	   must not be freed.
  */
 const char *gpiod_line_info_get_consumer(struct gpiod_line_info *info);
 
@@ -505,9 +516,9 @@ uint64_t gpiod_info_event_get_timestamp_ns(struct gpiod_info_event *event);
 /**
  * @brief Get the snapshot of line-info associated with the event.
  * @param event Line info event object.
- * @return Returns a pointer to the line-info object associated with the event
- *	   whose lifetime is tied to the event object. It must not be freed by
- *	   the caller.
+ * @return Returns a pointer to the line-info object associated with the event.
+ *	   The object lifetime is tied to the event object, so the pointer must
+ *	   be not be freed by the caller.
  */
 struct gpiod_line_info *
 gpiod_info_event_get_line_info(struct gpiod_info_event *event);
@@ -531,7 +542,8 @@ gpiod_info_event_get_line_info(struct gpiod_info_event *event);
 
 /**
  * @brief Create a new line settings object.
- * @return New line settings object or NULL on error.
+ * @return New line settings object or NULL on error. The returned object must
+ *         be freed by the caller using ::gpiod_line_settings_free.
  */
 struct gpiod_line_settings *gpiod_line_settings_new(void);
 
@@ -711,7 +723,8 @@ int gpiod_line_settings_get_output_value(struct gpiod_line_settings *settings);
 
 /**
  * @brief Create a new line config object.
- * @return New line config object or NULL on error.
+ * @return New line config object or NULL on error.  The returned object must
+ *	   be freed by the caller using ::gpiod_line_config_free.
  */
 struct gpiod_line_config *gpiod_line_config_new(void);
 
@@ -784,7 +797,8 @@ int gpiod_line_config_get_offsets(struct gpiod_line_config *config,
 
 /**
  * @brief Create a new request config object.
- * @return New request config object or NULL on error.
+ * @return New request config object or NULL on error.  The returned object must
+ *	   be freed by the caller using ::gpiod_request_config_free.
  */
 struct gpiod_request_config *gpiod_request_config_new(void);
 
@@ -1148,7 +1162,9 @@ bool gpiod_is_gpiochip_device(const char *path);
 
 /**
  * @brief Get the API version of the library as a human-readable string.
- * @return Human-readable string containing the library version.
+ * @return A valid pointer to a human-readable string containing the library
+ *	   version.  The pointer is valid for the lifetime of the program and
+ *	   must not be freed by the caller.
  */
 const char *gpiod_version_string(void);
 
