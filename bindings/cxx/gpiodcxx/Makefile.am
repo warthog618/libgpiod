@@ -13,6 +13,8 @@ otherinclude_HEADERS = \
 	line-config.hpp \
 	line-info.hpp \
 	line-request.hpp \
+	line-settings.hpp \
 	misc.hpp \
+	request-builder.hpp \
 	request-config.hpp \
 	timestamp.hpp

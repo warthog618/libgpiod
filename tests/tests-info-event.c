@@ -56,8 +56,9 @@ GPIOD_TEST_CASE(event_timeout)
 
 struct request_ctx {
 	struct gpiod_chip *chip;
-	struct gpiod_request_config *req_cfg;
 	struct gpiod_line_config *line_cfg;
+	struct gpiod_line_settings *settings;
+	guint offset;
 };
 
 static gpointer request_reconfigure_release_line(gpointer data)
@@ -68,16 +69,24 @@ static gpointer request_reconfigure_release_line(gpointer data)
 
 	g_usleep(1000);
 
-	request = gpiod_chip_request_lines(ctx->chip,
-					   ctx->req_cfg, ctx->line_cfg);
+	ret = gpiod_line_config_add_line_settings(ctx->line_cfg, &ctx->offset,
+						  1, ctx->settings);
+	g_assert_cmpint(ret, ==, 0);
+	if (g_test_failed())
+		return NULL;
+
+	request = gpiod_chip_request_lines(ctx->chip, NULL, ctx->line_cfg);
 	g_assert_nonnull(request);
 	if (g_test_failed())
 		return NULL;
 
 	g_usleep(1000);
 
-	gpiod_line_config_set_direction_default(ctx->line_cfg,
-						GPIOD_LINE_DIRECTION_OUTPUT);
+	gpiod_line_config_reset(ctx->line_cfg);
+	gpiod_line_settings_set_direction(ctx->settings,
+					  GPIOD_LINE_DIRECTION_OUTPUT);
+	gpiod_line_config_add_line_settings(ctx->line_cfg, &ctx->offset, 1,
+					    ctx->settings);
 
 	ret = gpiod_line_request_reconfigure_lines(request, ctx->line_cfg);
 	g_assert_cmpint(ret, ==, 0);
@@ -94,16 +103,14 @@ static gpointer request_reconfigure_release_line(gpointer data)
 
 GPIOD_TEST_CASE(request_reconfigure_release_events)
 {
-	static const guint offset = 3;
-
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
 	g_autoptr(struct_gpiod_line_info) info = NULL;
 	g_autoptr(struct_gpiod_info_event) request_event = NULL;
 	g_autoptr(struct_gpiod_info_event) reconfigure_event = NULL;
 	g_autoptr(struct_gpiod_info_event) release_event = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(GThread) thread = NULL;
 	struct gpiod_line_info *request_info, *reconfigure_info, *release_info;
 	guint64 request_ts, reconfigure_ts, release_ts;
@@ -111,10 +118,8 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
-
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
+	settings = gpiod_test_create_line_settings_or_fail();
 
 	info = gpiod_chip_watch_line_info(chip, 3);
 	g_assert_nonnull(info);
@@ -123,8 +128,9 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 	g_assert_false(gpiod_line_info_is_used(info));
 
 	ctx.chip = chip;
-	ctx.req_cfg = req_cfg;
 	ctx.line_cfg = line_cfg;
+	ctx.settings = settings;
+	ctx.offset = 3;
 
 	thread = g_thread_new("request-release",
 			      request_reconfigure_release_line, &ctx);
@@ -193,15 +199,13 @@ GPIOD_TEST_CASE(request_reconfigure_release_events)
 }
 
 GPIOD_TEST_CASE(chip_fd_can_be_polled)
-{
-	static const guint offset = 3;
-
+{\
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
 	g_autoptr(struct_gpiod_line_info) info = NULL;
 	g_autoptr(struct_gpiod_info_event) event = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
 	struct gpiod_line_info *evinfo;
@@ -211,10 +215,8 @@ GPIOD_TEST_CASE(chip_fd_can_be_polled)
 	gint ret, fd;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
-
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
 
 	info = gpiod_chip_watch_line_info(chip, 3);
 	g_assert_nonnull(info);
@@ -223,8 +225,9 @@ GPIOD_TEST_CASE(chip_fd_can_be_polled)
 	g_assert_false(gpiod_line_info_is_used(info));
 
 	ctx.chip = chip;
-	ctx.req_cfg = req_cfg;
 	ctx.line_cfg = line_cfg;
+	ctx.settings = settings;
+	ctx.offset = 3;
 
 	thread = g_thread_new("request-release",
 			      request_reconfigure_release_line, &ctx);
@@ -266,22 +269,21 @@ GPIOD_TEST_CASE(unwatch_and_check_that_no_events_are_generated)
 	g_autoptr(struct_gpiod_chip) chip = NULL;
 	g_autoptr(struct_gpiod_line_info) info = NULL;
 	g_autoptr(struct_gpiod_info_event) event = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 NULL);
 
 	info = gpiod_chip_watch_line_info(chip, 3);
 	g_assert_nonnull(info);
 	gpiod_test_return_if_failed();
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	ret = gpiod_chip_wait_info_event(chip, 100000000);
 	g_assert_cmpint(ret, >, 0);

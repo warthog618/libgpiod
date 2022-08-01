@@ -112,61 +112,115 @@ GPIOD_TEST_CASE(copy_line_info)
 			 gpiod_line_info_get_offset(copy));
 }
 
+GPIOD_TEST_CASE(direction_settings)
+{
+	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
+	g_autoptr(struct_gpiod_chip) chip = NULL;
+	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
+	g_autoptr(struct_gpiod_line_request) request = NULL;
+	g_autoptr(struct_gpiod_line_info) info0 = NULL;
+	g_autoptr(struct_gpiod_line_info) info1 = NULL;
+	g_autoptr(struct_gpiod_line_info) info2 = NULL;
+	guint offset;
+
+	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
+	settings = gpiod_test_create_line_settings_or_fail();
+	line_cfg = gpiod_test_create_line_config_or_fail();
+
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_OUTPUT);
+	offset = 0;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
+	offset = 1;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_AS_IS);
+	offset = 2;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
+	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
+	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
+
+	g_assert_cmpint(gpiod_line_info_get_direction(info0), ==,
+			GPIOD_LINE_DIRECTION_OUTPUT);
+	g_assert_cmpint(gpiod_line_info_get_direction(info1), ==,
+			GPIOD_LINE_DIRECTION_INPUT);
+	g_assert_cmpint(gpiod_line_info_get_direction(info2), ==,
+			GPIOD_LINE_DIRECTION_INPUT);
+}
+
 GPIOD_TEST_CASE(active_high)
 {
 	static const guint offset = 5;
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info = NULL;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_active_low_default(line_cfg, true);
+	gpiod_line_settings_set_active_low(settings, true);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset,
+							 1, settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info = gpiod_chip_get_line_info(chip, 5);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info = gpiod_test_get_line_info_or_fail(chip, 5);
 
 	g_assert_true(gpiod_line_info_is_active_low(info));
 }
 
 GPIOD_TEST_CASE(edge_detection_settings)
 {
-	static const guint offsets[] = { 0, 1, 2, 3 };
-
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_info) info0 = NULL;
 	g_autoptr(struct_gpiod_line_info) info1 = NULL;
 	g_autoptr(struct_gpiod_line_info) info2 = NULL;
 	g_autoptr(struct_gpiod_line_info) info3 = NULL;
+	guint offset;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 4, offsets);
-	gpiod_line_config_set_edge_detection_override(line_cfg,
-						GPIOD_LINE_EDGE_RISING, 1);
-	gpiod_line_config_set_edge_detection_override(line_cfg,
-						GPIOD_LINE_EDGE_FALLING, 2);
-	gpiod_line_config_set_edge_detection_override(line_cfg,
-						GPIOD_LINE_EDGE_BOTH, 3);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_NONE);
+	offset = 0;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_RISING);
+	offset = 1;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_edge_detection(settings,
+					       GPIOD_LINE_EDGE_FALLING);
+	offset = 2;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
+	offset = 3;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info0 = gpiod_chip_get_line_info(chip, 0);
-	info1 = gpiod_chip_get_line_info(chip, 1);
-	info2 = gpiod_chip_get_line_info(chip, 2);
-	info3 = gpiod_chip_get_line_info(chip, 3);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
+	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
+	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
+	info3 = gpiod_test_get_line_info_or_fail(chip, 3);
 
 	g_assert_cmpint(gpiod_line_info_get_edge_detection(info0), ==,
 			GPIOD_LINE_EDGE_NONE);
@@ -180,37 +234,43 @@ GPIOD_TEST_CASE(edge_detection_settings)
 
 GPIOD_TEST_CASE(bias_settings)
 {
-	static const guint offsets[] = { 0, 1, 2, 3 };
-
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info0 = NULL;
 	g_autoptr(struct_gpiod_line_info) info1 = NULL;
 	g_autoptr(struct_gpiod_line_info) info2 = NULL;
 	g_autoptr(struct_gpiod_line_info) info3 = NULL;
+	guint offset;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 4, offsets);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_OUTPUT);
-	gpiod_line_config_set_bias_override(line_cfg,
-					    GPIOD_LINE_BIAS_DISABLED, 1);
-	gpiod_line_config_set_bias_override(line_cfg,
-					    GPIOD_LINE_BIAS_PULL_DOWN, 2);
-	gpiod_line_config_set_bias_override(line_cfg,
-					    GPIOD_LINE_BIAS_PULL_UP, 3);
+	gpiod_line_settings_set_direction(settings,GPIOD_LINE_DIRECTION_OUTPUT);
+	offset = 0;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_bias(settings, GPIOD_LINE_BIAS_DISABLED);
+	offset = 1;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_bias(settings, GPIOD_LINE_BIAS_PULL_DOWN);
+	offset = 2;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_bias(settings, GPIOD_LINE_BIAS_PULL_UP);
+	offset = 3;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info0 = gpiod_chip_get_line_info(chip, 0);
-	info1 = gpiod_chip_get_line_info(chip, 1);
-	info2 = gpiod_chip_get_line_info(chip, 2);
-	info3 = gpiod_chip_get_line_info(chip, 3);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
+	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
+	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
+	info3 = gpiod_test_get_line_info_or_fail(chip, 3);
 
 	g_assert_cmpint(gpiod_line_info_get_bias(info0), ==,
 			GPIOD_LINE_BIAS_UNKNOWN);
@@ -224,33 +284,38 @@ GPIOD_TEST_CASE(bias_settings)
 
 GPIOD_TEST_CASE(drive_settings)
 {
-	static const guint offsets[] = { 0, 1, 2 };
-
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info0 = NULL;
 	g_autoptr(struct_gpiod_line_info) info1 = NULL;
 	g_autoptr(struct_gpiod_line_info) info2 = NULL;
+	guint offset;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 3, offsets);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_OUTPUT);
-	gpiod_line_config_set_drive_override(line_cfg,
-					     GPIOD_LINE_DRIVE_OPEN_DRAIN, 1);
-	gpiod_line_config_set_drive_override(line_cfg,
-					     GPIOD_LINE_DRIVE_OPEN_SOURCE, 2);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_OUTPUT);
+	offset = 0;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_drive(settings, GPIOD_LINE_DRIVE_OPEN_DRAIN);
+	offset = 1;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_drive(settings, GPIOD_LINE_DRIVE_OPEN_SOURCE);
+	offset = 2;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info0 = gpiod_chip_get_line_info(chip, 0);
-	info1 = gpiod_chip_get_line_info(chip, 1);
-	info2 = gpiod_chip_get_line_info(chip, 2);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
+	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
+	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
 
 	g_assert_cmpint(gpiod_line_info_get_drive(info0), ==,
 			GPIOD_LINE_DRIVE_PUSH_PULL);
@@ -266,22 +331,23 @@ GPIOD_TEST_CASE(debounce_period)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info = NULL;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
-	gpiod_line_config_set_debounce_period_us_default(line_cfg, 1000);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_debounce_period_us(settings, 1000);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info = gpiod_chip_get_line_info(chip, 5);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	info = gpiod_test_get_line_info_or_fail(chip, 5);
 
 	g_assert_cmpuint(gpiod_line_info_get_debounce_period_us(info),
 			 ==, 1000);
@@ -289,27 +355,32 @@ GPIOD_TEST_CASE(debounce_period)
 
 GPIOD_TEST_CASE(event_clock)
 {
-	static const guint offsets[] = { 0, 1 };
-
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info0 = NULL;
 	g_autoptr(struct_gpiod_line_info) info1 = NULL;
+	guint offset;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 2, offsets);
-	gpiod_line_config_set_event_clock_override(line_cfg,
-					GPIOD_LINE_EVENT_CLOCK_REALTIME, 1);
+	offset = 0;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+	gpiod_line_settings_set_event_clock(settings,
+					    GPIOD_LINE_EVENT_CLOCK_REALTIME);
+	offset = 1;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
-	info0 = gpiod_chip_get_line_info(chip, 0);
-	info1 = gpiod_chip_get_line_info(chip, 1);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+
+	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
+	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
 
 	g_assert_cmpint(gpiod_line_info_get_event_clock(info0), ==,
 			GPIOD_LINE_EVENT_CLOCK_MONOTONIC);

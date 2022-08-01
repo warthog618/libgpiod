@@ -43,6 +43,7 @@ extern "C" {
 struct gpiod_chip;
 struct gpiod_chip_info;
 struct gpiod_line_info;
+struct gpiod_line_settings;
 struct gpiod_line_config;
 struct gpiod_request_config;
 struct gpiod_line_request;
@@ -167,12 +168,10 @@ int gpiod_chip_get_line_offset_from_name(struct gpiod_chip *chip,
 /**
  * @brief Request a set of lines for exclusive usage.
  * @param chip GPIO chip object.
- * @param req_cfg Request config object.
+ * @param req_cfg Request config object. Can be NULL for default settings.
  * @param line_cfg Line config object.
  * @return New line request object or NULL if an error occurred. The request
  *	   must be released by the caller using ::gpiod_line_request_release.
- * @note Line configuration overrides for lines that are not requested are
- *	 silently ignored.
  */
 struct gpiod_line_request *
 gpiod_chip_request_lines(struct gpiod_chip *chip,
@@ -229,7 +228,7 @@ size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info);
 /**
  * @}
  *
- * @defgroup line_settings Line definitions
+ * @defgroup line_defs Line definitions
  * @{
  *
  * These defines are used across the API.
@@ -514,6 +513,180 @@ gpiod_info_event_get_line_info(struct gpiod_info_event *event);
 /**
  * @}
  *
+ * @defgroup line_settings Line settings objects
+ * @{
+ *
+ * Functions for manipulating line settings objects.
+ *
+ * Line settings object contains a set of line properties that can be used
+ * when requesting lines or reconfiguring an existing request.
+ *
+ * Mutators in general can only fail if the new property value is invalid. The
+ * return values can be safely ignored - the object remains valid even after
+ * a mutator fails and simply uses the sane default appropriate for given
+ * property.
+ */
+
+/**
+ * @brief Create a new line settings object.
+ * @return New line settings object or NULL on error.
+ */
+struct gpiod_line_settings *gpiod_line_settings_new(void);
+
+/**
+ * @brief Free the line settings object and release all associated resources.
+ * @param settings Line settings object.
+ */
+void gpiod_line_settings_free(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Reset the line settings object to its default values.
+ * @param settings Line settings object.
+ */
+void gpiod_line_settings_reset(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Copy the line settings object.
+ * @param settings Line settings object to copy.
+ * @return New line settings object that must be freed using
+ *         ::gpiod_line_settings_free or NULL on failure.
+ */
+struct gpiod_line_settings *
+gpiod_line_settings_copy(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set direction.
+ * @param settings Line settings object.
+ * @param direction New direction.
+ * @return 0 on success, -1 on error.
+ */
+int gpiod_line_settings_set_direction(struct gpiod_line_settings *settings,
+				      int direction);
+
+/**
+ * @brief Get direction.
+ * @param settings Line settings object.
+ * @return Current direction.
+ */
+int gpiod_line_settings_get_direction(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set edge detection.
+ * @param settings Line settings object.
+ * @param edge New edge detection setting.
+ * @return 0 on success, -1 on failure.
+ */
+int gpiod_line_settings_set_edge_detection(struct gpiod_line_settings *settings,
+					   int edge);
+
+/**
+ * @brief Get edge detection.
+ * @param settings Line settings object.
+ * @return Current edge detection setting.
+ */
+int
+gpiod_line_settings_get_edge_detection(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set bias.
+ * @param settings Line settings object.
+ * @param bias New bias.
+ * @return 0 on success, -1 on failure.
+ */
+int gpiod_line_settings_set_bias(struct gpiod_line_settings *settings,
+				 int bias);
+
+/**
+ * @brief Get bias.
+ * @param settings Line settings object.
+ * @return Current bias setting.
+ */
+int gpiod_line_settings_get_bias(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set drive.
+ * @param settings Line settings object.
+ * @param drive New drive setting.
+ * @return 0 on success, -1 on failure.
+ */
+int gpiod_line_settings_set_drive(struct gpiod_line_settings *settings,
+				  int drive);
+
+/**
+ * @brief Get drive.
+ * @param settings Line settings object.
+ * @return Current drive setting.
+ */
+int gpiod_line_settings_get_drive(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set active-low setting.
+ * @param settings Line settings object.
+ * @param active_low New active-low setting.
+ */
+void gpiod_line_settings_set_active_low(struct gpiod_line_settings *settings,
+					bool active_low);
+
+/**
+ * @brief Get active-low setting.
+ * @param settings Line settings object.
+ * @return True if active-low is enabled, false otherwise.
+ */
+bool gpiod_line_settings_get_active_low(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set debounce period.
+ * @param settings Line settings object.
+ * @param period New debounce period in microseconds.
+ */
+void
+gpiod_line_settings_set_debounce_period_us(struct gpiod_line_settings *settings,
+					   unsigned long period);
+
+/**
+ * @brief Get debounce period.
+ * @param settings Line settings object.
+ * @return Current debounce period in microseconds.
+ */
+unsigned long
+gpiod_line_settings_get_debounce_period_us(
+		struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set event clock.
+ * @param settings Line settings object.
+ * @param event_clock New event clock.
+ * @return 0 on success, -1 on failure.
+ */
+int gpiod_line_settings_set_event_clock(struct gpiod_line_settings *settings,
+					int event_clock);
+
+/**
+ * @brief Get event clock setting.
+ * @param settings Line settings object.
+ * @return Current event clock setting.
+ */
+int gpiod_line_settings_get_event_clock(struct gpiod_line_settings *settings);
+
+/**
+ * @brief Set the output value.
+ * @param settings Line settings object.
+ * @param value New output value.
+ * @return 0 on success, -1 on failure.
+ */
+int gpiod_line_settings_set_output_value(struct gpiod_line_settings *settings,
+					 int value);
+
+/**
+ * @brief Get the output value.
+ * @param settings Line settings object.
+ * @return Current output value.
+ */
+int gpiod_line_settings_get_output_value(struct gpiod_line_settings *settings);
+
+/*
+ * @}
+ *
  * @defgroup line_config Line configuration objects
  * @{
  *
@@ -524,34 +697,14 @@ gpiod_info_event_get_line_info(struct gpiod_info_event *event);
  *  - when making a line request
  *  - when reconfiguring a set of already requested lines.
  *
- * A new line-config object is instantiated with a set of sane defaults
- * for all supported configuration settings. Those defaults can be modified by
- * the caller. Default values can be overridden by applying different values
- * for specific lines. When making a request or reconfiguring an existing one,
- * the overridden settings for specific lines take precedance. For lines
- * without an override the requested default settings are used.
+ * A new line-config object is empty. Using it in a request will lead to an
+ * error. In order to a line-config to become useful, it needs to be assigned
+ * at least one offset-to-settings mapping by calling
+ * ::gpiod_line_config_add_line_settings.
  *
- * For every setting there are two mutators (one setting the default and one
- * for the per-line override), two getters (one for reading the global
- * default and one for retrieving the effective value for the line),
- * a function for testing if a setting is overridden for the line
- * and finally a function for clearing the overrides (per line).
- *
- * The mutators don't return errors. If the set of options is too complex to
- * be translated into kernel uAPI structures then an error will be returned at
- * the time of the request or reconfiguration. If an invalid value was passed
- * to any of the mutators then the default value will be silently used instead.
- *
- * Operating on lines in struct line_config has no immediate effect on real
- * GPIOs, it only manipulates the config object in memory.  Those changes are
- * only applied to the hardware at the time of the request or reconfiguration.
- *
- * Overrides for lines that don't end up being requested are silently ignored
- * both in ::gpiod_chip_request_lines as well as in
- * ::gpiod_line_request_reconfigure_lines.
- *
- * In cases where all requested lines are using the one configuration, the
- * line overrides can be entirely ignored when preparing the configuration.
+ * When calling ::gpiod_chip_request_lines, the library will request all
+ * offsets that were assigned settings in the order that they were assigned.
+ * If any of the offsets was duplicated, the last one will take precedence.
  */
 
 /**
@@ -576,522 +729,42 @@ void gpiod_line_config_free(struct gpiod_line_config *config);
 void gpiod_line_config_reset(struct gpiod_line_config *config);
 
 /**
- * @brief Set the default line direction.
+ * @brief Add line settings for a set of offsets.
  * @param config Line config object.
- * @param direction New direction.
+ * @param offsets Array of offsets for which to apply the settings.
+ * @param num_offsets Number of offsets stored in the offsets array.
+ * @param settings Line settings to apply.
+ * @return 0 on success, -1 on failure.
  */
-void gpiod_line_config_set_direction_default(struct gpiod_line_config *config,
-					     int direction);
+int gpiod_line_config_add_line_settings(struct gpiod_line_config *config,
+					const unsigned int *offsets,
+					size_t num_offsets,
+					struct gpiod_line_settings *settings);
 
 /**
- * @brief Set the direction override for a line.
+ * @brief Get line settings for offset.
  * @param config Line config object.
- * @param direction New direction.
- * @param offset The offset of the line for which to set the override.
+ * @param offset Offset for which to get line settings.
+ * @return New line settings object (must be freed by the caller) or NULL on
+ *         error.
  */
-void gpiod_line_config_set_direction_override(struct gpiod_line_config *config,
-					      int direction,
-					      unsigned int offset);
+struct gpiod_line_settings *
+gpiod_line_config_get_line_settings(struct gpiod_line_config *config,
+				    unsigned int offset);
 
 /**
- * @brief Clear the direction override for a line.
+ * @brief Get configured offsets.
  * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
+ * @param num_offsets Pointer to a variable in which the number of line offsets
+ *                    will be stored.
+ * @param offsets Pointer to a pointer which will be set to point to an array
+ *                containing the configured offsets. The array will be allocated
+ *                using malloc() and must be freed using free().
+ * @return 0 on success, -1 on failure.
  */
-void
-gpiod_line_config_clear_direction_override(struct gpiod_line_config *config,
-					   unsigned int offset);
-
-/**
- * @brief Check if the direction is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if direction is overridden on the line, false otherwise.
- */
-bool gpiod_line_config_direction_is_overridden(struct gpiod_line_config *config,
-					       unsigned int offset);
-
-/**
- * @brief Get the default direction setting.
- * @param config Line config object.
- * @return Direction setting used for any non-overridden line.
- */
-int gpiod_line_config_get_direction_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the direction setting for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the direction.
- * @return Direction setting for the line if the config object were used
- *	   in a request.
- */
-int gpiod_line_config_get_direction_offset(struct gpiod_line_config *config,
-					   unsigned int offset);
-
-/**
- * @brief Set the default edge event detection.
- * @param config Line config object.
- * @param edge Type of edge events to detect.
- */
-void
-gpiod_line_config_set_edge_detection_default(struct gpiod_line_config *config,
-					     int edge);
-
-/**
- * @brief Set the edge detection override for a line.
- * @param config Line config object.
- * @param edge Type of edge events to detect.
- * @param offset The offset of the line for which to set the override.
- */
-void
-gpiod_line_config_set_edge_detection_override(struct gpiod_line_config *config,
-					      int edge, unsigned int offset);
-
-/**
- * @brief Clear the edge detection override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void
-gpiod_line_config_clear_edge_detection_override(
-			struct gpiod_line_config *config, unsigned int offset);
-
-/**
- * @brief Check if the edge detection setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if edge detection is overridden for the line, false otherwise.
- */
-bool
-gpiod_line_config_edge_detection_is_overridden(struct gpiod_line_config *config,
-					       unsigned int offset);
-
-/**
- * @brief Get the default edge detection setting.
- * @param config Line config object.
- * @return Edge detection setting used for any non-overridden line.
- */
-int
-gpiod_line_config_get_edge_detection_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the edge event detection setting for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the edge event detection
- *		 setting.
- * @return Edge event detection setting for the line if the config object
- *	   were used in a request.
- */
-int
-gpiod_line_config_get_edge_detection_offset(struct gpiod_line_config *config,
-					    unsigned int offset);
-
-/**
- * @brief Set the default bias setting.
- * @param config Line config object.
- * @param bias New bias.
- */
-void gpiod_line_config_set_bias_default(struct gpiod_line_config *config,
-					int bias);
-
-/**
- * @brief Set the bias override for a line.
- * @param config Line config object.
- * @param bias New bias setting.
- * @param offset The offset of the line for which to set the override.
- */
-void gpiod_line_config_set_bias_override(struct gpiod_line_config *config,
-					 int bias, unsigned int offset);
-
-/**
- * @brief Clear the bias override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void gpiod_line_config_clear_bias_override(struct gpiod_line_config *config,
-					   unsigned int offset);
-
-/**
- * @brief Check if the bias setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if bias is overridden for the line, false otherwise.
- */
-bool gpiod_line_config_bias_is_overridden(struct gpiod_line_config *config,
-					  unsigned int offset);
-/**
- * @brief Get the default bias setting.
- * @param config Line config object.
- * @return Bias setting used for any non-overridden line.
- */
-int gpiod_line_config_get_bias_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the bias setting for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the bias setting.
- * @return Bias setting used for the line if the config object were used
- *	   in a request.
- */
-int gpiod_line_config_get_bias_offset(struct gpiod_line_config *config,
-				      unsigned int offset);
-
-/**
- * @brief Set the default drive setting.
- * @param config Line config object.
- * @param drive New drive.
- */
-void gpiod_line_config_set_drive_default(struct gpiod_line_config *config,
-					 int drive);
-
-/**
- * @brief Set the drive override for a line.
- * @param config Line config object.
- * @param drive New drive setting.
- * @param offset The offset of the line for which to set the override.
- */
-void gpiod_line_config_set_drive_override(struct gpiod_line_config *config,
-					  int drive, unsigned int offset);
-
-/**
- * @brief Clear the drive override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void gpiod_line_config_clear_drive_override(struct gpiod_line_config *config,
-					    unsigned int offset);
-
-/**
- * @brief Check if the drive setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if drive is overridden for the line, false otherwise.
- */
-bool gpiod_line_config_drive_is_overridden(struct gpiod_line_config *config,
-					   unsigned int offset);
-
-/**
- * @brief Get the default drive setting.
- * @param config Line config object.
- * @return Drive setting for any non-overridden line.
- */
-int gpiod_line_config_get_drive_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the drive setting for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the drive setting.
- * @return Drive setting for the line if the config object were used in a
- *	   request.
- */
-int gpiod_line_config_get_drive_offset(struct gpiod_line_config *config,
-				       unsigned int offset);
-
-/**
- * @brief Set the default active-low setting.
- * @param config Line config object.
- * @param active_low New active-low setting.
- */
-void gpiod_line_config_set_active_low_default(struct gpiod_line_config *config,
-					      bool active_low);
-
-/**
- * @brief Override the active-low setting for a line.
- * @param config Line config object.
- * @param active_low New active-low setting.
- * @param offset The offset of the line for which to set the override.
- */
-void gpiod_line_config_set_active_low_override(struct gpiod_line_config *config,
-					       bool active_low,
-					       unsigned int offset);
-
-/**
- * @brief Clear the active-low override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void
-gpiod_line_config_clear_active_low_override(struct gpiod_line_config *config,
-					    unsigned int offset);
-
-/**
- * @brief Check if the active-low setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if active-low is overridden for the line, false otherwise.
- */
-bool
-gpiod_line_config_active_low_is_overridden(struct gpiod_line_config *config,
-					   unsigned int offset);
-
-/**
- * @brief Check if active-low is the default setting.
- * @param config Line config object.
- * @return Active-low setting for any non-overridden line.
- */
-bool gpiod_line_config_get_active_low_default(struct gpiod_line_config *config);
-
-/**
- * @brief Check if a line is configured as active-low.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the active-low setting.
- * @return Active-low setting for the line if the config object were used in
- *	   a request.
- */
-bool gpiod_line_config_get_active_low_offset(struct gpiod_line_config *config,
-					     unsigned int offset);
-
-/**
- * @brief Set the default debounce period.
- * @param config Line config object.
- * @param period New debounce period in microseconds. Disables debouncing if 0.
- * @note Debouncing is only useful on input lines with edge detection.
- *	 Its purpose is to filter spurious events due to noise during the
- *	 edge transition.  It has no effect on normal get or set operations.
- */
-void gpiod_line_config_set_debounce_period_us_default(
-		struct gpiod_line_config *config, unsigned long period);
-
-/**
- * @brief Override the debounce period setting for a line.
- * @param config Line config object.
- * @param period New debounce period in microseconds.
- * @param offset The offset of the line for which to set the override.
- */
-void
-gpiod_line_config_set_debounce_period_us_override(
-					struct gpiod_line_config *config,
-					unsigned long period,
-					unsigned int offset);
-
-/**
- * @brief Clear the debounce period override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void gpiod_line_config_clear_debounce_period_us_override(
-					struct gpiod_line_config *config,
-					unsigned int offset);
-
-/**
- * @brief Check if the debounce period setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if debounce period is overridden for the line, false
- *	   otherwise.
- */
-bool gpiod_line_config_debounce_period_us_is_overridden(
-					struct gpiod_line_config *config,
-					unsigned int offset);
-
-/**
- * @brief Get the default debounce period.
- * @param config Line config object.
- * @return Debounce period for any non-overridden line.
- *	   Measured in microseconds.
- *	   0 if debouncing is disabled.
- */
-unsigned long gpiod_line_config_get_debounce_period_us_default(
-					struct gpiod_line_config *config);
-
-/**
- * @brief Get the debounce period for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the debounce period.
- * @return Debounce period for the line if the config object were used in a
- *	   request.
- *	   Measured in microseconds.
- *	   0 if debouncing is disabled.
- */
-unsigned long
-gpiod_line_config_get_debounce_period_us_offset(
-			struct gpiod_line_config *config, unsigned int offset);
-
-/**
- * @brief Set the default event timestamp clock.
- * @param config Line config object.
- * @param clock New clock to use.
- */
-void gpiod_line_config_set_event_clock_default(struct gpiod_line_config *config,
-					       int clock);
-
-/**
- * @brief Override the event clock setting for a line.
- * @param config Line config object.
- * @param clock New event clock to use.
- * @param offset The offset of the line for which to set the override.
- */
-void
-gpiod_line_config_set_event_clock_override(struct gpiod_line_config *config,
-					   int clock, unsigned int offset);
-
-/**
- * @brief Clear the event clock override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void
-gpiod_line_config_clear_event_clock_override(struct gpiod_line_config *config,
-					     unsigned int offset);
-
-/**
- * @brief Check if the event clock setting is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if event clock period is overridden for the line, false
- *	   otherwise.
- */
-bool
-gpiod_line_config_event_clock_is_overridden(struct gpiod_line_config *config,
-					    unsigned int offset);
-
-/**
- * @brief Get the default event clock setting.
- * @param config Line config object.
- * @return Event clock setting for any non-overridden line.
- */
-int gpiod_line_config_get_event_clock_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the event clock setting for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to read the event clock setting.
- * @return Event clock setting for the line if the config object were used in a
- *	   request.
- */
-int gpiod_line_config_get_event_clock_offset(struct gpiod_line_config *config,
-					     unsigned int offset);
-
-/**
- * @brief Set the default output value.
- * @param config Line config object.
- * @param value New value.
- *
- * The default output value applies to all non-overridden output lines.
- * It does not apply to input lines or overridden lines.
- */
-void
-gpiod_line_config_set_output_value_default(struct gpiod_line_config *config,
-					   int value);
-
-/**
- * @brief Override the output value for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to override the output value.
- * @param value Output value to set.
- */
-void
-gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
-					    int value, unsigned int offset);
-
-/**
- * @brief Override the output values for multiple lines.
- * @param config Line config object.
- * @param num_values Number of lines for which to override values.
- * @param offsets Array of offsets identifying the lines for which to override
- *		  values,  containing \p num_values entries.
- * @param values Array of output values corresponding to the lines identified in
- *		 \p offsets, also containing \p num_values entries.
- */
-void gpiod_line_config_set_output_values(struct gpiod_line_config *config,
-					 size_t num_values,
-					 const unsigned int *offsets,
-					 const int *values);
-
-/**
- * @brief Clear the output value override for a line.
- * @param config Line config object.
- * @param offset The offset of the line for which to clear the override.
- * @note Does nothing if no override is set for the line.
- */
-void
-gpiod_line_config_clear_output_value_override(struct gpiod_line_config *config,
-					      unsigned int offset);
-
-/**
- * @brief Check if the output value is overridden for a line.
- * @param config Line config object.
- * @param offset The offset of the line to check for the override.
- * @return True if output value is overridden for the line, false otherwise.
- */
-bool
-gpiod_line_config_output_value_is_overridden(struct gpiod_line_config *config,
-					     unsigned int offset);
-
-/**
- * @brief Get the default output value.
- * @param config Line config object.
- * @return Output value for any non-overridden line.
- */
-int
-gpiod_line_config_get_output_value_default(struct gpiod_line_config *config);
-
-/**
- * @brief Get the configured output value for a line.
- * @param config Line config object.
- * @param offset Line offset for which to read the value.
- * @return Output value for the line if the config object were used in a
- *	   request.
- */
-int gpiod_line_config_get_output_value_offset(struct gpiod_line_config *config,
-					      unsigned int offset);
-
-/**
- * @brief List of properties that can be stored in a line_config object.
- *
- * Used when retrieving the overrides.
- */
-enum {
-	GPIOD_LINE_CONFIG_PROP_DIRECTION = 1,
-	/**< Line direction. */
-	GPIOD_LINE_CONFIG_PROP_EDGE_DETECTION,
-	/**< Edge detection. */
-	GPIOD_LINE_CONFIG_PROP_BIAS,
-	/**< Bias. */
-	GPIOD_LINE_CONFIG_PROP_DRIVE,
-	/**< Drive. */
-	GPIOD_LINE_CONFIG_PROP_ACTIVE_LOW,
-	/**< Active-low setting. */
-	GPIOD_LINE_CONFIG_PROP_DEBOUNCE_PERIOD_US,
-	/** Debounce period. */
-	GPIOD_LINE_CONFIG_PROP_EVENT_CLOCK,
-	/**< Event clock type. */
-	GPIOD_LINE_CONFIG_PROP_OUTPUT_VALUE,
-	/**< Output value. */
-};
-
-/**
- * @brief Get the total number of overridden settings stored in the line config
- *	  object.
- * @param config Line config object.
- * @return Number of individual overridden settings.
- */
-size_t gpiod_line_config_get_num_overrides(struct gpiod_line_config *config);
-
-/**
- * @brief Get the list of overridden offsets and the corresponding types of
- *	  overridden settings.
- * @param config Line config object.
- * @param offsets Array to store the overidden offsets. Must be sized to hold
- *		  the number of unsigned integers returned by
- *		  ::gpiod_line_config_get_num_overrides.
- * @param props Array to store the types of overridden settings. Must be sized
- *		to hold the number of integers returned by
- *		::gpiod_line_config_get_num_overrides.
- *
- * The overridden (offset, prop) pairs are stored in the \p offsets and
- * \p props arrays, with the pairs having the same index.
- */
-void
-gpiod_line_config_get_overrides(struct gpiod_line_config *config,
-				unsigned int *offsets, int *props);
+int gpiod_line_config_get_offsets(struct gpiod_line_config *config,
+				  size_t *num_offsets,
+				  unsigned int **offsets);
 
 /**
  * @}
@@ -1102,9 +775,9 @@ gpiod_line_config_get_overrides(struct gpiod_line_config *config,
  * Functions for manipulating request configuration objects.
  *
  * Request config objects are used to pass a set of options to the kernel at
- * the time of the line request. Similarly to the line-config - the mutators
- * don't return error values. If the values are invalid, in general they are
- * silently adjusted to acceptable ranges.
+ * the time of the line request. The mutators don't return error values. If the
+ * values are invalid, in general they are silently adjusted to acceptable
+ * ranges.
  */
 
 /**
@@ -1136,35 +809,6 @@ void gpiod_request_config_set_consumer(struct gpiod_request_config *config,
  */
 const char *
 gpiod_request_config_get_consumer(struct gpiod_request_config *config);
-
-/**
- * @brief Set the offsets of the lines to be requested.
- * @param config Request config object.
- * @param num_offsets Number of offsets to set.
- * @param offsets Array of offsets, containing \p num_offsets entries.
- * @note If too many offsets were specified, the offsets above the limit
- *       accepted by the kernel (64 lines) are silently dropped.
- */
-void gpiod_request_config_set_offsets(struct gpiod_request_config *config,
-				      size_t num_offsets,
-				      const unsigned int *offsets);
-
-/**
- * @brief Get the number of offsets configured in this request config.
- * @param config Request config object.
- * @return Number of line offsets in this request config.
- */
-size_t
-gpiod_request_config_get_num_offsets(struct gpiod_request_config *config);
-
-/**
- * @brief Get the offsets of lines in the request config.
- * @param config Request config object.
- * @param offsets Array to store offsets. Must be sized to hold the number of
- *		  lines returned by ::gpiod_request_config_get_num_offsets.
- */
-void gpiod_request_config_get_offsets(struct gpiod_request_config *config,
-				      unsigned int *offsets);
 
 /**
  * @brief Set the size of the kernel event buffer for the request.

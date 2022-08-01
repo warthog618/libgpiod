@@ -192,12 +192,10 @@ gpiod_chip_request_lines(struct gpiod_chip *chip,
 
 	memset(&uapi_req, 0, sizeof(uapi_req));
 
-	ret = gpiod_request_config_to_uapi(req_cfg, &uapi_req);
-	if (ret)
-		return NULL;
+	if (req_cfg)
+		gpiod_request_config_to_uapi(req_cfg, &uapi_req);
 
-	ret = gpiod_line_config_to_uapi(line_cfg, &uapi_req.config,
-					uapi_req.num_lines, uapi_req.offsets);
+	ret = gpiod_line_config_to_uapi(line_cfg, &uapi_req);
 	if (ret)
 		return NULL;
 

@@ -12,8 +12,6 @@
 #include "helpers.hpp"
 
 using simprop = ::gpiosim::chip::property;
-using reqprop = ::gpiod::request_config::property;
-using lineprop = ::gpiod::line_config::property;
 using direction = ::gpiod::line::direction;
 using event_type = ::gpiod::info_event::event_type;
 
@@ -23,19 +21,20 @@ void request_reconfigure_release_line(::gpiod::chip& chip)
 {
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, ::gpiod::line::offsets({ 7 }) }
-		}),
-		::gpiod::line_config()
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(7, ::gpiod::line_settings())
+		.do_request();
 
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
 
 	request.reconfigure_lines(
-		::gpiod::line_config({
-			{ lineprop::DIRECTION, direction::OUTPUT }
-		})
+		::gpiod::line_config()
+			.add_line_settings(
+				7,
+				::gpiod::line_settings()
+					.set_direction(direction::OUTPUT)
+			)
 	);
 
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
@@ -109,12 +108,10 @@ TEST_CASE("info_event can be copied and moved", "[info-event]")
 
 	chip.watch_line_info(0);
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, ::gpiod::line::offsets({ 0 }) }
-		}),
-		::gpiod::line_config()
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(0, ::gpiod::line_settings())
+		.do_request();
 
 	REQUIRE(chip.wait_info_event(::std::chrono::seconds(1)));
 	auto event = chip.read_info_event();
@@ -176,12 +173,10 @@ TEST_CASE("info_event stream insertion operator works", "[info-event][line-info]
 
 	chip.watch_line_info(0);
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, ::gpiod::line::offsets({ 0 }) }
-		}),
-		::gpiod::line_config()
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(0, ::gpiod::line_settings())
+		.do_request();
 
 	auto event = chip.read_info_event();
 

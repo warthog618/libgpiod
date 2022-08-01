@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021-2022 Bartosz Golaszewski <brgl@bgdev.pl>
 
 #include <iterator>
+#include <ostream>
 #include <utility>
 
 #include "internal.hpp"
@@ -126,12 +127,13 @@ GPIOD_CXX_API void line_request::get_values(line::values& values)
 	this->get_values(this->offsets(), values);
 }
 
-GPIOD_CXX_API void line_request::line_request::set_value(line::offset offset, line::value value)
+GPIOD_CXX_API line_request&
+line_request::line_request::set_value(line::offset offset, line::value value)
 {
-	this->set_values({ offset }, { value });
+	return this->set_values({ offset }, { value });
 }
 
-GPIOD_CXX_API void
+GPIOD_CXX_API line_request&
 line_request::set_values(const line::value_mappings& values)
 {
 	line::offsets offsets(values.size());
@@ -142,10 +144,10 @@ line_request::set_values(const line::value_mappings& values)
 		vals[i] = values[i].second;
 	}
 
-	this->set_values(offsets, vals);
+	return this->set_values(offsets, vals);
 }
 
-GPIOD_CXX_API void line_request::set_values(const line::offsets& offsets,
+GPIOD_CXX_API line_request& line_request::set_values(const line::offsets& offsets,
 					    const line::values& values)
 {
 	this->_m_priv->throw_if_released();
@@ -160,14 +162,16 @@ GPIOD_CXX_API void line_request::set_values(const line::offsets& offsets,
 							 reinterpret_cast<const int*>(values.data()));
 	if (ret)
 		throw_from_errno("unable to set line values");
+
+	return *this;
 }
 
-GPIOD_CXX_API void line_request::set_values(const line::values& values)
+GPIOD_CXX_API line_request& line_request::set_values(const line::values& values)
 {
-	this->set_values(this->offsets(), values);
+	return this->set_values(this->offsets(), values);
 }
 
-GPIOD_CXX_API void line_request::reconfigure_lines(const line_config& config)
+GPIOD_CXX_API line_request& line_request::reconfigure_lines(const line_config& config)
 {
 	this->_m_priv->throw_if_released();
 
@@ -175,6 +179,8 @@ GPIOD_CXX_API void line_request::reconfigure_lines(const line_config& config)
 							 config._m_priv->config.get());
 	if (ret)
 		throw_from_errno("unable to reconfigure GPIO lines");
+
+	return *this;
 }
 
 GPIOD_CXX_API int line_request::fd() const

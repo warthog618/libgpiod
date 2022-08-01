@@ -159,6 +159,7 @@ int main(int argc, char **argv)
 	struct gpiod_edge_event_buffer *event_buffer;
 	int optc, opti, ret, i, edge, bias = 0;
 	uint64_t timeout = 10 * 1000000000LLU;
+	struct gpiod_line_settings *settings;
 	struct gpiod_request_config *req_cfg;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
@@ -250,26 +251,37 @@ int main(int argc, char **argv)
 		num_lines++;
 	}
 
+	if (has_duplicate_offsets(num_lines, offsets))
+		die("offsets must be unique");
+
 	chip = chip_open_lookup(argv[0]);
 	if (!chip)
 		die_perror("unable to open %s", argv[0]);
 
-	line_cfg = gpiod_line_config_new();
-	if (!line_cfg)
-		die_perror("unable to allocate the line config structure");
+	settings = gpiod_line_settings_new();
+	if (!settings)
+		die_perror("unable to allocate line settings");
 
 	if (bias)
-		gpiod_line_config_set_bias_default(line_cfg, bias);
+		gpiod_line_settings_set_bias(settings, bias);
 	if (active_low)
-		gpiod_line_config_set_active_low_default(line_cfg, true);
-	gpiod_line_config_set_edge_detection_default(line_cfg, edge);
+		gpiod_line_settings_set_active_low(settings, active_low);
+	gpiod_line_settings_set_edge_detection(settings, edge);
 
 	req_cfg = gpiod_request_config_new();
 	if (!req_cfg)
 		die_perror("unable to allocate the request config structure");
 
 	gpiod_request_config_set_consumer(req_cfg, "gpiomon");
-	gpiod_request_config_set_offsets(req_cfg, num_lines, offsets);
+
+	line_cfg = gpiod_line_config_new();
+	if (!line_cfg)
+		die_perror("unable to allocate the line config structure");
+
+	ret = gpiod_line_config_add_line_settings(line_cfg, offsets,
+						  num_lines, settings);
+	if (ret)
+		die_perror("unable to add line settings");
 
 	request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
 	if (!request)
@@ -314,6 +326,7 @@ done:
 	gpiod_line_request_release(request);
 	gpiod_request_config_free(req_cfg);
 	gpiod_line_config_free(line_cfg);
+	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
 
 	return EXIT_SUCCESS;

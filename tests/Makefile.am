@@ -29,5 +29,6 @@ gpiod_test_SOURCES =			\
 		tests-line-config.c	\
 		tests-line-info.c	\
 		tests-line-request.c	\
+		tests-line-settings.c	\
 		tests-misc.c		\
 		tests-request-config.c

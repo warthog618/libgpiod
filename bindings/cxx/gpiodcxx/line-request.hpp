@@ -53,6 +53,7 @@ public:
 	/**
 	 * @brief Move assignment operator.
 	 * @param other Object to move.
+	 * @return Reference to self.
 	 */
 	line_request& operator=(line_request&& other) noexcept;
 
@@ -130,35 +131,40 @@ public:
 	 * @brief Set the value of a single requested line.
 	 * @param offset Offset of the line to set within the chip.
 	 * @param value New line value.
+	 * @return Reference to self.
 	 */
-	void set_value(line::offset offset, line::value value);
+	line_request& set_value(line::offset offset, line::value value);
 
 	/**
 	 * @brief Set the values of a subset of requested lines.
 	 * @param values Vector containing a set of offset->value mappings.
+	 * @return Reference to self.
 	 */
-	void set_values(const line::value_mappings& values);
+	line_request& set_values(const line::value_mappings& values);
 
 	/**
 	 * @brief Set the values of a subset of requested lines.
 	 * @param offsets Vector containing the offsets of lines to set.
 	 * @param values Vector containing new values with indexes
 	 *               corresponding with those in the offsets vector.
+	 * @return Reference to self.
 	 */
-	void set_values(const line::offsets& offsets, const line::values& values);
+	line_request& set_values(const line::offsets& offsets, const line::values& values);
 
 	/**
 	 * @brief Set the values of all requested lines.
 	 * @param values Array of new line values. The size must be equal to
 	 *               the value returned by line_request::num_lines.
+	 * @return Reference to self.
 	 */
-	void set_values(const line::values& values);
+	line_request& set_values(const line::values& values);
 
 	/**
 	 * @brief Apply new config options to requested lines.
 	 * @param config New configuration.
+	 * @return Reference to self.
 	 */
-	void reconfigure_lines(const line_config& config);
+	line_request& reconfigure_lines(const line_config& config);
 
 	/**
 	 * @brief Get the file descriptor number associated with this line
@@ -201,7 +207,7 @@ private:
 
 	::std::unique_ptr<impl> _m_priv;
 
-	friend chip;
+	friend request_builder;
 };
 
 /**

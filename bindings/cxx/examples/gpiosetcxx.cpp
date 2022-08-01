@@ -36,18 +36,15 @@ int main(int argc, char **argv)
 						       ::gpiod::line::value::INACTIVE);
 	}
 
-	::gpiod::chip chip(argv[1]);
-	auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ ::gpiod::request_config::property::OFFSETS, offsets },
-				{ ::gpiod::request_config::property::CONSUMER, "gpiogetcxx" }
-			}),
-			::gpiod::line_config({
-				{
-					::gpiod::line_config::property::DIRECTION,
-					::gpiod::line::direction::OUTPUT
-				}
-			}));
+	auto request = ::gpiod::chip(argv[1])
+		.prepare_request()
+		.set_consumer("gpiosetcxx")
+		.add_line_settings(
+			offsets,
+			::gpiod::line_settings()
+				.set_direction(::gpiod::line::direction::OUTPUT)
+		)
+		.do_request();
 
 	request.set_values(values);
 

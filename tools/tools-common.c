@@ -169,3 +169,16 @@ struct gpiod_chip *chip_open_lookup(const char *device)
 
 	return chip;
 }
+
+bool has_duplicate_offsets(size_t num_offsets, unsigned int *offsets)
+{
+	size_t i, j;
+
+	for (i = 0; i < num_offsets; i++) {
+		for (j = i + 1; j < num_offsets; j++)
+			if (offsets[i] == offsets[j])
+				return true;
+	}
+
+	return false;
+}

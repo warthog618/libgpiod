@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021-2022 Bartosz Golaszewski <brgl@bgdev.pl>
 
 #include <map>
+#include <ostream>
 
 #include "internal.hpp"
 

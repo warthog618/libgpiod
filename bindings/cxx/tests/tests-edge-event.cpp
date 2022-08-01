@@ -12,8 +12,6 @@
 #include "helpers.hpp"
 
 using simprop = ::gpiosim::chip::property;
-using reqprop = ::gpiod::request_config::property;
-using lineprop = ::gpiod::line_config::property;
 using direction = ::gpiod::line::direction;
 using edge = ::gpiod::line::edge;
 using offsets = ::gpiod::line::offsets;
@@ -45,14 +43,13 @@ TEST_CASE("edge_event wait timeout", "[edge-event]")
 	::gpiosim::chip sim;
 	::gpiod::chip chip(sim.dev_path());
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, offsets({ 0 })}
-		}),
-		::gpiod::line_config({
-			{ lineprop::EDGE_DETECTION, edge::BOTH }
-		})
-	);
+	auto request = chip.prepare_request()
+		.add_line_settings(
+			0,
+			::gpiod::line_settings()
+				.set_edge_detection(edge::BOTH)
+		)
+		.do_request();
 
 	REQUIRE_FALSE(request.wait_edge_event(::std::chrono::milliseconds(100)));
 }
@@ -60,18 +57,17 @@ TEST_CASE("edge_event wait timeout", "[edge-event]")
 TEST_CASE("output mode and edge detection don't work together", "[edge-event]")
 {
 	::gpiosim::chip sim;
-	::gpiod::chip chip(sim.dev_path());
 
 	REQUIRE_THROWS_AS(
-		chip.request_lines(
-			::gpiod::request_config({
-				{ reqprop::OFFSETS, offsets({ 0 })}
-			}),
-			::gpiod::line_config({
-				{ lineprop::DIRECTION, direction::OUTPUT },
-				{ lineprop::EDGE_DETECTION, edge::BOTH }
-			})
-		),
+		::gpiod::chip(sim.dev_path())
+			.prepare_request()
+			.add_line_settings(
+				0,
+				::gpiod::line_settings()
+					.set_direction(direction::OUTPUT)
+					.set_edge_detection(edge::BOTH)
+			)
+			.do_request(),
 		::std::invalid_argument
 	);
 }
@@ -101,14 +97,14 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 
 	SECTION("both edge events")
 	{
-		auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ reqprop::OFFSETS, offsets({ 2 })}
-			}),
-			::gpiod::line_config({
-				{ lineprop::EDGE_DETECTION, edge::BOTH }
-			})
-		);
+		auto request = chip
+			.prepare_request()
+			.add_line_settings(
+				2,
+				::gpiod::line_settings()
+					.set_edge_detection(edge::BOTH)
+			)
+			.do_request();
 
 		::std::uint64_t ts_rising, ts_falling;
 
@@ -139,14 +135,14 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 
 	SECTION("rising edge event")
 	{
-		auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ reqprop::OFFSETS, offsets({ 6 })}
-			}),
-			::gpiod::line_config({
-				{ lineprop::EDGE_DETECTION, edge::RISING }
-			})
-		);
+		auto request = chip
+			.prepare_request()
+			.add_line_settings(
+				6,
+				::gpiod::line_settings()
+					.set_edge_detection(edge::RISING)
+			)
+			.do_request();
 
 		::std::thread thread(trigger_falling_and_rising_edge, ::std::ref(sim), 6);
 
@@ -164,14 +160,14 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 
 	SECTION("falling edge event")
 	{
-		auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ reqprop::OFFSETS, offsets({ 7 })}
-			}),
-			::gpiod::line_config({
-				{ lineprop::EDGE_DETECTION, edge::FALLING }
-			})
-		);
+		auto request = chip
+			.prepare_request()
+			.add_line_settings(
+				7,
+				::gpiod::line_settings()
+					.set_edge_detection(edge::FALLING)
+			)
+			.do_request();
 
 		::std::thread thread(trigger_falling_and_rising_edge, ::std::ref(sim), 7);
 
@@ -189,14 +185,14 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 
 	SECTION("sequence numbers")
 	{
-		auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ reqprop::OFFSETS, offsets({ 0, 1 })}
-			}),
-			::gpiod::line_config({
-				{ lineprop::EDGE_DETECTION, edge::BOTH }
-			})
-		);
+		auto request = chip
+			.prepare_request()
+			.add_line_settings(
+				{ 0, 1 },
+				::gpiod::line_settings()
+					.set_edge_detection(edge::BOTH)
+			)
+			.do_request();
 
 		::std::thread thread(trigger_rising_edge_events_on_two_offsets, ::std::ref(sim), 0, 1);
 
@@ -227,14 +223,14 @@ TEST_CASE("reading multiple events", "[edge-event]")
 	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
 	::gpiod::chip chip(sim.dev_path());
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, offsets({ 1 })}
-		}),
-		::gpiod::line_config({
-			{ lineprop::EDGE_DETECTION, edge::BOTH }
-		})
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(
+			1,
+			::gpiod::line_settings()
+				.set_edge_detection(edge::BOTH)
+		)
+		.do_request();
 
 	unsigned long line_seqno = 1, global_seqno = 1;
 
@@ -277,14 +273,14 @@ TEST_CASE("edge_event_buffer can be moved", "[edge-event]")
 	::gpiod::edge_event_buffer buffer(13);
 
 	/* Get some events into the buffer. */
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, offsets({ 1 })}
-		}),
-		::gpiod::line_config({
-			{ lineprop::EDGE_DETECTION, edge::BOTH }
-		})
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(
+			1,
+			::gpiod::line_settings()
+				.set_edge_detection(edge::BOTH)
+		)
+		.do_request();
 
 	sim.set_pull(1, pull::PULL_UP);
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
@@ -321,14 +317,14 @@ TEST_CASE("edge_event can be copied and moved", "[edge-event]")
 	::gpiod::chip chip(sim.dev_path());
 	::gpiod::edge_event_buffer buffer;
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, offsets({ 0 })}
-		}),
-		::gpiod::line_config({
-			{ lineprop::EDGE_DETECTION, edge::BOTH }
-		})
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(
+			0,
+			::gpiod::line_settings()
+				.set_edge_detection(edge::BOTH)
+		)
+		.do_request();
 
 	sim.set_pull(0, pull::PULL_UP);
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(10));
@@ -387,14 +383,14 @@ TEST_CASE("stream insertion operators work for edge_event and edge_event_buffer"
 	::gpiod::edge_event_buffer buffer;
 	::std::stringstream sbuf, expected;
 
-	auto request = chip.request_lines(
-		::gpiod::request_config({
-			{ reqprop::OFFSETS, offsets({ 0 })}
-		}),
-		::gpiod::line_config({
-			{ lineprop::EDGE_DETECTION, edge::BOTH }
-		})
-	);
+	auto request = chip
+		.prepare_request()
+		.add_line_settings(
+			0,
+			::gpiod::line_settings()
+				.set_edge_detection(edge::BOTH)
+		)
+		.do_request();
 
 	sim.set_pull(0, pull::PULL_UP);
 	::std::this_thread::sleep_for(::std::chrono::milliseconds(30));

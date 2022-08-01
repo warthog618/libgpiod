@@ -172,21 +172,42 @@ GPIOD_API int gpiod_line_request_set_values(struct gpiod_line_request *request,
 						    request->offsets, values);
 }
 
+static bool offsets_equal(struct gpiod_line_request *request,
+			  struct gpio_v2_line_request *uapi_cfg)
+{
+	size_t i;
+
+	if (request->num_lines != uapi_cfg->num_lines)
+		return false;
+
+	for (i = 0; i < request->num_lines; i++) {
+		if (request->offsets[i] != uapi_cfg->offsets[i])
+			return false;
+	}
+
+	return true;
+}
+
 GPIOD_API int
 gpiod_line_request_reconfigure_lines(struct gpiod_line_request *request,
 				     struct gpiod_line_config *config)
 {
-	struct gpio_v2_line_config uapi_cfg;
+	struct gpio_v2_line_request uapi_cfg;
 	int ret;
 
 	memset(&uapi_cfg, 0, sizeof(uapi_cfg));
 
-	ret = gpiod_line_config_to_uapi(config, &uapi_cfg,
-					request->num_lines, request->offsets);
+	ret = gpiod_line_config_to_uapi(config, &uapi_cfg);
 	if (ret)
 		return ret;
 
-	ret = ioctl(request->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &uapi_cfg);
+	if (!offsets_equal(request, &uapi_cfg)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = ioctl(request->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL,
+		    &uapi_cfg.config);
 	if (ret)
 		return ret;
 

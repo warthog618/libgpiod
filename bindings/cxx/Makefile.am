@@ -15,7 +15,9 @@ libgpiodcxx_la_SOURCES =	\
 	line-config.cpp		\
 	line-info.cpp		\
 	line-request.cpp	\
+	line-settings.cpp	\
 	misc.cpp		\
+	request-builder.cpp	\
 	request-config.cpp
 
 libgpiodcxx_la_CXXFLAGS = -Wall -Wextra -g -std=gnu++17

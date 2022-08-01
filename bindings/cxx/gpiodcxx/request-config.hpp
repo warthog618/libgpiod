@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
-/* SPDX-FileCopyrightText: 2021 Bartosz Golaszewski <brgl@bgdev.pl> */
+/* SPDX-FileCopyrightText: 2021-2022 Bartosz Golaszewski <brgl@bgdev.pl> */
 
 /**
  * @file request-config.hpp
@@ -12,10 +12,8 @@
 #error "Only gpiod.hpp can be included directly."
 #endif
 
-#include <any>
 #include <cstddef>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <string>
 
@@ -39,29 +37,9 @@ class request_config
 public:
 
 	/**
-	 * @brief List of available configuration settings. Used in the
-	 *        constructor and :request_config::set_property.
-	 */
-	enum class property {
-		OFFSETS = 1,
-		/**< List of line offsets to request. */
-		CONSUMER,
-		/**< Consumer string. */
-		EVENT_BUFFER_SIZE,
-		/**< Suggested size of the edge event buffer. */
-	};
-
-	/**
-	 * @brief Map of mappings between property types and property values.
-	 */
-	using properties = ::std::map<property, ::std::any>;
-
-	/**
 	 * @brief Constructor.
-	 * @param props List of config properties. See
-	 *              :request_config::set_property.
 	 */
-	explicit request_config(const properties& props = properties());
+	request_config();
 
 	request_config(const request_config& other) = delete;
 
@@ -73,8 +51,6 @@ public:
 
 	~request_config();
 
-	request_config& operator=(const request_config& other) = delete;
-
 	/**
 	 * @brief Move assignment operator.
 	 * @param other Object to move.
@@ -83,33 +59,11 @@ public:
 	request_config& operator=(request_config&& other) noexcept;
 
 	/**
-	 * @brief Set the value of a single config property.
-	 * @param prop Property to set.
-	 * @param val Property value. The type must correspond to the property
-	 *            being set: `std::string` or `const char*` for
-	 *            :property::CONSUMER, `:line::offsets` for
-	 *            :property::OFFSETS and `unsigned long` for
-	 *            :property::EVENT_BUFFER_SIZE.
-	 */
-	void set_property(property prop, const ::std::any& val);
-
-	/**
-	 * @brief Set line offsets for this request.
-	 * @param offsets Vector of line offsets to request.
-	 */
-	void set_offsets(const line::offsets& offsets) noexcept;
-
-	/**
-	 * @brief Get the number of offsets configured in this request config.
-	 * @return Number of line offsets in this request config.
-	 */
-	::std::size_t num_offsets() const noexcept;
-
-	/**
 	 * @brief Set the consumer name.
 	 * @param consumer New consumer name.
+	 * @return Reference to self.
 	 */
-	void set_consumer(const ::std::string& consumer) noexcept;
+	request_config& set_consumer(const ::std::string& consumer) noexcept;
 
 	/**
 	 * @brief Get the consumer name.
@@ -118,18 +72,13 @@ public:
 	::std::string consumer() const noexcept;
 
 	/**
-	 * @brief Get the hardware offsets of lines in this request config.
-	 * @return List of line offsets.
-	 */
-	line::offsets offsets() const;
-
-	/**
 	 * @brief Set the size of the kernel event buffer.
 	 * @param event_buffer_size New event buffer size.
+	 * @return Reference to self.
 	 * @note The kernel may adjust the value if it's too high. If set to 0,
 	 *       the default value will be used.
 	 */
-	void set_event_buffer_size(::std::size_t event_buffer_size) noexcept;
+	request_config& set_event_buffer_size(::std::size_t event_buffer_size) noexcept;
 
 	/**
 	 * @brief Get the edge event buffer size from this request config.
@@ -141,9 +90,11 @@ private:
 
 	struct impl;
 
-	::std::unique_ptr<impl> _m_priv;
+	::std::shared_ptr<impl> _m_priv;
 
-	friend chip;
+	request_config& operator=(const request_config& other);
+
+	friend request_builder;
 };
 
 /**

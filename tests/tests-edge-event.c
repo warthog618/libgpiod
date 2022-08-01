@@ -36,20 +36,20 @@ GPIOD_TEST_CASE(edge_event_wait_timeout)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	ret = gpiod_line_request_wait_edge_event(request, 1000000);
 	g_assert_cmpint(ret, ==, 0);
@@ -61,21 +61,22 @@ GPIOD_TEST_CASE(cannot_request_lines_in_output_mode_with_edge_detection)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_OUTPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_OUTPUT);
 
-	request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_chip_request_lines(chip, NULL, line_cfg);
 	g_assert_null(request);
 	gpiod_test_expect_errno(EINVAL);
 }
@@ -101,7 +102,7 @@ GPIOD_TEST_CASE(read_both_events)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -111,17 +112,18 @@ GPIOD_TEST_CASE(read_both_events)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("request-release",
 			      falling_and_rising_edge_events, sim);
@@ -178,7 +180,7 @@ GPIOD_TEST_CASE(read_rising_edge_event)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -187,17 +189,19 @@ GPIOD_TEST_CASE(read_rising_edge_event)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_RISING);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings,
+					       GPIOD_LINE_EDGE_RISING);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("edge-generator",
 			      falling_and_rising_edge_events, sim);
@@ -236,7 +240,7 @@ GPIOD_TEST_CASE(read_falling_edge_event)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -245,17 +249,19 @@ GPIOD_TEST_CASE(read_falling_edge_event)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_FALLING);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings,
+					       GPIOD_LINE_EDGE_FALLING);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("request-release",
 			      falling_and_rising_edge_events, sim);
@@ -294,7 +300,7 @@ GPIOD_TEST_CASE(read_rising_edge_event_polled)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -305,17 +311,19 @@ GPIOD_TEST_CASE(read_rising_edge_event_polled)
 	gint ret, fd;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_RISING);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings,
+					       GPIOD_LINE_EDGE_RISING);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("edge-generator",
 			      falling_and_rising_edge_events, sim);
@@ -368,7 +376,7 @@ GPIOD_TEST_CASE(read_both_events_blocking)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -377,17 +385,18 @@ GPIOD_TEST_CASE(read_both_events_blocking)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("request-release",
 			      falling_and_rising_edge_events, sim);
@@ -447,7 +456,7 @@ GPIOD_TEST_CASE(seqno)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -456,17 +465,18 @@ GPIOD_TEST_CASE(seqno)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 2, offsets);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, offsets, 2,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	thread = g_thread_new("request-release",
 			      rising_edge_events_on_two_offsets, sim);
@@ -517,7 +527,7 @@ GPIOD_TEST_CASE(event_copy)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -527,17 +537,18 @@ GPIOD_TEST_CASE(event_copy)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
 
@@ -564,7 +575,7 @@ GPIOD_TEST_CASE(reading_more_events_than_the_queue_contains_doesnt_block)
 
 	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 8, NULL);
 	g_autoptr(struct_gpiod_chip) chip = NULL;
-	g_autoptr(struct_gpiod_request_config) req_cfg = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
 	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(GThread) thread = NULL;
@@ -572,17 +583,18 @@ GPIOD_TEST_CASE(reading_more_events_than_the_queue_contains_doesnt_block)
 	gint ret;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
-	req_cfg = gpiod_test_create_request_config_or_fail();
+	settings = gpiod_test_create_line_settings_or_fail();
 	line_cfg = gpiod_test_create_line_config_or_fail();
 	buffer = gpiod_test_create_edge_event_buffer_or_fail(64);
 
-	gpiod_request_config_set_offsets(req_cfg, 1, &offset);
-	gpiod_line_config_set_direction_default(line_cfg,
-						GPIOD_LINE_DIRECTION_INPUT);
-	gpiod_line_config_set_edge_detection_default(line_cfg,
-						     GPIOD_LINE_EDGE_BOTH);
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_edge_detection(settings, GPIOD_LINE_EDGE_BOTH);
 
-	request = gpiod_test_request_lines_or_fail(chip, req_cfg, line_cfg);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	g_gpiosim_chip_set_pull(sim, 2, G_GPIOSIM_PULL_UP);
 	g_usleep(500);

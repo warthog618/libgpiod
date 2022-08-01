@@ -27,6 +27,7 @@ class info_event;
 class line_config;
 class line_info;
 class line_request;
+class request_builder;
 class request_config;
 
 /**
@@ -47,8 +48,6 @@ public:
 	 * @param path Path to the device file to open.
 	 */
 	explicit chip(const ::std::filesystem::path& path);
-
-	chip(const chip& other) = delete;
 
 	/**
 	 * @brief Move constructor.
@@ -147,19 +146,20 @@ public:
 	int get_line_offset_from_name(const ::std::string& name) const;
 
 	/**
-	 * @brief Request a set of lines for exclusive usage.
-	 * @param req_cfg Request config object.
-	 * @param line_cfg Line config object.
-	 * @return New line_request object.
+	 * @brief Create a request_builder associated with this chip.
+	 * @return New request_builder object.
 	 */
-	line_request request_lines(const request_config& req_cfg,
-				   const line_config& line_cfg);
+	request_builder prepare_request();
 
 private:
 
 	struct impl;
 
-	::std::unique_ptr<impl> _m_priv;
+	::std::shared_ptr<impl> _m_priv;
+
+	chip(const chip& other);
+
+	friend request_builder;
 };
 
 /**

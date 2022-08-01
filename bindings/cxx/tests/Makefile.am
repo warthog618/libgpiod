@@ -22,10 +22,11 @@ gpiod_cxx_test_SOURCES =			\
 		tests-chip.cpp			\
 		tests-chip-info.cpp		\
 		tests-edge-event.cpp		\
+		tests-info-event.cpp		\
 		tests-line.cpp			\
 		tests-line-config.cpp		\
 		tests-line-info.cpp		\
 		tests-line-request.cpp		\
-		tests-info-event.cpp		\
+		tests-line-settings.cpp		\
 		tests-misc.cpp			\
 		tests-request-config.cpp

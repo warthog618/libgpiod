@@ -20,13 +20,15 @@ int main(int argc, char **argv)
 	for (int i = 2; i < argc; i++)
 		offsets.push_back(::std::stoul(argv[i]));
 
-	::gpiod::chip chip(argv[1]);
-	auto request = chip.request_lines(
-			::gpiod::request_config({
-				{ ::gpiod::request_config::property::OFFSETS, offsets },
-				{ ::gpiod::request_config::property::CONSUMER, "gpiogetcxx" }
-			}),
-			::gpiod::line_config());
+	auto request = ::gpiod::chip(argv[1])
+		.prepare_request()
+		.set_consumer("gpiogetcxx")
+		.add_line_settings(
+			offsets,
+			::gpiod::line_settings()
+				.set_direction(::gpiod::line::direction::INPUT)
+		)
+		.do_request();
 
 	auto vals = request.get_values();
 

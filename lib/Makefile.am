@@ -11,6 +11,7 @@ libgpiod_la_SOURCES =	chip.c \
 			line-config.c \
 			line-info.c \
 			line-request.c \
+			line-settings.c \
 			misc.c \
 			request-config.c \
 			uapi/gpio.h

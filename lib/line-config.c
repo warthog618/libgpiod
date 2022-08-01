@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileCopyrightText: 2021 Bartosz Golaszewski <brgl@bgdev.pl>
+// SPDX-FileCopyrightText: 2022 Bartosz Golaszewski <brgl@bgdev.pl>
 
 #include <errno.h>
 #include <gpiod.h>
@@ -8,77 +8,23 @@
 
 #include "internal.h"
 
-struct base_config {
-	unsigned int direction : 2;
-	unsigned int edge : 3;
-	unsigned int drive : 2;
-	unsigned int bias : 3;
-	bool active_low : 1;
-	unsigned int clock : 2;
-	unsigned long debounce_period_us;
-	unsigned int value : 1;
-} GPIOD_PACKED;
+#define LINES_MAX (GPIO_V2_LINES_MAX)
 
-#define OVERRIDE_FLAG_DIRECTION		GPIOD_BIT(0)
-#define OVERRIDE_FLAG_EDGE		GPIOD_BIT(1)
-#define OVERRIDE_FLAG_DRIVE		GPIOD_BIT(2)
-#define OVERRIDE_FLAG_BIAS		GPIOD_BIT(3)
-#define OVERRIDE_FLAG_ACTIVE_LOW	GPIOD_BIT(4)
-#define OVERRIDE_FLAG_CLOCK		GPIOD_BIT(5)
-#define OVERRIDE_FLAG_DEBOUNCE_PERIOD	GPIOD_BIT(6)
-#define OVERRIDE_FLAG_OUTPUT_VALUE	GPIOD_BIT(7)
-
-static const int override_flag_list[] = {
-	OVERRIDE_FLAG_DIRECTION,
-	OVERRIDE_FLAG_EDGE,
-	OVERRIDE_FLAG_BIAS,
-	OVERRIDE_FLAG_DRIVE,
-	OVERRIDE_FLAG_ACTIVE_LOW,
-	OVERRIDE_FLAG_DEBOUNCE_PERIOD,
-	OVERRIDE_FLAG_CLOCK,
-	OVERRIDE_FLAG_OUTPUT_VALUE
+struct settings_node {
+	struct settings_node *next;
+	struct gpiod_line_settings *settings;
 };
 
-#define NUM_OVERRIDE_FLAGS		8
-#define NUM_OVERRIDES_MAX		(GPIO_V2_LINES_MAX)
-
-/*
- * Config overriding the defaults for a single line offset. Only flagged
- * settings are actually overriden for a line.
- */
-struct override_config {
-	struct base_config base;
+struct per_line_config {
 	unsigned int offset;
-	unsigned int override_flags : 8;
-} GPIOD_PACKED;
+	struct settings_node *node;
+};
 
 struct gpiod_line_config {
-	bool too_complex;
-	struct base_config defaults;
-	struct override_config overrides[NUM_OVERRIDES_MAX];
+	struct per_line_config line_configs[LINES_MAX];
+	size_t num_configs;
+	struct settings_node *sref_list;
 };
-
-static void init_base_config(struct base_config *config)
-{
-	config->direction = GPIOD_LINE_DIRECTION_AS_IS;
-	config->edge = GPIOD_LINE_EDGE_NONE;
-	config->bias = GPIOD_LINE_BIAS_AS_IS;
-	config->drive = GPIOD_LINE_DRIVE_PUSH_PULL;
-	config->active_low = false;
-	config->clock = GPIOD_LINE_EVENT_CLOCK_MONOTONIC;
-	config->debounce_period_us = 0;
-}
-
-static void init_override_config(struct override_config *override)
-{
-	override->override_flags = 0;
-	init_base_config(&override->base);
-}
-
-static bool override_used(struct override_config *override)
-{
-	return !!override->override_flags;
-}
 
 GPIOD_API struct gpiod_line_config *gpiod_line_config_new(void)
 {
@@ -88,737 +34,258 @@ GPIOD_API struct gpiod_line_config *gpiod_line_config_new(void)
 	if (!config)
 		return NULL;
 
-	gpiod_line_config_reset(config);
+	memset(config, 0, sizeof(*config));
 
 	return config;
 }
 
+static void free_refs(struct gpiod_line_config *config)
+{
+	struct settings_node *node, *tmp;
+
+	for (node = config->sref_list; node;) {
+		tmp = node->next;
+		gpiod_line_settings_free(node->settings);
+		free(node);
+		node = tmp;
+	}
+}
+
 GPIOD_API void gpiod_line_config_free(struct gpiod_line_config *config)
 {
+	free_refs(config);
 	free(config);
 }
 
 GPIOD_API void gpiod_line_config_reset(struct gpiod_line_config *config)
 {
-	size_t i;
-
+	free_refs(config);
 	memset(config, 0, sizeof(*config));
-	init_base_config(&config->defaults);
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++)
-		init_override_config(&config->overrides[i]);
 }
 
-static struct override_config *
-get_override_by_offset(struct gpiod_line_config *config, unsigned int offset)
+static struct per_line_config *
+find_config(struct gpiod_line_config *config, unsigned int offset)
 {
-	struct override_config *override;
+	struct per_line_config *per_line;
 	size_t i;
 
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
+	for (i = 0; i < config->num_configs; i++) {
+		per_line = &config->line_configs[i];
 
-		if (override->offset == offset)
-			return override;
+		if (offset == per_line->offset)
+			return per_line;
 	}
 
+	return &config->line_configs[config->num_configs++];
+}
+
+GPIOD_API int
+gpiod_line_config_add_line_settings(struct gpiod_line_config *config,
+				    const unsigned int *offsets,
+				    size_t num_offsets,
+				    struct gpiod_line_settings *settings)
+{
+	struct per_line_config *per_line;
+	struct settings_node *node;
+	size_t i;
+
+	if ((config->num_configs + num_offsets) > LINES_MAX) {
+		errno = E2BIG;
+		return -1;
+	}
+
+	node = malloc(sizeof(*node));
+	if (!node)
+		return -1;
+
+	if (!settings)
+		node->settings = gpiod_line_settings_new();
+	else
+		node->settings = gpiod_line_settings_copy(settings);
+	if (!node->settings) {
+		free(node);
+		return -1;
+	}
+
+	node->next = config->sref_list;
+	config->sref_list = node;
+
+	for (i = 0; i < num_offsets; i++) {
+		per_line = find_config(config, offsets[i]);
+
+		per_line->offset = offsets[i];
+		per_line->node = node;
+	}
+
+	return 0;
+}
+
+GPIOD_API struct gpiod_line_settings *
+gpiod_line_config_get_line_settings(struct gpiod_line_config *config,
+				    unsigned int offset)
+{
+	struct per_line_config *per_line;
+	size_t i;
+
+	for (i = 0; i < config->num_configs; i++) {
+		per_line = &config->line_configs[i];
+
+		if (per_line->offset == offset)
+			return gpiod_line_settings_copy(
+					per_line->node->settings);
+	}
+
+	errno = ENOENT;
 	return NULL;
 }
 
-static struct override_config *
-get_free_override(struct gpiod_line_config *config, unsigned int offset)
+GPIOD_API int
+gpiod_line_config_get_offsets(struct gpiod_line_config *config,
+			      size_t *num_offsets,
+			      unsigned int **offsets)
 {
-	struct override_config *override;
+	unsigned int *offs;
 	size_t i;
 
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
+	*num_offsets = config->num_configs;
+	*offsets = NULL;
 
-		if (override->override_flags)
+	if (!config->num_configs)
+		return 0;
+
+	offs = calloc(config->num_configs, sizeof(unsigned int));
+	if (!offs)
+		return -1;
+
+	for (i = 0; i < config->num_configs; i++)
+		offs[i] = config->line_configs[i].offset;
+
+	*offsets = offs;
+
+	return 0;
+}
+
+static void set_offsets(struct gpiod_line_config *config,
+			struct gpio_v2_line_request *uapi_cfg)
+{
+	size_t i;
+
+	uapi_cfg->num_lines = config->num_configs;
+
+	for (i = 0; i < config->num_configs; i++)
+		uapi_cfg->offsets[i] = config->line_configs[i].offset;
+}
+
+static bool has_at_least_one_output_direction(struct gpiod_line_config *config)
+{
+	size_t i;
+
+	for (i = 0; i < config->num_configs; i++) {
+		if (gpiod_line_settings_get_direction(
+				config->line_configs[i].node->settings) ==
+		    GPIOD_LINE_DIRECTION_OUTPUT)
+			return true;
+	}
+
+	return false;
+}
+
+static void set_kernel_output_values(uint64_t *mask, uint64_t *vals,
+				     struct gpiod_line_config *config)
+{
+	struct per_line_config *per_line;
+	int value;
+	size_t i;
+
+	gpiod_line_mask_zero(mask);
+	gpiod_line_mask_zero(vals);
+
+	for (i = 0; i < config->num_configs; i++) {
+		per_line = &config->line_configs[i];
+
+		if (gpiod_line_settings_get_direction(
+				per_line->node->settings) !=
+		    GPIOD_LINE_DIRECTION_OUTPUT)
 			continue;
 
-		override->offset = offset;
-		return override;
-	}
-
-	/* No more free overrides. */
-	config->too_complex = true;
-	return NULL;
-}
-
-static struct override_config *
-get_override_config_for_writing(struct gpiod_line_config *config,
-				unsigned int offset)
-{
-	struct override_config *override;
-
-	if (config->too_complex)
-		return NULL;
-
-	override = get_override_by_offset(config, offset);
-	if (!override) {
-		override = get_free_override(config, offset);
-		if (!override)
-			return NULL;
-	}
-
-	return override;
-}
-
-static struct base_config *
-get_base_config_for_reading(struct gpiod_line_config *config,
-			    unsigned int offset, unsigned int flag)
-{
-	struct override_config *override;
-
-	override = get_override_by_offset(config, offset);
-	if (override && (override->override_flags & flag))
-		return &override->base;
-
-	return &config->defaults;
-}
-
-static void clear_override(struct gpiod_line_config *config,
-			   unsigned int offset, int flag)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	if (override->override_flags & flag) {
-		override->override_flags &= ~flag;
-
-		if (!override->override_flags)
-			init_override_config(override);
+		gpiod_line_mask_set_bit(mask, i);
+		value = gpiod_line_settings_get_output_value(
+						per_line->node->settings);
+		gpiod_line_mask_assign_bit(vals, i,
+				value == GPIOD_LINE_VALUE_ACTIVE ? 1 : 0);
 	}
 }
 
-static bool check_override(struct gpiod_line_config *config,
-			   unsigned int offset, int flag)
+static void set_output_values(struct gpiod_line_config *config,
+			      struct gpio_v2_line_request *uapi_cfg,
+			      unsigned int *attr_idx)
 {
-	struct override_config *override;
+	struct gpio_v2_line_config_attribute *attr;
+	uint64_t mask, values;
 
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return false;
-
-	return override->override_flags & flag;
-}
-
-static void set_direction(struct base_config *config, int direction)
-{
-	switch (direction) {
-	case GPIOD_LINE_DIRECTION_INPUT:
-	case GPIOD_LINE_DIRECTION_OUTPUT:
-	case GPIOD_LINE_DIRECTION_AS_IS:
-		config->direction = direction;
-		break;
-	default:
-		config->direction = GPIOD_LINE_DIRECTION_AS_IS;
-		break;
-	}
-}
-
-GPIOD_API void
-gpiod_line_config_set_direction_default(struct gpiod_line_config *config,
-					int direction)
-{
-	set_direction(&config->defaults, direction);
-}
-
-GPIOD_API void
-gpiod_line_config_set_direction_override(struct gpiod_line_config *config,
-				       int direction, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
+	if (!has_at_least_one_output_direction(config))
 		return;
 
-	set_direction(&override->base, direction);
-	override->override_flags |= OVERRIDE_FLAG_DIRECTION;
+	attr = &uapi_cfg->config.attrs[(*attr_idx)++];
+	attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
+	set_kernel_output_values(&mask, &values, config);
+	attr->attr.values = values;
+	attr->mask = mask;
 }
 
-GPIOD_API void
-gpiod_line_config_clear_direction_override(struct gpiod_line_config *config,
-					   unsigned int offset)
+static int set_debounce_periods(struct gpiod_line_config *config,
+				struct gpio_v2_line_config *uapi_cfg,
+				unsigned int *attr_idx)
 {
-	clear_override(config, offset, OVERRIDE_FLAG_DIRECTION);
-}
-
-GPIOD_API bool
-gpiod_line_config_direction_is_overridden(struct gpiod_line_config *config,
-					 unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_DIRECTION);
-}
-
-GPIOD_API int
-gpiod_line_config_get_direction_default(struct gpiod_line_config *config)
-{
-	return config->defaults.direction;
-}
-
-GPIOD_API int
-gpiod_line_config_get_direction_offset(struct gpiod_line_config *config,
-				       unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset,
-					   OVERRIDE_FLAG_DIRECTION);
-
-	return base->direction;
-}
-
-static void set_edge_detection(struct base_config *config, int edge)
-{
-	switch (edge) {
-	case GPIOD_LINE_EDGE_NONE:
-	case GPIOD_LINE_EDGE_RISING:
-	case GPIOD_LINE_EDGE_FALLING:
-	case GPIOD_LINE_EDGE_BOTH:
-		config->edge = edge;
-		break;
-	default:
-		config->edge = GPIOD_LINE_EDGE_NONE;
-		break;
-	}
-}
-
-GPIOD_API void
-gpiod_line_config_set_edge_detection_default(struct gpiod_line_config *config,
-					     int edge)
-{
-	set_edge_detection(&config->defaults, edge);
-}
-
-GPIOD_API void
-gpiod_line_config_set_edge_detection_override(struct gpiod_line_config *config,
-					      int edge, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	set_edge_detection(&override->base, edge);
-	override->override_flags |= OVERRIDE_FLAG_EDGE;
-}
-
-GPIOD_API void
-gpiod_line_config_clear_edge_detection_override(
-			struct gpiod_line_config *config, unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_EDGE);
-}
-
-GPIOD_API bool
-gpiod_line_config_edge_detection_is_overridden(struct gpiod_line_config *config,
-					      unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_EDGE);
-}
-
-GPIOD_API int
-gpiod_line_config_get_edge_detection_default(struct gpiod_line_config *config)
-{
-	return config->defaults.edge;
-}
-
-GPIOD_API int
-gpiod_line_config_get_edge_detection_offset(struct gpiod_line_config *config,
-					    unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset, OVERRIDE_FLAG_EDGE);
-
-	return base->edge;
-}
-
-static void set_bias(struct base_config *config, int bias)
-{
-	switch (bias) {
-	case GPIOD_LINE_BIAS_AS_IS:
-	case GPIOD_LINE_BIAS_DISABLED:
-	case GPIOD_LINE_BIAS_PULL_UP:
-	case GPIOD_LINE_BIAS_PULL_DOWN:
-		config->bias = bias;
-		break;
-	default:
-		config->bias = GPIOD_LINE_BIAS_AS_IS;
-		break;
-	}
-}
-
-GPIOD_API void
-gpiod_line_config_set_bias_default(struct gpiod_line_config *config, int bias)
-{
-	set_bias(&config->defaults, bias);
-}
-
-GPIOD_API void
-gpiod_line_config_set_bias_override(struct gpiod_line_config *config,
-				  int bias, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	set_bias(&override->base, bias);
-	override->override_flags |= OVERRIDE_FLAG_BIAS;
-}
-
-GPIOD_API void
-gpiod_line_config_clear_bias_override(struct gpiod_line_config *config,
-				      unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_BIAS);
-}
-
-GPIOD_API bool
-gpiod_line_config_bias_is_overridden(struct gpiod_line_config *config,
-				     unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_BIAS);
-}
-
-GPIOD_API int
-gpiod_line_config_get_bias_default(struct gpiod_line_config *config)
-{
-	return config->defaults.bias;
-}
-
-GPIOD_API int
-gpiod_line_config_get_bias_offset(struct gpiod_line_config *config,
-				  unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset, OVERRIDE_FLAG_BIAS);
-
-	return base->bias;
-}
-
-static void set_drive(struct base_config *config, int drive)
-{
-	switch (drive) {
-	case GPIOD_LINE_DRIVE_PUSH_PULL:
-	case GPIOD_LINE_DRIVE_OPEN_DRAIN:
-	case GPIOD_LINE_DRIVE_OPEN_SOURCE:
-		config->drive = drive;
-		break;
-	default:
-		config->drive = GPIOD_LINE_DRIVE_PUSH_PULL;
-		break;
-	}
-}
-
-GPIOD_API void
-gpiod_line_config_set_drive_default(struct gpiod_line_config *config, int drive)
-{
-	set_drive(&config->defaults, drive);
-}
-
-GPIOD_API void
-gpiod_line_config_set_drive_override(struct gpiod_line_config *config,
-				     int drive, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	set_drive(&override->base, drive);
-	override->override_flags |= OVERRIDE_FLAG_DRIVE;
-}
-
-GPIOD_API void
-gpiod_line_config_clear_drive_override(struct gpiod_line_config *config,
-				       unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_DRIVE);
-}
-
-GPIOD_API bool
-gpiod_line_config_drive_is_overridden(struct gpiod_line_config *config,
-				      unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_DRIVE);
-}
-
-GPIOD_API int
-gpiod_line_config_get_drive_default(struct gpiod_line_config *config)
-{
-	return config->defaults.drive;
-}
-
-GPIOD_API int
-gpiod_line_config_get_drive_offset(struct gpiod_line_config *config,
-				   unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset, OVERRIDE_FLAG_DRIVE);
-
-	return base->drive;
-}
-
-GPIOD_API void
-gpiod_line_config_set_active_low_default(struct gpiod_line_config *config,
-					 bool active_low)
-{
-	config->defaults.active_low = active_low;
-}
-
-GPIOD_API void
-gpiod_line_config_set_active_low_override(struct gpiod_line_config *config,
-					  bool active_low,
-					  unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	override->base.active_low = active_low;
-	override->override_flags |= OVERRIDE_FLAG_ACTIVE_LOW;
-}
-
-GPIOD_API void
-gpiod_line_config_clear_active_low_override(struct gpiod_line_config *config,
-					    unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_ACTIVE_LOW);
-}
-
-GPIOD_API bool
-gpiod_line_config_active_low_is_overridden(struct gpiod_line_config *config,
-					   unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_ACTIVE_LOW);
-}
-
-GPIOD_API bool
-gpiod_line_config_get_active_low_default(struct gpiod_line_config *config)
-{
-	return config->defaults.active_low;
-}
-
-GPIOD_API bool
-gpiod_line_config_get_active_low_offset(struct gpiod_line_config *config,
-					unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset,
-					   OVERRIDE_FLAG_ACTIVE_LOW);
-
-	return base->active_low;
-}
-
-GPIOD_API void
-gpiod_line_config_set_debounce_period_us_default(
-		struct gpiod_line_config *config, unsigned long period)
-{
-	config->defaults.debounce_period_us = period;
-}
-
-GPIOD_API void
-gpiod_line_config_set_debounce_period_us_override(
-					struct gpiod_line_config *config,
-					unsigned long period,
-					unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	override->base.debounce_period_us = period;
-	override->override_flags |= OVERRIDE_FLAG_DEBOUNCE_PERIOD;
-}
-
-GPIOD_API void gpiod_line_config_clear_debounce_period_us_override(
-					struct gpiod_line_config *config,
-					unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_DEBOUNCE_PERIOD);
-}
-
-GPIOD_API bool gpiod_line_config_debounce_period_us_is_overridden(
-					struct gpiod_line_config *config,
-					unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_DEBOUNCE_PERIOD);
-}
-
-GPIOD_API unsigned long
-gpiod_line_config_get_debounce_period_us_default(
-					struct gpiod_line_config *config)
-{
-	return config->defaults.debounce_period_us;
-}
-
-GPIOD_API unsigned long
-gpiod_line_config_get_debounce_period_us_offset(
-			struct gpiod_line_config *config, unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset,
-					   OVERRIDE_FLAG_DEBOUNCE_PERIOD);
-
-	return base->debounce_period_us;
-}
-
-static void set_event_clock(struct base_config *config, int clock)
-{
-	switch (clock) {
-	case GPIOD_LINE_EVENT_CLOCK_MONOTONIC:
-	case GPIOD_LINE_EVENT_CLOCK_REALTIME:
-		config->clock = clock;
-		break;
-	default:
-		config->clock = GPIOD_LINE_EVENT_CLOCK_MONOTONIC;
-		break;
-	}
-}
-
-GPIOD_API void
-gpiod_line_config_set_event_clock_default(struct gpiod_line_config *config,
-					  int clock)
-{
-	set_event_clock(&config->defaults, clock);
-}
-
-GPIOD_API void
-gpiod_line_config_set_event_clock_override(struct gpiod_line_config *config,
-					   int clock, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	set_event_clock(&override->base, clock);
-	override->override_flags |= OVERRIDE_FLAG_CLOCK;
-}
-
-GPIOD_API void
-gpiod_line_config_clear_event_clock_override(struct gpiod_line_config *config,
-					     unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_CLOCK);
-}
-
-GPIOD_API bool
-gpiod_line_config_event_clock_is_overridden(struct gpiod_line_config *config,
-					    unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_CLOCK);
-}
-
-GPIOD_API int
-gpiod_line_config_get_event_clock_default(struct gpiod_line_config *config)
-{
-	return config->defaults.clock;
-}
-
-GPIOD_API int
-gpiod_line_config_get_event_clock_offset(struct gpiod_line_config *config,
-					 unsigned int offset)
-{
-	struct base_config *base;
-
-	base = get_base_config_for_reading(config, offset, OVERRIDE_FLAG_CLOCK);
-
-	return base->clock;
-}
-
-GPIOD_API void
-gpiod_line_config_set_output_value_default(struct gpiod_line_config *config,
-					   int value)
-{
-	config->defaults.value = value;
-}
-
-GPIOD_API void
-gpiod_line_config_set_output_value_override(struct gpiod_line_config *config,
-					    int value, unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_config_for_writing(config, offset);
-	if (!override)
-		return;
-
-	override->base.value = !!value;
-	override->override_flags |= OVERRIDE_FLAG_OUTPUT_VALUE;
-}
-
-GPIOD_API void
-gpiod_line_config_set_output_values(struct gpiod_line_config *config,
-				    size_t num_values,
-				    const unsigned int *offsets,
-				    const int *values)
-{
-	size_t i;
-
-	for (i = 0; i < num_values; i++)
-		gpiod_line_config_set_output_value_override(config,
-							    values[i],
-							    offsets[i]);
-}
-
-GPIOD_API void
-gpiod_line_config_clear_output_value_override(struct gpiod_line_config *config,
-					      unsigned int offset)
-{
-	clear_override(config, offset, OVERRIDE_FLAG_OUTPUT_VALUE);
-}
-
-GPIOD_API bool
-gpiod_line_config_output_value_is_overridden(struct gpiod_line_config *config,
-					     unsigned int offset)
-{
-	return check_override(config, offset, OVERRIDE_FLAG_OUTPUT_VALUE);
-}
-
-GPIOD_API int
-gpiod_line_config_get_output_value_default(struct gpiod_line_config *config)
-{
-	return config->defaults.value;
-}
-
-GPIOD_API int
-gpiod_line_config_get_output_value_offset(struct gpiod_line_config *config,
-					  unsigned int offset)
-{
-	struct override_config *override;
-
-	override = get_override_by_offset(config, offset);
-	if (override && (override->override_flags & OVERRIDE_FLAG_OUTPUT_VALUE))
-		return override->base.value;
-
-	return config->defaults.value;
-}
-
-static bool base_config_flags_are_equal(struct base_config *base,
-					struct override_config *override)
-{
-	if (((override->override_flags & OVERRIDE_FLAG_DIRECTION) &&
-	     base->direction != override->base.direction) ||
-	    ((override->override_flags & OVERRIDE_FLAG_EDGE) &&
-	     base->edge != override->base.edge) ||
-	    ((override->override_flags & OVERRIDE_FLAG_DRIVE) &&
-	     base->drive != override->base.drive) ||
-	    ((override->override_flags & OVERRIDE_FLAG_BIAS) &&
-	     base->bias != override->base.bias) ||
-	    ((override->override_flags & OVERRIDE_FLAG_ACTIVE_LOW) &&
-	     base->active_low != override->base.active_low) ||
-	    ((override->override_flags & OVERRIDE_FLAG_CLOCK) &&
-	     base->clock != override->base.clock))
-		return false;
-
-	return true;
-}
-
-static bool base_debounce_period_is_equal(struct base_config *base,
-					  struct override_config *override)
-{
-	if ((override->override_flags & OVERRIDE_FLAG_DEBOUNCE_PERIOD) &&
-	    base->debounce_period_us != override->base.debounce_period_us)
-		return false;
-
-	return true;
-}
-
-GPIOD_API size_t
-gpiod_line_config_get_num_overrides(struct gpiod_line_config *config)
-{
-	struct override_config *override;
-	size_t i, j, count = 0;
-
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
-
-		if (override_used(override)) {
-			for (j = 0; j < NUM_OVERRIDE_FLAGS; j++) {
-				if (override->override_flags &
-				    override_flag_list[j])
-					count++;
+	struct gpio_v2_line_config_attribute *attr;
+	unsigned long period_i, period_j;
+	uint64_t done, mask;
+	size_t i, j;
+
+	gpiod_line_mask_zero(&done);
+
+	for (i = 0; i < config->num_configs; i++) {
+		if (gpiod_line_mask_test_bit(&done, i))
+			continue;
+
+		gpiod_line_mask_set_bit(&done, i);
+		gpiod_line_mask_zero(&mask);
+
+		period_i = gpiod_line_settings_get_debounce_period_us(
+				config->line_configs[i].node->settings);
+		if (!period_i)
+			continue;
+
+		if (*attr_idx == GPIO_V2_LINE_NUM_ATTRS_MAX) {
+			errno = E2BIG;
+			return -1;
+		}
+
+		attr = &uapi_cfg->attrs[(*attr_idx)++];
+		attr->attr.id = GPIO_V2_LINE_ATTR_ID_DEBOUNCE;
+		attr->attr.debounce_period_us = period_i;
+		gpiod_line_mask_set_bit(&mask, i);
+
+		for (j = i; j < config->num_configs; j++) {
+			period_j = gpiod_line_settings_get_debounce_period_us(
+					config->line_configs[j].node->settings);
+			if (period_i == period_j) {
+				gpiod_line_mask_set_bit(&mask, j);
+				gpiod_line_mask_set_bit(&done, j);
 			}
 		}
+
+		attr->mask = mask;
 	}
 
-	return count;
+	return 0;
 }
 
-static int override_flag_to_prop(int flag)
-{
-	switch (flag) {
-	case OVERRIDE_FLAG_DIRECTION:
-		return GPIOD_LINE_CONFIG_PROP_DIRECTION;
-	case OVERRIDE_FLAG_EDGE:
-		return GPIOD_LINE_CONFIG_PROP_EDGE_DETECTION;
-	case OVERRIDE_FLAG_BIAS:
-		return GPIOD_LINE_CONFIG_PROP_BIAS;
-	case OVERRIDE_FLAG_DRIVE:
-		return GPIOD_LINE_CONFIG_PROP_DRIVE;
-	case OVERRIDE_FLAG_ACTIVE_LOW:
-		return GPIOD_LINE_CONFIG_PROP_ACTIVE_LOW;
-	case OVERRIDE_FLAG_DEBOUNCE_PERIOD:
-		return GPIOD_LINE_CONFIG_PROP_DEBOUNCE_PERIOD_US;
-	case OVERRIDE_FLAG_CLOCK:
-		return GPIOD_LINE_CONFIG_PROP_EVENT_CLOCK;
-	case OVERRIDE_FLAG_OUTPUT_VALUE:
-		return GPIOD_LINE_CONFIG_PROP_OUTPUT_VALUE;
-	}
-
-	/* Can't happen. */
-	return -1;
-}
-
-GPIOD_API void
-gpiod_line_config_get_overrides(struct gpiod_line_config *config,
-				unsigned int *offsets, int *props)
-{
-	struct override_config *override;
-	size_t i, j, count = 0;
-
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
-
-		if (override_used(override)) {
-			for (j = 0; j < NUM_OVERRIDE_FLAGS; j++) {
-				if (override->override_flags &
-				    override_flag_list[j]) {
-					offsets[count] = override->offset;
-					props[count] = override_flag_to_prop(
-							override_flag_list[j]);
-					count++;
-				}
-			}
-		}
-	}
-}
-
-static uint64_t make_kernel_flags(const struct base_config *config)
+static uint64_t make_kernel_flags(struct gpiod_line_settings *settings)
 {
 	uint64_t flags = 0;
 
-	switch (config->direction) {
+	switch (gpiod_line_settings_get_direction(settings)) {
 	case GPIOD_LINE_DIRECTION_INPUT:
 		flags |= GPIO_V2_LINE_FLAG_INPUT;
 		break;
@@ -827,7 +294,7 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 		break;
 	}
 
-	switch (config->edge) {
+	switch (gpiod_line_settings_get_edge_detection(settings)) {
 	case GPIOD_LINE_EDGE_FALLING:
 		flags |= (GPIO_V2_LINE_FLAG_EDGE_FALLING |
 			   GPIO_V2_LINE_FLAG_INPUT);
@@ -846,7 +313,7 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 		break;
 	}
 
-	switch (config->drive) {
+	switch (gpiod_line_settings_get_drive(settings)) {
 	case GPIOD_LINE_DRIVE_OPEN_DRAIN:
 		flags |= GPIO_V2_LINE_FLAG_OPEN_DRAIN;
 		break;
@@ -855,7 +322,7 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 		break;
 	}
 
-	switch (config->bias) {
+	switch (gpiod_line_settings_get_bias(settings)) {
 	case GPIOD_LINE_BIAS_DISABLED:
 		flags |= GPIO_V2_LINE_FLAG_BIAS_DISABLED;
 		break;
@@ -867,10 +334,10 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 		break;
 	}
 
-	if (config->active_low)
+	if (gpiod_line_settings_get_active_low(settings))
 		flags |= GPIO_V2_LINE_FLAG_ACTIVE_LOW;
 
-	switch (config->clock) {
+	switch (gpiod_line_settings_get_event_clock(settings)) {
 	case GPIOD_LINE_EVENT_CLOCK_REALTIME:
 		flags |= GPIO_V2_LINE_FLAG_EVENT_CLOCK_REALTIME;
 		break;
@@ -879,341 +346,113 @@ static uint64_t make_kernel_flags(const struct base_config *config)
 	return flags;
 }
 
-static int find_bitmap_index(unsigned int needle, unsigned int num_lines,
-			     const unsigned int *haystack)
+static bool settings_equal(struct gpiod_line_settings *left,
+			 struct gpiod_line_settings *right)
 {
-	size_t i;
+	if (gpiod_line_settings_get_direction(left) !=
+	    gpiod_line_settings_get_direction(right))
+		return false;
 
-	for (i = 0; i < num_lines; i++) {
-		if (needle == haystack[i])
-			return i;
-	}
+	if (gpiod_line_settings_get_edge_detection(left) !=
+	    gpiod_line_settings_get_edge_detection(right))
+		return false;
 
-	return -1;
+	if (gpiod_line_settings_get_bias(left) !=
+	    gpiod_line_settings_get_bias(right))
+		return false;
+
+	if (gpiod_line_settings_get_drive(left) !=
+	    gpiod_line_settings_get_drive(right))
+		return false;
+
+	if (gpiod_line_settings_get_active_low(left) !=
+	    gpiod_line_settings_get_active_low(right))
+		return false;
+
+	if (gpiod_line_settings_get_event_clock(left) !=
+	    gpiod_line_settings_get_event_clock(right))
+		return false;
+
+	return true;
 }
 
-static void set_kernel_output_values(uint64_t *mask, uint64_t *vals,
-				     struct gpiod_line_config *config,
-				     unsigned int num_lines,
-				     const unsigned int *offsets)
+static int set_flags(struct gpiod_line_config *config,
+		     struct gpio_v2_line_config *uapi_cfg,
+		     unsigned int *attr_idx)
 {
-	struct override_config *override;
-	size_t i;
-	int idx;
-
-	gpiod_line_mask_zero(mask);
-	gpiod_line_mask_zero(vals);
-
-	if (config->defaults.direction == GPIOD_LINE_DIRECTION_OUTPUT) {
-		/*
-		 * Default direction is output - assign the default output
-		 * value to all lines. Overrides that may set some lines to
-		 * input will be handled later and may re-assign the output
-		 * values.
-		 */
-		for (i = 0; i < num_lines; i++) {
-			gpiod_line_mask_set_bit(mask, i);
-			gpiod_line_mask_assign_bit(vals, i,
-						   config->defaults.value);
-		}
-	} else {
-		/*
-		 * Default output value is not output. Iterate over overrides
-		 * and set the default output value for those that override the
-		 * direction to output. Don't touch the ones which override
-		 * the output value.
-		 */
-		for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-			override = &config->overrides[i];
-
-			if (override->base.direction !=
-			    GPIOD_LINE_DIRECTION_OUTPUT ||
-			    !(override->override_flags &
-			      OVERRIDE_FLAG_DIRECTION) ||
-			    (override->override_flags &
-			     OVERRIDE_FLAG_OUTPUT_VALUE))
-				continue;
-
-			idx = find_bitmap_index(override->offset,
-						num_lines, offsets);
-			if (idx < 0)
-				continue;
-
-			gpiod_line_mask_set_bit(mask, idx);
-			gpiod_line_mask_assign_bit(vals, idx,
-						   !!config->defaults.value);
-		}
-	}
-
-	/*
-	 * Finally iterate over the overrides again and set the overridden
-	 * output values.
-	 */
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
-
-		if (!(override->override_flags & OVERRIDE_FLAG_OUTPUT_VALUE))
-			continue;
-
-		if (config->defaults.direction != GPIOD_LINE_DIRECTION_OUTPUT &&
-		    (!(override->override_flags & OVERRIDE_FLAG_DIRECTION) ||
-		     override->base.direction != GPIOD_LINE_DIRECTION_OUTPUT))
-			continue;
-
-		idx = find_bitmap_index(override->offset, num_lines, offsets);
-		if (idx < 0)
-			continue;
-
-		gpiod_line_mask_set_bit(mask, idx);
-		gpiod_line_mask_assign_bit(vals, idx, !!override->base.value);
-	}
-}
-
-static bool override_config_flags_are_equal(struct override_config *a,
-					    struct override_config *b)
-{
-	if (((a->override_flags & ~OVERRIDE_FLAG_DEBOUNCE_PERIOD) ==
-	     (b->override_flags & ~OVERRIDE_FLAG_DEBOUNCE_PERIOD)) &&
-	    base_config_flags_are_equal(&a->base, b))
-		return true;
-
-	return false;
-}
-
-static void set_base_config_flags(struct gpio_v2_line_attribute *attr,
-				  struct override_config *override,
-				  struct gpiod_line_config *config)
-{
-	struct base_config base;
-
-	memcpy(&base, &config->defaults, sizeof(base));
-
-	if (override->override_flags & OVERRIDE_FLAG_DIRECTION)
-		base.direction = override->base.direction;
-	if (override->override_flags & OVERRIDE_FLAG_EDGE)
-		base.edge = override->base.edge;
-	if (override->override_flags & OVERRIDE_FLAG_BIAS)
-		base.bias = override->base.bias;
-	if (override->override_flags & OVERRIDE_FLAG_DRIVE)
-		base.drive = override->base.drive;
-	if (override->override_flags & OVERRIDE_FLAG_ACTIVE_LOW)
-		base.active_low = override->base.active_low;
-	if (override->override_flags & OVERRIDE_FLAG_CLOCK)
-		base.clock = override->base.clock;
-
-	attr->id = GPIO_V2_LINE_ATTR_ID_FLAGS;
-	attr->flags = make_kernel_flags(&base);
-}
-
-static bool override_config_debounce_period_is_equal(struct override_config *a,
-						     struct override_config *b)
-{
-	if (base_debounce_period_is_equal(&a->base, b) &&
-	    ((a->override_flags & OVERRIDE_FLAG_DEBOUNCE_PERIOD) ==
-	     (b->override_flags & OVERRIDE_FLAG_DEBOUNCE_PERIOD)))
-		return true;
-
-	return false;
-}
-
-static void
-set_base_config_debounce_period(struct gpio_v2_line_attribute *attr,
-				struct override_config *override,
-				struct gpiod_line_config *config GPIOD_UNUSED)
-{
-	attr->id = GPIO_V2_LINE_ATTR_ID_DEBOUNCE;
-	attr->debounce_period_us = override->base.debounce_period_us;
-}
-
-static void set_kernel_attr_mask(uint64_t *out, const uint64_t *in,
-				 unsigned int num_lines,
-				 const unsigned int *offsets,
-				 struct gpiod_line_config *config)
-{
-	struct override_config *override;
-	size_t i, j;
-	int idx;
-
-	gpiod_line_mask_zero(out);
-
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
-
-		if (!override_used(override) ||
-		    !gpiod_line_mask_test_bit(in, i))
-			continue;
-
-		for (j = 0, idx = -1; j < num_lines; j++) {
-			if (offsets[j] == override->offset) {
-				idx = j;
-				break;
-			}
-		}
-
-		/*
-		 * Overridden offsets that are not in the list of offsets to
-		 * request (or already requested) are silently ignored.
-		 */
-		if (idx < 0)
-			continue;
-
-		gpiod_line_mask_set_bit(out, idx);
-	}
-}
-
-static int process_overrides(struct gpiod_line_config *config,
-			     struct gpio_v2_line_config *uapi_cfg,
-			     unsigned int *attr_idx,
-			     unsigned int num_lines,
-			     const unsigned int *offsets,
-			     bool (*defaults_equal_func)(struct base_config *,
-						struct override_config *),
-			     bool (*override_equal_func)(
-						struct override_config *,
-						struct override_config *),
-			     void (*set_func)(struct gpio_v2_line_attribute *,
-					      struct override_config *,
-					      struct gpiod_line_config *))
-{
+	struct gpiod_line_settings *settings_i, *settings_j;
 	struct gpio_v2_line_config_attribute *attr;
-	uint64_t processed = 0, marked = 0, mask;
-	struct override_config *current, *next;
+	bool globals_taken = false;
+	uint64_t done, mask;
 	size_t i, j;
 
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		current = &config->overrides[i];
+	gpiod_line_mask_zero(&done);
 
-		if (!override_used(current) ||
-		    gpiod_line_mask_test_bit(&processed, i))
+	for (i = 0; i < config->num_configs; i++) {
+		if (gpiod_line_mask_test_bit(&done, i))
 			continue;
 
-		if (*attr_idx == GPIO_V2_LINE_NUM_ATTRS_MAX) {
-			errno = E2BIG;
-			return -1;
-		}
+		gpiod_line_mask_set_bit(&done, i);
 
-		gpiod_line_mask_set_bit(&processed, i);
+		settings_i = config->line_configs[i].node->settings;
 
-		if (defaults_equal_func(&config->defaults, current))
-			continue;
+		if (!globals_taken) {
+			globals_taken = true;
+			uapi_cfg->flags = make_kernel_flags(settings_i);
 
-		marked = 0;
-		gpiod_line_mask_set_bit(&marked, i);
-
-		for (j = i + 1; j < NUM_OVERRIDES_MAX; j++) {
-			next = &config->overrides[j];
-
-			if (!override_used(next) ||
-			    gpiod_line_mask_test_bit(&processed, j))
-				continue;
-
-			if (override_equal_func(current, next)) {
-				gpiod_line_mask_set_bit(&marked, j);
-				gpiod_line_mask_set_bit(&processed, j);
+			for (j = i; j < config->num_configs; j++) {
+				settings_j =
+					config->line_configs[j].node->settings;
+				if (settings_equal(settings_i, settings_j))
+					gpiod_line_mask_set_bit(&done, j);
 			}
+		} else {
+			gpiod_line_mask_zero(&mask);
+			gpiod_line_mask_set_bit(&mask, i);
+
+			if (*attr_idx == GPIO_V2_LINE_NUM_ATTRS_MAX) {
+				errno = E2BIG;
+				return -1;
+			}
+
+			attr = &uapi_cfg->attrs[(*attr_idx)++];
+			attr->attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+			attr->attr.flags = make_kernel_flags(settings_i);
+
+			for (j = i; j < config->num_configs; j++) {
+				settings_j =
+					config->line_configs[j].node->settings;
+				if (settings_equal(settings_i, settings_j)) {
+					gpiod_line_mask_set_bit(&done, j);
+					gpiod_line_mask_set_bit(&mask, j);
+				}
+			}
+
+			attr->mask = mask;
 		}
-
-		attr = &uapi_cfg->attrs[(*attr_idx)++];
-
-		set_kernel_attr_mask(&mask, &marked,
-				     num_lines, offsets, config);
-		attr->mask = mask;
-		set_func(&attr->attr, current, config);
 	}
 
 	return 0;
-}
-
-static bool has_at_least_one_output_direction(struct gpiod_line_config *config)
-{
-	struct override_config *override;
-	size_t i;
-
-	if (config->defaults.direction == GPIOD_LINE_DIRECTION_OUTPUT)
-		return true;
-
-	for (i = 0; i < NUM_OVERRIDES_MAX; i++) {
-		override = &config->overrides[i];
-
-		if (override->base.direction == GPIOD_LINE_DIRECTION_OUTPUT)
-			return true;
-	}
-
-	return false;
 }
 
 int gpiod_line_config_to_uapi(struct gpiod_line_config *config,
-			      struct gpio_v2_line_config *uapi_cfg,
-			      unsigned int num_lines,
-			      const unsigned int *offsets)
+			      struct gpio_v2_line_request *uapi_cfg)
 {
-	struct gpio_v2_line_config_attribute *attr;
 	unsigned int attr_idx = 0;
-	uint64_t mask, values;
 	int ret;
 
-	if (config->too_complex)
-		goto err_2big;
+	set_offsets(config, uapi_cfg);
+	set_output_values(config, uapi_cfg, &attr_idx);
 
-	/*
-	 * First check if we have at least one line configured in output mode.
-	 * If so, let's take one attribute for the default values.
-	 */
-	if (has_at_least_one_output_direction(config)) {
-		attr = &uapi_cfg->attrs[attr_idx++];
-		attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
-
-		set_kernel_output_values(&mask, &values, config,
-					 num_lines, offsets);
-
-		attr->attr.values = values;
-		attr->mask = mask;
-
-	}
-
-	/* If we have a default debounce period - use another attribute. */
-	if (config->defaults.debounce_period_us) {
-		attr = &uapi_cfg->attrs[attr_idx++];
-		attr->attr.id = GPIO_V2_LINE_ATTR_ID_DEBOUNCE;
-		attr->attr.debounce_period_us =
-				config->defaults.debounce_period_us;
-		gpiod_line_mask_fill(&mask);
-		attr->mask = mask;
-	}
-
-	/*
-	 * The overrides are processed independently for regular flags and the
-	 * debounce period. We iterate over the configured line overrides. We
-	 * first check if the given set of options is equal to the global
-	 * defaults. If not, we mark it and iterate over the remaining
-	 * overrides looking for ones that have the same config as the one
-	 * currently processed. We mark them too and at the end we create a
-	 * single kernel attribute with the translated config and the mask
-	 * corresponding to all marked overrides. Those are now excluded from
-	 * further processing.
-	 */
-
-	ret = process_overrides(config, uapi_cfg, &attr_idx, num_lines, offsets,
-				base_config_flags_are_equal,
-				override_config_flags_are_equal,
-				set_base_config_flags);
+	ret = set_debounce_periods(config, &uapi_cfg->config, &attr_idx);
 	if (ret)
 		return -1;
 
-	ret = process_overrides(config, uapi_cfg, &attr_idx, num_lines, offsets,
-				base_debounce_period_is_equal,
-				override_config_debounce_period_is_equal,
-				set_base_config_debounce_period);
+	ret = set_flags(config, &uapi_cfg->config, &attr_idx);
 	if (ret)
 		return -1;
 
-	uapi_cfg->flags = make_kernel_flags(&config->defaults);
-	uapi_cfg->num_attrs = attr_idx;
+	uapi_cfg->config.num_attrs = attr_idx;
 
 	return 0;
-
-err_2big:
-	config->too_complex = true;
-	errno = E2BIG;
-	return -1;
 }

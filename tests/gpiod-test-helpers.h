@@ -30,6 +30,10 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_info_event, gpiod_info_event_free);
 typedef struct gpiod_line_config struct_gpiod_line_config;
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_line_config, gpiod_line_config_free);
 
+typedef struct gpiod_line_settings struct_gpiod_line_settings;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_line_settings,
+			      gpiod_line_settings_free);
+
 typedef struct gpiod_request_config struct_gpiod_request_config;
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_request_config,
 			      gpiod_request_config_free);
@@ -84,6 +88,15 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_edge_event_buffer,
 		_info; \
 	})
 
+#define gpiod_test_create_line_settings_or_fail() \
+	({ \
+		struct gpiod_line_settings *_settings = \
+				gpiod_line_settings_new(); \
+		g_assert_nonnull(_settings); \
+		gpiod_test_return_if_failed(); \
+		_settings; \
+	})
+
 #define gpiod_test_create_line_config_or_fail() \
 	({ \
 		struct gpiod_line_config *_config = \
@@ -101,6 +114,17 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(struct_gpiod_edge_event_buffer,
 		gpiod_test_return_if_failed(); \
 		_buffer; \
 	})
+
+#define gpiod_test_line_config_add_line_settings_or_fail(_line_cfg, _offsets, \
+						_num_offsets, _settings) \
+	do { \
+		gint ret = gpiod_line_config_add_line_settings((_line_cfg), \
+							       (_offsets),  \
+							       (_num_offsets), \
+							       (_settings)); \
+		g_assert_cmpint(ret, ==, 0); \
+		gpiod_test_return_if_failed(); \
+	} while (0)
 
 #define gpiod_test_create_request_config_or_fail() \
 	({ \

@@ -10,8 +10,6 @@
 
 struct gpiod_request_config {
 	char consumer[GPIO_MAX_NAME_SIZE];
-	unsigned int offsets[GPIO_V2_LINES_MAX];
-	size_t num_offsets;
 	size_t event_buffer_size;
 };
 
@@ -51,34 +49,6 @@ gpiod_request_config_get_consumer(struct gpiod_request_config *config)
 }
 
 GPIOD_API void
-gpiod_request_config_set_offsets(struct gpiod_request_config *config,
-				 size_t num_offsets,
-				 const unsigned int *offsets)
-{
-	size_t i;
-
-	config->num_offsets = num_offsets > GPIO_V2_LINES_MAX ?
-					GPIO_V2_LINES_MAX : num_offsets;
-
-	for (i = 0; i < config->num_offsets; i++)
-		config->offsets[i] = offsets[i];
-}
-
-GPIOD_API size_t
-gpiod_request_config_get_num_offsets(struct gpiod_request_config *config)
-{
-	return config->num_offsets;
-}
-
-GPIOD_API void
-gpiod_request_config_get_offsets(struct gpiod_request_config *config,
-				 unsigned int *offsets)
-{
-	memcpy(offsets, config->offsets,
-	       sizeof(*offsets) * config->num_offsets);
-}
-
-GPIOD_API void
 gpiod_request_config_set_event_buffer_size(struct gpiod_request_config *config,
 					   size_t event_buffer_size)
 {
@@ -91,22 +61,9 @@ gpiod_request_config_get_event_buffer_size(struct gpiod_request_config *config)
 	return config->event_buffer_size;
 }
 
-int gpiod_request_config_to_uapi(struct gpiod_request_config *config,
-				 struct gpio_v2_line_request *uapi_req)
+void gpiod_request_config_to_uapi(struct gpiod_request_config *config,
+				  struct gpio_v2_line_request *uapi_req)
 {
-	size_t i;
-
-	if (config->num_offsets == 0) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (i = 0; i < config->num_offsets; i++)
-		uapi_req->offsets[i] = config->offsets[i];
-
-	uapi_req->num_lines = config->num_offsets;
 	strcpy(uapi_req->consumer, config->consumer);
 	uapi_req->event_buffer_size = config->event_buffer_size;
-
-	return 0;
 }

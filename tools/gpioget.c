@@ -43,6 +43,7 @@ int main(int argc, char **argv)
 {
 	int direction = GPIOD_LINE_DIRECTION_INPUT;
 	int optc, opti, bias = 0, ret, *values;
+	struct gpiod_line_settings *settings;
 	struct gpiod_request_config *req_cfg;
 	struct gpiod_line_request *request;
 	struct gpiod_line_config *line_cfg;
@@ -103,28 +104,39 @@ int main(int argc, char **argv)
 			die("invalid GPIO offset: %s", argv[i + 1]);
 	}
 
+	if (has_duplicate_offsets(num_lines, offsets))
+		die("offsets must be unique");
+
 	chip = chip_open_lookup(device);
 	if (!chip)
 		die_perror("unable to open %s", device);
 
-	line_cfg = gpiod_line_config_new();
-	if (!line_cfg)
-		die_perror("unable to allocate the line config structure");
+	settings = gpiod_line_settings_new();
+	if (!settings)
+		die_perror("unable to allocate line settings");
 
-	gpiod_line_config_set_direction_default(line_cfg, direction);
+	gpiod_line_settings_set_direction(settings, direction);
 
 	if (bias)
-		gpiod_line_config_set_bias_default(line_cfg, bias);
+		gpiod_line_settings_set_bias(settings, bias);
 
 	if (active_low)
-		gpiod_line_config_set_active_low_default(line_cfg, true);
+		gpiod_line_settings_set_active_low(settings, active_low);
 
 	req_cfg = gpiod_request_config_new();
 	if (!req_cfg)
 		die_perror("unable to allocate the request config structure");
 
 	gpiod_request_config_set_consumer(req_cfg, "gpioget");
-	gpiod_request_config_set_offsets(req_cfg, num_lines, offsets);
+
+	line_cfg = gpiod_line_config_new();
+	if (!line_cfg)
+		die_perror("unable to allocate the line config structure");
+
+	ret = gpiod_line_config_add_line_settings(line_cfg, offsets,
+						  num_lines, settings);
+	if (ret)
+		die_perror("unable to add line settings");
 
 	request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
 	if (!request)
@@ -144,6 +156,7 @@ int main(int argc, char **argv)
 	gpiod_line_request_release(request);
 	gpiod_request_config_free(req_cfg);
 	gpiod_line_config_free(line_cfg);
+	gpiod_line_settings_free(settings);
 	gpiod_chip_close(chip);
 	free(offsets);
 	free(values);

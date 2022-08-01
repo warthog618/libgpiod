@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021-2022 Bartosz Golaszewski <brgl@bgdev.pl>
 
+#include <ostream>
+#include <utility>
+
 #include "internal.hpp"
 
 namespace gpiod {
 
 namespace {
-
-using chip_deleter = deleter<::gpiod_chip, ::gpiod_chip_close>;
-using chip_ptr = ::std::unique_ptr<::gpiod_chip, chip_deleter>;
 
 chip_ptr open_chip(const ::std::filesystem::path& path)
 {
@@ -21,30 +21,26 @@ chip_ptr open_chip(const ::std::filesystem::path& path)
 
 } /* namespace */
 
-struct chip::impl
+chip::impl::impl(const ::std::filesystem::path& path)
+	: chip(open_chip(path))
 {
-	impl(const ::std::filesystem::path& path)
-		: chip(open_chip(path))
-	{
 
-	}
+}
 
-	impl(const impl& other) = delete;
-	impl(impl&& other) = delete;
-	impl& operator=(const impl& other) = delete;
-	impl& operator=(impl&& other) = delete;
-
-	void throw_if_closed() const
-	{
-		if (!this->chip)
-			throw chip_closed("GPIO chip has been closed");
-	}
-
-	chip_ptr chip;
-};
+void chip::impl::throw_if_closed() const
+{
+	if (!this->chip)
+		throw chip_closed("GPIO chip has been closed");
+}
 
 GPIOD_CXX_API chip::chip(const ::std::filesystem::path& path)
 	: _m_priv(new impl(path))
+{
+
+}
+
+chip::chip(const chip& other)
+	: _m_priv(other._m_priv)
 {
 
 }
@@ -187,21 +183,9 @@ GPIOD_CXX_API int chip::get_line_offset_from_name(const ::std::string& name) con
 	return ret;
 }
 
-GPIOD_CXX_API line_request chip::request_lines(const request_config& req_cfg,
-					       const line_config& line_cfg)
+GPIOD_CXX_API request_builder chip::prepare_request()
 {
-	this->_m_priv->throw_if_closed();
-
-	line_request_ptr request(::gpiod_chip_request_lines(this->_m_priv->chip.get(),
-							    req_cfg._m_priv->config.get(),
-							    line_cfg._m_priv->config.get()));
-	if (!request)
-		throw_from_errno("error requesting GPIO lines");
-
-	line_request ret;
-	ret._m_priv.get()->set_request_ptr(request);
-
-	return ret;
+	return request_builder(*this);
 }
 
 GPIOD_CXX_API ::std::ostream& operator<<(::std::ostream& out, const chip& chip)

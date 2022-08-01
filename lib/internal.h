@@ -13,9 +13,6 @@
 /* For internal library use only. */
 
 #define GPIOD_API	__attribute__((visibility("default")))
-#define GPIOD_PACKED	__attribute__((packed))
-#define GPIOD_UNUSED	__attribute__((unused))
-
 #define GPIOD_BIT(nr)	(1UL << (nr))
 
 bool gpiod_check_gpiochip_device(const char *path, bool set_errno);
@@ -24,12 +21,10 @@ struct gpiod_chip_info *
 gpiod_chip_info_from_uapi(struct gpiochip_info *uapi_info);
 struct gpiod_line_info *
 gpiod_line_info_from_uapi(struct gpio_v2_line_info *uapi_info);
-int gpiod_request_config_to_uapi(struct gpiod_request_config *config,
-				 struct gpio_v2_line_request *uapi_req);
+void gpiod_request_config_to_uapi(struct gpiod_request_config *config,
+				  struct gpio_v2_line_request *uapi_req);
 int gpiod_line_config_to_uapi(struct gpiod_line_config *config,
-			      struct gpio_v2_line_config *uapi_cfg,
-			      unsigned int num_lines,
-			      const unsigned int *offsets);
+			      struct gpio_v2_line_request *uapi_cfg);
 struct gpiod_line_request *
 gpiod_line_request_from_uapi(struct gpio_v2_line_request *uapi_req);
 int gpiod_edge_event_buffer_read_fd(int fd, struct gpiod_edge_event_buffer *buffer,

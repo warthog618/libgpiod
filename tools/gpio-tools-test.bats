@@ -449,7 +449,7 @@ teardown() {
 	run_tool gpioget "$(gpiosim_chip_name sim0)" 0 0
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*offsets must be unique"
 }
 
 @test "gpioget: invalid bias" {
@@ -737,7 +737,7 @@ teardown() {
 	run_tool gpioset "$(gpiosim_chip_name sim0)" 0=1 0=1
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*offsets must be unique"
 }
 
 #
@@ -957,7 +957,7 @@ teardown() {
 	run_tool gpiomon "$(gpiosim_chip_name sim0)" 0 0
 
 	test "$status" -eq "1"
-	output_regex_match ".*unable to request lines"
+	output_regex_match ".*offsets must be unique"
 }
 
 @test "gpiomon: no arguments" {

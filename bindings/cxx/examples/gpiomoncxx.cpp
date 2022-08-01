@@ -42,27 +42,16 @@ int main(int argc, char **argv)
 	for (int i = 2; i < argc; i++)
 		offsets.push_back(::std::stoul(argv[i]));
 
-	::gpiod::chip chip(argv[1]);
-	auto request = chip.request_lines(
-		::gpiod::request_config(
-			{
-				{ ::gpiod::request_config::property::OFFSETS, offsets},
-				{ ::gpiod::request_config::property::CONSUMER, "gpiomoncxx"},
-			}
-		),
-		::gpiod::line_config(
-			{
-				{
-					::gpiod::line_config::property::DIRECTION,
-					::gpiod::line::direction::INPUT
-				},
-				{
-					::gpiod::line_config::property::EDGE_DETECTION,
-					::gpiod::line::edge::BOTH
-				}
-			}
+	auto request = ::gpiod::chip(argv[1])
+		.prepare_request()
+		.set_consumer("gpiomoncxx")
+		.add_line_settings(
+			offsets,
+			::gpiod::line_settings()
+				.set_direction(::gpiod::line::direction::INPUT)
+				.set_edge_detection(::gpiod::line::edge::BOTH)
 		)
-	);
+		.do_request();
 
 	::gpiod::edge_event_buffer buffer;
 
