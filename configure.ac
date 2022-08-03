@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017-2022 Bartosz Golaszewski <brgl@bgdev.pl>
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.71])
 
 AC_INIT([libgpiod], [2.0])
 AC_SUBST(EXTRA_VERSION, [-devel])
@@ -46,7 +46,7 @@ AC_ARG_VAR([PYTHON_LIBS],
 	[Libraries to link into Python extensions [default: auto-detect]])
 
 AC_CONFIG_SRCDIR([lib])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_DEFINE([_GNU_SOURCE], [], [We want GNU extensions])
 
@@ -76,7 +76,8 @@ AC_DEFUN([HEADER_NOT_FOUND_CXX],
 	[ERR_NOT_FOUND([$1 header], [C++ bindings])])
 
 # This is always checked (library needs this)
-AC_HEADER_STDC
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
 AC_FUNC_MALLOC
 AC_CHECK_FUNC([ioctl], [], [FUNC_NOT_FOUND_LIB([ioctl])])
 AC_CHECK_FUNC([asprintf], [], [FUNC_NOT_FOUND_LIB([asprintf])])
