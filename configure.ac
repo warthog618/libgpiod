@@ -171,7 +171,7 @@ AM_CONDITIONAL([WITH_BINDINGS_CXX], [test "x$with_bindings_cxx" = xtrue])
 
 if test "x$with_bindings_cxx" = xtrue
 then
-	AC_LIBTOOL_CXX
+	LT_LANG([C++])
 	# This needs autoconf-archive
 	AX_CXX_COMPILE_STDCXX_11([ext], [mandatory])
 
