@@ -10,8 +10,7 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using property = ::gpiosim::chip::property;
-using line_name = ::gpiosim::chip::line_name;
+using ::gpiosim::make_sim;
 
 namespace {
 
@@ -19,7 +18,7 @@ TEST_CASE("chip constructor works", "[chip]")
 {
 	SECTION("open an existing GPIO chip")
 	{
-		::gpiosim::chip sim;
+		auto sim = make_sim().build();
 
 		REQUIRE_NOTHROW(::gpiod::chip(sim.dev_path()));
 	}
@@ -44,7 +43,9 @@ TEST_CASE("chip constructor works", "[chip]")
 
 	SECTION("move constructor")
 	{
-		::gpiosim::chip sim({{ property::LABEL, "foobar" }});
+		auto sim = make_sim()
+			.set_label("foobar")
+			.build();
 
 		::gpiod::chip first(sim.dev_path());
 		REQUIRE_THAT(first.get_info().label(), Catch::Equals("foobar"));
@@ -55,12 +56,18 @@ TEST_CASE("chip constructor works", "[chip]")
 
 TEST_CASE("chip operators work", "[chip]")
 {
-	::gpiosim::chip sim({{ property::LABEL, "foobar" }});
+	auto sim = make_sim()
+		.set_label("foobar")
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 
 	SECTION("assignment operator")
 	{
-		::gpiosim::chip moved_sim({{ property::LABEL, "moved" }});
+		auto moved_sim = make_sim()
+			.set_label("moved")
+			.build();
+
 		::gpiod::chip moved_chip(moved_sim.dev_path());
 
 		REQUIRE_THAT(chip.get_info().label(), Catch::Equals("foobar"));
@@ -78,7 +85,11 @@ TEST_CASE("chip operators work", "[chip]")
 
 TEST_CASE("chip properties can be read", "[chip]")
 {
-	::gpiosim::chip sim({{ property::NUM_LINES, 8 }, { property::LABEL, "foobar" }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_label("foobar")
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 
 	SECTION("get device path")
@@ -94,13 +105,13 @@ TEST_CASE("chip properties can be read", "[chip]")
 
 TEST_CASE("line lookup by name works", "[chip]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 8 },
-		{ property::LINE_NAME, line_name(0, "foo") },
-		{ property::LINE_NAME, line_name(2, "bar") },
-		{ property::LINE_NAME, line_name(3, "baz") },
-		{ property::LINE_NAME, line_name(5, "xyz") }
-	});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_line_name(0, "foo")
+		.set_line_name(2, "bar")
+		.set_line_name(3, "baz")
+		.set_line_name(5, "xyz")
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 
@@ -117,13 +128,13 @@ TEST_CASE("line lookup by name works", "[chip]")
 
 TEST_CASE("line lookup: behavior for duplicate names", "[chip]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 8 },
-		{ property::LINE_NAME, line_name(0, "foo") },
-		{ property::LINE_NAME, line_name(2, "bar") },
-		{ property::LINE_NAME, line_name(3, "baz") },
-		{ property::LINE_NAME, line_name(5, "bar") }
-	});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_line_name(0, "foo")
+		.set_line_name(2, "bar")
+		.set_line_name(3, "baz")
+		.set_line_name(5, "bar")
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 
@@ -132,7 +143,7 @@ TEST_CASE("line lookup: behavior for duplicate names", "[chip]")
 
 TEST_CASE("closed chip can no longer be used", "[chip]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 
 	::gpiod::chip chip(sim.dev_path());
 	chip.close();
@@ -141,10 +152,10 @@ TEST_CASE("closed chip can no longer be used", "[chip]")
 
 TEST_CASE("stream insertion operator works for chip", "[chip]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 4 },
-		{ property::LABEL, "foobar" }
-	});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.set_label("foobar")
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 	::std::stringstream buf;

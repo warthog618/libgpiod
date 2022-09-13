@@ -10,7 +10,7 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using simprop = ::gpiosim::chip::property;
+using ::gpiosim::make_sim;
 using offsets = ::gpiod::line::offsets;
 using values = ::gpiod::line::values;
 using direction = ::gpiod::line::direction;
@@ -60,7 +60,10 @@ private:
 
 TEST_CASE("requesting lines behaves correctly with invalid arguments", "[line-request][chip]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 
 	SECTION("no offsets")
@@ -96,7 +99,10 @@ TEST_CASE("requesting lines behaves correctly with invalid arguments", "[line-re
 
 TEST_CASE("consumer string is set correctly", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 4 }});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	offsets offs({ 3, 0, 2 });
 
@@ -130,7 +136,10 @@ TEST_CASE("consumer string is set correctly", "[line-request]")
 
 TEST_CASE("values can be read", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	const offsets offs({ 7, 1, 0, 6, 2 });
 
 	const ::std::vector<pull> pulls({
@@ -230,14 +239,16 @@ TEST_CASE("values can be read", "[line-request]")
 
 TEST_CASE("output values can be set at request time", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	const offsets offs({ 0, 1, 3, 4 });
 
 	::gpiod::line_settings settings;
-	settings
-		.set_direction(direction::OUTPUT)
-		.set_output_value(value::ACTIVE);
+	settings.set_direction(direction::OUTPUT);
+	settings.set_output_value(value::ACTIVE);
 
 	::gpiod::line_config line_cfg;
 	line_cfg.add_line_settings(offs, settings);
@@ -275,7 +286,10 @@ TEST_CASE("output values can be set at request time", "[line-request]")
 
 TEST_CASE("values can be set after requesting lines", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	const offsets offs({ 0, 1, 3, 4 });
 
 	auto request = ::gpiod::chip(sim.dev_path())
@@ -339,7 +353,10 @@ TEST_CASE("values can be set after requesting lines", "[line-request]")
 
 TEST_CASE("line_request can be moved", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	const offsets offs({ 3, 1, 0, 2 });
 
@@ -377,7 +394,7 @@ TEST_CASE("line_request can be moved", "[line-request]")
 
 TEST_CASE("released request can no longer be used", "[line-request]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 
 	auto request = ::gpiod::chip(sim.dev_path())
 		.prepare_request()
@@ -391,7 +408,7 @@ TEST_CASE("released request can no longer be used", "[line-request]")
 
 TEST_CASE("line_request survives parent chip", "[line-request][chip]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 
 	sim.set_pull(0, pull::PULL_UP);
 
@@ -447,7 +464,9 @@ TEST_CASE("line_request survives parent chip", "[line-request][chip]")
 
 TEST_CASE("line_request stream insertion operator works", "[line-request]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 4 }});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.build();
 
 	auto request = ::gpiod::chip(sim.dev_path())
 		.prepare_request()

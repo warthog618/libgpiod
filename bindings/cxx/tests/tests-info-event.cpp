@@ -11,7 +11,7 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using simprop = ::gpiosim::chip::property;
+using ::gpiosim::make_sim;
 using direction = ::gpiod::line::direction;
 using event_type = ::gpiod::info_event::event_type;
 
@@ -44,7 +44,10 @@ void request_reconfigure_release_line(::gpiod::chip& chip)
 
 TEST_CASE("Lines can be watched", "[info-event][chip]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 
 	SECTION("watch_line_info() returns line info")
@@ -102,7 +105,7 @@ TEST_CASE("Lines can be watched", "[info-event][chip]")
 
 TEST_CASE("info_event can be copied and moved", "[info-event]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 	::gpiod::chip chip(sim.dev_path());
 	::std::stringstream buf, expected;
 
@@ -167,7 +170,7 @@ TEST_CASE("info_event stream insertion operator works", "[info-event][line-info]
 	 * and line_info classes.
 	 */
 
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 	::gpiod::chip chip(sim.dev_path());
 	::std::stringstream buf, expected;
 

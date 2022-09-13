@@ -1,14 +1,12 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
 /* SPDX-FileCopyrightText: 2022 Bartosz Golaszewski <brgl@bgdev.pl> */
 
-#include <functional>
 #include <map>
 #include <system_error>
+#include <utility>
 
 #include "gpiosim.h"
 #include "gpiosim.hpp"
-
-#define NORETURN __attribute__((noreturn))
 
 namespace gpiosim {
 
@@ -19,10 +17,10 @@ const ::std::map<chip::pull, int> pull_mapping = {
 	{ chip::pull::PULL_DOWN,	GPIOSIM_PULL_DOWN }
 };
 
-const ::std::map<chip::hog_direction, int> hog_dir_mapping = {
-	{ chip::hog_direction::INPUT,		GPIOSIM_HOG_DIR_INPUT },
-	{ chip::hog_direction::OUTPUT_HIGH,	GPIOSIM_HOG_DIR_OUTPUT_HIGH },
-	{ chip::hog_direction::OUTPUT_LOW,	GPIOSIM_HOG_DIR_OUTPUT_LOW }
+const ::std::map<chip_builder::hog_direction, int> hog_dir_mapping = {
+	{ chip_builder::hog_direction::INPUT,		GPIOSIM_HOG_DIR_INPUT },
+	{ chip_builder::hog_direction::OUTPUT_HIGH,	GPIOSIM_HOG_DIR_OUTPUT_HIGH },
+	{ chip_builder::hog_direction::OUTPUT_LOW,	GPIOSIM_HOG_DIR_OUTPUT_LOW }
 };
 
 const ::std::map<int, chip::value> value_mapping = {
@@ -82,45 +80,13 @@ bank_ptr make_sim_bank(const dev_ptr& dev)
 	return bank;
 }
 
-NORETURN void throw_invalid_type()
-{
-	throw ::std::logic_error("invalid type for property");
-}
-
-unsigned any_to_unsigned_int(const ::std::any& val)
-{
-	if (val.type() == typeid(int)) {
-		auto num_lines = ::std::any_cast<int>(val);
-		if (num_lines < 0)
-			throw ::std::invalid_argument("negative value not accepted");
-
-		   return static_cast<unsigned int>(num_lines);
-	} else if (val.type() == typeid(unsigned int)) {
-		return ::std::any_cast<unsigned int>(val);
-	}
-
-	throw_invalid_type();
-}
-
-::std::string any_to_string(const ::std::any& val)
-{
-	if (val.type() == typeid(::std::string))
-		return ::std::any_cast<::std::string>(val);
-	else if (val.type() == typeid(const char*))
-		return ::std::any_cast<const char*>(val);
-
-	throw_invalid_type();
-}
-
 } /* namespace */
 
 struct chip::impl
 {
 	impl()
 		: dev(make_sim_dev()),
-		  bank(make_sim_bank(this->dev)),
-		  has_num_lines(false),
-		  has_label(false)
+		  bank(make_sim_bank(this->dev))
 	{
 
 	}
@@ -131,99 +97,32 @@ struct chip::impl
 	impl& operator=(const impl& other) = delete;
 	impl& operator=(impl&& other) = delete;
 
-	static const ::std::map<chip::property,
-				::std::function<void (impl&,
-						      const ::std::any&)>> setter_mapping;
-
-	void set_property(chip::property prop, const ::std::any& val)
-	{
-		setter_mapping.at(prop)(*this, val);
-	}
-
-	void set_num_lines(const ::std::any& val)
-	{
-		if (this->has_num_lines)
-			throw ::std::logic_error("number of lines can be set at most once");
-
-		int ret = ::gpiosim_bank_set_num_lines(this->bank.get(), any_to_unsigned_int(val));
-		if (ret)
-			throw ::std::system_error(errno, ::std::system_category(),
-						  "failed to set the number of lines");
-
-		this->has_num_lines = true;
-	}
-
-	void set_label(const ::std::any& val)
-	{
-		if (this->has_label)
-			throw ::std::logic_error("label can be set at most once");
-
-		int ret = ::gpiosim_bank_set_label(this->bank.get(),
-						   any_to_string(val).c_str());
-		if (ret)
-			throw ::std::system_error(errno, ::std::system_category(),
-						  "failed to set the chip label");
-
-		this->has_label = true;
-	}
-
-	void set_line_name(const ::std::any& val)
-	{
-		auto name = ::std::any_cast<line_name>(val);
-
-		int ret = ::gpiosim_bank_set_line_name(this->bank.get(),
-						       ::std::get<0>(name),
-						       ::std::get<1>(name).c_str());
-		if (ret)
-			throw ::std::system_error(errno, ::std::system_category(),
-						  "failed to set simulated line name");
-	}
-
-	void set_line_hog(const ::std::any& val)
-	{
-		auto hog = ::std::any_cast<line_hog>(val);
-
-		int ret = ::gpiosim_bank_hog_line(this->bank.get(),
-						  ::std::get<0>(hog),
-						  ::std::get<1>(hog).c_str(),
-						  hog_dir_mapping.at(::std::get<2>(hog)));
-		if (ret)
-			throw ::std::system_error(errno, ::std::system_category(),
-						  "failed to hog a simulated line");
-	}
-
 	dev_ptr dev;
 	bank_ptr bank;
-	bool has_num_lines;
-	bool has_label;
 };
 
-const ::std::map<chip::property,
-		 ::std::function<void (chip::impl&,
-				       const ::std::any&)>> chip::impl::setter_mapping = {
-	{ chip::property::NUM_LINES,	&chip::impl::set_num_lines },
-	{ chip::property::LABEL,	&chip::impl::set_label },
-	{ chip::property::LINE_NAME,	&chip::impl::set_line_name },
-	{ chip::property::HOG,		&chip::impl::set_line_hog }
-};
-
-chip::chip(const properties& args)
+chip::chip()
 	: _m_priv(new impl)
 {
-	int ret;
 
-	for (const auto& arg: args)
-		this->_m_priv.get()->set_property(arg.first, arg.second);
+}
 
-	ret = ::gpiosim_dev_enable(this->_m_priv->dev.get());
-	if (ret)
-		throw ::std::system_error(errno, ::std::system_category(),
-					  "failed to enable the simulated GPIO chip");
+chip::chip(chip&& other)
+	: _m_priv(::std::move(other._m_priv))
+{
+
 }
 
 chip::~chip()
 {
-	this->_m_priv.reset(nullptr);
+
+}
+
+chip& chip::operator=(chip&& other)
+{
+	this->_m_priv = ::std::move(other._m_priv);
+
+	return *this;
 }
 
 ::std::filesystem::path chip::dev_path() const
@@ -253,6 +152,126 @@ void chip::set_pull(unsigned int offset, pull pull)
 	if (ret)
 		throw ::std::system_error(errno, ::std::system_category(),
 					  "failed to set the pull of simulated GPIO line");
+}
+
+struct chip_builder::impl
+{
+	impl()
+		: num_lines(0),
+		  label(),
+		  line_names(),
+		  hogs()
+	{
+
+	}
+
+	::std::size_t num_lines;
+	::std::string label;
+	::std::map<unsigned int, ::std::string> line_names;
+	::std::map<unsigned int, ::std::pair<::std::string, hog_direction>> hogs;
+};
+
+chip_builder::chip_builder()
+	: _m_priv(new impl)
+{
+
+}
+
+chip_builder::chip_builder(chip_builder&& other)
+	: _m_priv(::std::move(other._m_priv))
+{
+
+}
+
+chip_builder::~chip_builder()
+{
+
+}
+
+chip_builder& chip_builder::operator=(chip_builder&& other)
+{
+	this->_m_priv = ::std::move(other._m_priv);
+
+	return *this;
+}
+
+chip_builder& chip_builder::set_num_lines(::std::size_t num_lines)
+{
+	this->_m_priv->num_lines = num_lines;
+
+	return *this;
+}
+
+chip_builder& chip_builder::set_label(const ::std::string& label)
+{
+	this->_m_priv->label = label;
+
+	return *this;
+}
+
+chip_builder& chip_builder::set_line_name(unsigned int offset, const ::std::string& name)
+{
+	this->_m_priv->line_names[offset] = name;
+
+	return *this;
+}
+
+chip_builder& chip_builder::set_hog(unsigned int offset, const ::std::string& name, hog_direction direction)
+{
+	this->_m_priv->hogs[offset] = { name, direction };
+
+	return *this;
+}
+
+chip chip_builder::build()
+{
+	chip sim;
+	int ret;
+
+	if (this->_m_priv->num_lines) {
+		ret = ::gpiosim_bank_set_num_lines(sim._m_priv->bank.get(),
+						   this->_m_priv->num_lines);
+		if (ret)
+			throw ::std::system_error(errno, ::std::system_category(),
+						  "failed to set number of lines");
+	}
+
+	if (!this->_m_priv->label.empty()) {
+		ret = ::gpiosim_bank_set_label(sim._m_priv->bank.get(),
+					       this->_m_priv->label.c_str());
+		if (ret)
+			throw ::std::system_error(errno, ::std::system_category(),
+						  "failed to set the chip label");
+	}
+
+	for (const auto& name: this->_m_priv->line_names) {
+		ret = ::gpiosim_bank_set_line_name(sim._m_priv->bank.get(),
+						 name.first, name.second.c_str());
+		if (ret)
+			throw ::std::system_error(errno, ::std::system_category(),
+						  "failed to set the line name");
+	}
+
+	for (const auto& hog: this->_m_priv->hogs) {
+		ret = ::gpiosim_bank_hog_line(sim._m_priv->bank.get(), hog.first,
+					      hog.second.first.c_str(),
+					      hog_dir_mapping.at(hog.second.second));
+		if (ret)
+			throw ::std::system_error(errno, ::std::system_category(),
+						  "failed to hog the line");
+	}
+
+	ret = ::gpiosim_dev_enable(sim._m_priv->dev.get());
+	if (ret)
+		throw ::std::system_error(errno, ::std::system_category(),
+					  "failed to enable the simulated GPIO device");
+
+	return sim;
+}
+
+chip_builder make_sim()
+{
+	return chip_builder();
 }
 
 } /* namespace gpiosim */

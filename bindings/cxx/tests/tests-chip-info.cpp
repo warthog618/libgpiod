@@ -8,13 +8,17 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using property = ::gpiosim::chip::property;
+using ::gpiosim::make_sim;
 
 namespace {
 
 TEST_CASE("chip_info properties can be read", "[chip-info][chip]")
 {
-	::gpiosim::chip sim({{ property::NUM_LINES, 8 }, { property::LABEL, "foobar" }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_label("foobar")
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	auto info = chip.get_info();
 
@@ -36,7 +40,11 @@ TEST_CASE("chip_info properties can be read", "[chip-info][chip]")
 
 TEST_CASE("chip_info can be copied and moved", "[chip-info]")
 {
-	::gpiosim::chip sim({{ property::NUM_LINES, 4 }, { property::LABEL, "foobar" }});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.set_label("foobar")
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	auto info = chip.get_info();
 
@@ -91,10 +99,10 @@ TEST_CASE("chip_info can be copied and moved", "[chip-info]")
 
 TEST_CASE("stream insertion operator works for chip_info", "[chip-info]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 4 },
-		{ property::LABEL, "foobar" }
-	});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.set_label("foobar")
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 	auto info = chip.get_info();

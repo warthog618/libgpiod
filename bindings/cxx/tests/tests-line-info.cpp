@@ -8,10 +8,8 @@
 #include "helpers.hpp"
 #include "gpiosim.hpp"
 
-using property = ::gpiosim::chip::property;
-using line_name = ::gpiosim::chip::line_name;
-using line_hog = ::gpiosim::chip::line_hog;
-using hog_dir = ::gpiosim::chip::hog_direction;
+using ::gpiosim::make_sim;
+using hog_dir = ::gpiosim::chip_builder::hog_direction;
 using direction = ::gpiod::line::direction;
 using edge = ::gpiod::line::edge;
 using bias = ::gpiod::line::bias;
@@ -24,11 +22,11 @@ namespace {
 
 TEST_CASE("get_line_info() works", "[chip][line-info]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 8 },
-		{ property::LINE_NAME, line_name(0, "foobar") },
-		{ property::HOG, line_hog(0, "hog", hog_dir::OUTPUT_HIGH ) }
-	});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_line_name(0,  "foobar")
+		.set_hog(0, "hog", hog_dir::OUTPUT_HIGH)
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 
@@ -58,15 +56,15 @@ TEST_CASE("get_line_info() works", "[chip][line-info]")
 
 TEST_CASE("line properties can be retrieved", "[line-info]")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 8 },
-		{ property::LINE_NAME, line_name(1, "foo") },
-		{ property::LINE_NAME, line_name(2, "bar") },
-		{ property::LINE_NAME, line_name(4, "baz") },
-		{ property::LINE_NAME, line_name(5, "xyz") },
-		{ property::HOG, line_hog(3, "hog3", hog_dir::OUTPUT_HIGH) },
-		{ property::HOG, line_hog(4, "hog4", hog_dir::OUTPUT_LOW) }
-	});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.set_line_name(1, "foo")
+		.set_line_name(2, "bar")
+		.set_line_name(4, "baz")
+		.set_line_name(5, "xyz")
+		.set_hog(3, "hog3", hog_dir::OUTPUT_HIGH)
+		.set_hog(4, "hog4", hog_dir::OUTPUT_LOW)
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 
@@ -92,10 +90,10 @@ TEST_CASE("line properties can be retrieved", "[line-info]")
 
 TEST_CASE("line_info can be copied and moved")
 {
-	::gpiosim::chip sim({
-		{ property::NUM_LINES, 4 },
-		{ property::LINE_NAME, line_name(2, "foobar") }
-	});
+	auto sim = make_sim()
+		.set_num_lines(4)
+		.set_line_name(2, "foobar")
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 	auto info = chip.get_line_info(2);
@@ -139,10 +137,10 @@ TEST_CASE("line_info can be copied and moved")
 
 TEST_CASE("line_info stream insertion operator works")
 {
-	::gpiosim::chip sim({
-		{ property::LINE_NAME, line_name(0, "foo") },
-		{ property::HOG, line_hog(0, "hogger", hog_dir::OUTPUT_HIGH) }
-	});
+	auto sim = make_sim()
+		.set_line_name(0, "foo")
+		.set_hog(0, "hogger", hog_dir::OUTPUT_HIGH)
+		.build();
 
 	::gpiod::chip chip(sim.dev_path());
 

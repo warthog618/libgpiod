@@ -11,7 +11,7 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using property = ::gpiosim::chip::property;
+using ::gpiosim::make_sim;
 
 namespace {
 
@@ -48,14 +48,14 @@ TEST_CASE("is_gpiochip_device() works", "[misc][chip]")
 
 	SECTION("is_gpiochip_device() returns true for a GPIO chip")
 	{
-		::gpiosim::chip sim;
+		auto sim = make_sim().build();
 
 		REQUIRE(::gpiod::is_gpiochip_device(sim.dev_path()));
 	}
 
 	SECTION("is_gpiochip_device() can resolve a symlink")
 	{
-		::gpiosim::chip sim;
+		auto sim = make_sim().build();
 		::std::string link("/tmp/gpiod-cxx-tmp-link.");
 
 		link += ::std::to_string(::getpid());

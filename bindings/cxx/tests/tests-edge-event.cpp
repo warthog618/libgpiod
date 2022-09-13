@@ -11,7 +11,7 @@
 #include "gpiosim.hpp"
 #include "helpers.hpp"
 
-using simprop = ::gpiosim::chip::property;
+using ::gpiosim::make_sim;
 using direction = ::gpiod::line::direction;
 using edge = ::gpiod::line::edge;
 using offsets = ::gpiod::line::offsets;
@@ -40,7 +40,7 @@ TEST_CASE("edge_event_buffer capacity settings work", "[edge-event]")
 
 TEST_CASE("edge_event wait timeout", "[edge-event]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 	::gpiod::chip chip(sim.dev_path());
 
 	auto request = chip.prepare_request()
@@ -56,7 +56,7 @@ TEST_CASE("edge_event wait timeout", "[edge-event]")
 
 TEST_CASE("output mode and edge detection don't work together", "[edge-event]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 
 	REQUIRE_THROWS_AS(
 		::gpiod::chip(sim.dev_path())
@@ -91,7 +91,10 @@ void trigger_rising_edge_events_on_two_offsets(::gpiosim::chip& sim,
 
 TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	::gpiod::edge_event_buffer buffer;
 
@@ -220,7 +223,10 @@ TEST_CASE("waiting for and reading edge events works", "[edge-event]")
 
 TEST_CASE("reading multiple events", "[edge-event]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 8 }});
+	auto sim = make_sim()
+		.set_num_lines(8)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 
 	auto request = chip
@@ -268,7 +274,10 @@ TEST_CASE("reading multiple events", "[edge-event]")
 
 TEST_CASE("edge_event_buffer can be moved", "[edge-event]")
 {
-	::gpiosim::chip sim({{ simprop::NUM_LINES, 2 }});
+	auto sim = make_sim()
+		.set_num_lines(2)
+		.build();
+
 	::gpiod::chip chip(sim.dev_path());
 	::gpiod::edge_event_buffer buffer(13);
 
@@ -313,7 +322,7 @@ TEST_CASE("edge_event_buffer can be moved", "[edge-event]")
 
 TEST_CASE("edge_event can be copied and moved", "[edge-event]")
 {
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 	::gpiod::chip chip(sim.dev_path());
 	::gpiod::edge_event_buffer buffer;
 
@@ -378,7 +387,7 @@ TEST_CASE("stream insertion operators work for edge_event and edge_event_buffer"
 	 * edge_event_buffer classes.
 	 */
 
-	::gpiosim::chip sim;
+	auto sim = make_sim().build();
 	::gpiod::chip chip(sim.dev_path());
 	::gpiod::edge_event_buffer buffer;
 	::std::stringstream sbuf, expected;

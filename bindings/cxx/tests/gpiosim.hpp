@@ -4,34 +4,19 @@
 #ifndef __GPIOD_CXX_GPIOSIM_HPP__
 #define __GPIOD_CXX_GPIOSIM_HPP__
 
-#include <any>
 #include <filesystem>
 #include <memory>
-#include <tuple>
-#include <utility>
-#include <vector>
 
 namespace gpiosim {
+
+class chip_builder;
 
 class chip
 {
 public:
-	enum class property {
-		NUM_LINES = 1,
-		LABEL,
-		LINE_NAME,
-		HOG
-	};
-
 	enum class pull {
 		PULL_UP = 1,
 		PULL_DOWN
-	};
-
-	enum class hog_direction {
-		INPUT = 1,
-		OUTPUT_HIGH,
-		OUTPUT_LOW
 	};
 
 	enum class value {
@@ -39,17 +24,12 @@ public:
 		ACTIVE = 1
 	};
 
-	using line_name = ::std::tuple<unsigned int, ::std::string>;
-	using line_hog = ::std::tuple<unsigned int, ::std::string, hog_direction>;
-	using properties = ::std::vector<::std::pair<property, ::std::any>>;
-
-	explicit chip(const properties& args = properties());
 	chip(const chip& other) = delete;
-	chip(chip&& other) = delete;
+	chip(chip&& other);
 	~chip();
 
 	chip& operator=(const chip& other) = delete;
-	chip& operator=(chip&& other) = delete;
+	chip& operator=(chip&& other);
 
 	::std::filesystem::path dev_path() const;
 	::std::string name() const;
@@ -59,10 +39,47 @@ public:
 
 private:
 
+	chip();
+
+	struct impl;
+
+	::std::unique_ptr<impl> _m_priv;
+
+	friend chip_builder;
+};
+
+class chip_builder
+{
+public:
+	enum class hog_direction {
+		INPUT = 1,
+		OUTPUT_HIGH,
+		OUTPUT_LOW
+	};
+
+	chip_builder();
+	chip_builder(const chip_builder& other) = delete;
+	chip_builder(chip_builder&& other);
+	~chip_builder();
+
+	chip_builder& operator=(const chip_builder& other) = delete;
+	chip_builder& operator=(chip_builder&& other);
+
+	chip_builder& set_num_lines(::std::size_t num_lines);
+	chip_builder& set_label(const ::std::string& label);
+	chip_builder& set_line_name(unsigned int offset, const ::std::string& name);
+	chip_builder& set_hog(unsigned int offset, const ::std::string& name, hog_direction direction);
+
+	chip build();
+
+private:
+
 	struct impl;
 
 	::std::unique_ptr<impl> _m_priv;
 };
+
+chip_builder make_sim();
 
 } /* namespace gpiosim */
 
