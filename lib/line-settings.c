@@ -195,6 +195,7 @@ gpiod_line_settings_set_event_clock(struct gpiod_line_settings *settings,
 	switch (event_clock) {
 	case GPIOD_LINE_EVENT_CLOCK_MONOTONIC:
 	case GPIOD_LINE_EVENT_CLOCK_REALTIME:
+	case GPIOD_LINE_EVENT_CLOCK_HTE:
 		settings->event_clock = event_clock;
 		break;
 	default:

@@ -362,6 +362,7 @@ GPIOD_TEST_CASE(event_clock)
 	g_autoptr(struct_gpiod_line_request) request = NULL;
 	g_autoptr(struct_gpiod_line_info) info0 = NULL;
 	g_autoptr(struct_gpiod_line_info) info1 = NULL;
+	g_autoptr(struct_gpiod_line_info) info2 = NULL;
 	guint offset;
 
 	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
@@ -377,13 +378,22 @@ GPIOD_TEST_CASE(event_clock)
 	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
 							 settings);
 
+	gpiod_line_settings_set_event_clock(settings,
+					    GPIOD_LINE_EVENT_CLOCK_HTE);
+	offset = 2;
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
+							 settings);
+
 	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
 
 	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
 	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
+	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
 
 	g_assert_cmpint(gpiod_line_info_get_event_clock(info0), ==,
 			GPIOD_LINE_EVENT_CLOCK_MONOTONIC);
 	g_assert_cmpint(gpiod_line_info_get_event_clock(info1), ==,
 			GPIOD_LINE_EVENT_CLOCK_REALTIME);
+	g_assert_cmpint(gpiod_line_info_get_event_clock(info2), ==,
+			GPIOD_LINE_EVENT_CLOCK_HTE);
 }

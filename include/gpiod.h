@@ -306,6 +306,8 @@ enum {
 	/**< Line uses the monotonic clock for edge event timestamps. */
 	GPIOD_LINE_EVENT_CLOCK_REALTIME,
 	/**< Line uses the realtime clock for edge event timestamps. */
+	GPIOD_LINE_EVENT_CLOCK_HTE,
+	/**< Line uses the hardware timestamp engine for event timestamps. */
 };
 
 /**

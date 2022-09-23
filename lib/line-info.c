@@ -160,6 +160,8 @@ gpiod_line_info_from_uapi(struct gpio_v2_line_info *uapi_info)
 
 	if (uapi_info->flags & GPIO_V2_LINE_FLAG_EVENT_CLOCK_REALTIME)
 		info->event_clock = GPIOD_LINE_EVENT_CLOCK_REALTIME;
+	else if (uapi_info->flags & GPIO_V2_LINE_FLAG_EVENT_CLOCK_HTE)
+		info->event_clock = GPIOD_LINE_EVENT_CLOCK_HTE;
 	else
 		info->event_clock = GPIOD_LINE_EVENT_CLOCK_MONOTONIC;
 

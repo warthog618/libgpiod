@@ -143,7 +143,7 @@ public:
 	/**
 	 * @brief Read the current event clock setting used for edge event
 	 *        timestamps.
-	 * @return Returns MONOTONIC or REALTIME.
+	 * @return Returns MONOTONIC, REALTIME or HTE.
 	 */
 	line::clock event_clock() const;
 

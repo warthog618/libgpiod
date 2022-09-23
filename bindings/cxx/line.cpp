@@ -45,7 +45,8 @@ const ::std::map<line::edge, ::std::string> edge_names = {
 
 const ::std::map<line::clock, ::std::string> clock_names = {
 	{ line::clock::MONOTONIC,	"MONOTONIC" },
-	{ line::clock::REALTIME,	"REALTIME" }
+	{ line::clock::REALTIME,	"REALTIME" },
+	{ line::clock::HTE,		"HTE" }
 };
 
 } /* namespace */

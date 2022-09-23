@@ -107,6 +107,8 @@ TEST_CASE("line_settings mutators work", "[line-settings]")
 		REQUIRE(settings.event_clock() == clock_type::REALTIME);
 		settings.set_event_clock(clock_type::MONOTONIC);
 		REQUIRE(settings.event_clock() == clock_type::MONOTONIC);
+		settings.set_event_clock(clock_type::HTE);
+		REQUIRE(settings.event_clock() == clock_type::HTE);
 		REQUIRE_THROWS_AS(settings.set_event_clock(static_cast<clock_type>(999)),
 				  ::std::invalid_argument);
 	}

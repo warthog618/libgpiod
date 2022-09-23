@@ -43,6 +43,6 @@ public:
 	}
 };
 
-kernel_checker require_kernel(5, 17, 4);
+kernel_checker require_kernel(5, 19, 0);
 
 } /* namespace */

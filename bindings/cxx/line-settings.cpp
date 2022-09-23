@@ -57,7 +57,8 @@ const ::std::map<int, line::drive> reverse_drive_mapping = make_reverse_maping(d
 
 const ::std::map<line::clock, int> clock_mapping = {
 	{ line::clock::MONOTONIC,	GPIOD_LINE_EVENT_CLOCK_MONOTONIC },
-	{ line::clock::REALTIME,	GPIOD_LINE_EVENT_CLOCK_REALTIME }
+	{ line::clock::REALTIME,	GPIOD_LINE_EVENT_CLOCK_REALTIME },
+	{ line::clock::HTE,		GPIOD_LINE_EVENT_CLOCK_HTE }
 };
 
 const ::std::map<int, line::clock> reverse_clock_mapping = make_reverse_maping(clock_mapping);

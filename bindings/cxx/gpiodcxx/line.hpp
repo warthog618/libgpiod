@@ -156,8 +156,10 @@ enum class clock
 {
 	MONOTONIC = 1,
 	/**< Line uses the monotonic clock for edge event timestamps. */
-	REALTIME
+	REALTIME,
 	/**< Line uses the realtime clock for edge event timestamps. */
+	HTE,
+	/*<< Line uses the hardware timestamp engine for event timestamps. */
 };
 
 /**

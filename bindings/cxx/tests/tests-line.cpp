@@ -92,9 +92,11 @@ TEST_CASE("stream insertion operators for types in gpiod::line work", "[line]")
 	{
 		auto monotonic = clock_type::MONOTONIC;
 		auto realtime = clock_type::REALTIME;
+		auto hte = clock_type::HTE;
 
 		REQUIRE_THAT(monotonic, stringify_matcher<clock_type>("MONOTONIC"));
 		REQUIRE_THAT(realtime, stringify_matcher<clock_type>("REALTIME"));
+		REQUIRE_THAT(hte, stringify_matcher<clock_type>("HTE"));
 	}
 
 	SECTION("offsets")

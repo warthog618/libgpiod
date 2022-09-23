@@ -10,8 +10,8 @@
 #include "gpiod-test.h"
 
 #define MIN_KERNEL_MAJOR	5
-#define MIN_KERNEL_MINOR	17
-#define MIN_KERNEL_RELEASE	4
+#define MIN_KERNEL_MINOR	19
+#define MIN_KERNEL_RELEASE	0
 #define MIN_KERNEL_VERSION	KERNEL_VERSION(MIN_KERNEL_MAJOR, \
 					       MIN_KERNEL_MINOR, \
 					       MIN_KERNEL_RELEASE)

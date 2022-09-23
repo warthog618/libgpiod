@@ -222,6 +222,12 @@ GPIOD_TEST_CASE(set_event_clock)
 	g_assert_cmpint(gpiod_line_settings_get_event_clock(settings), ==,
 			GPIOD_LINE_EVENT_CLOCK_REALTIME);
 
+	ret = gpiod_line_settings_set_event_clock(settings,
+					GPIOD_LINE_EVENT_CLOCK_HTE);
+	g_assert_cmpint(ret, ==, 0);
+	g_assert_cmpint(gpiod_line_settings_get_event_clock(settings), ==,
+			GPIOD_LINE_EVENT_CLOCK_HTE);
+
 	ret = gpiod_line_settings_set_event_clock(settings, 999);
 	g_assert_cmpint(ret, <, 0);
 	g_assert_cmpint(errno, ==, EINVAL);
