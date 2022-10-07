@@ -384,8 +384,14 @@ GPIOD_TEST_CASE(event_clock)
 	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, &offset, 1,
 							 settings);
 
-	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+	request = gpiod_chip_request_lines(chip, NULL, line_cfg);
+	if (!request && errno == EOPNOTSUPP) {
+		g_test_skip("HTE support not available");
+		return;
+	}
 
+	gpiod_test_return_if_failed();
+	
 	info0 = gpiod_test_get_line_info_or_fail(chip, 0);
 	info1 = gpiod_test_get_line_info_or_fail(chip, 1);
 	info2 = gpiod_test_get_line_info_or_fail(chip, 2);
