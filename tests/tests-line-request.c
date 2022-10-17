@@ -266,6 +266,45 @@ GPIOD_TEST_CASE(set_all_values)
 				==, values[i]);
 }
 
+GPIOD_TEST_CASE(set_values_subset_of_lines)
+{
+	static const guint offsets[] = { 0, 1, 2, 3 };
+	static const guint offsets_to_set[] = { 0, 1, 3 };
+	static const gint values[] = { GPIOD_LINE_VALUE_ACTIVE,
+				       GPIOD_LINE_VALUE_INACTIVE,
+				       GPIOD_LINE_VALUE_ACTIVE };
+
+	g_autoptr(GPIOSimChip) sim = g_gpiosim_chip_new("num-lines", 4, NULL);
+	g_autoptr(struct_gpiod_chip) chip = NULL;
+	g_autoptr(struct_gpiod_line_settings) settings = NULL;
+	g_autoptr(struct_gpiod_line_config) line_cfg = NULL;
+	g_autoptr(struct_gpiod_line_request) request = NULL;
+	gint ret;
+
+	chip = gpiod_test_open_chip_or_fail(g_gpiosim_chip_get_dev_path(sim));
+	settings = gpiod_test_create_line_settings_or_fail();
+	line_cfg = gpiod_test_create_line_config_or_fail();
+
+	gpiod_line_settings_set_direction(settings,
+					  GPIOD_LINE_DIRECTION_OUTPUT);
+	gpiod_test_line_config_add_line_settings_or_fail(line_cfg, offsets, 4,
+							 settings);
+
+	request = gpiod_test_request_lines_or_fail(chip, NULL, line_cfg);
+
+	ret = gpiod_line_request_set_values_subset(request, 3,
+						   offsets_to_set, values);
+	g_assert_cmpint(ret, ==, 0);
+	gpiod_test_return_if_failed();
+
+	g_assert_cmpint(g_gpiosim_chip_get_value(sim, 0),
+			==, GPIOD_LINE_VALUE_ACTIVE);
+	g_assert_cmpint(g_gpiosim_chip_get_value(sim, 1),
+			==, GPIOD_LINE_VALUE_INACTIVE);
+	g_assert_cmpint(g_gpiosim_chip_get_value(sim, 3),
+			==, GPIOD_LINE_VALUE_ACTIVE);
+}
+
 GPIOD_TEST_CASE(set_line_after_requesting)
 {
 	static const guint offsets[] = { 0, 1, 3, 4 };
