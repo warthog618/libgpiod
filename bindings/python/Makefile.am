@@ -19,7 +19,7 @@ all-local:
 
 install-exec-local:
 	GPIOD_WITH_TESTS= \
-	$(PYTHON) setup.py install --prefix=$(DESTDIR)$(prefix)
+	$(PYTHON) setup.py install --root=$(if $(DESTDIR),$(DESTDIR),/) --prefix=$(prefix)
 
 SUBDIRS = gpiod
 
