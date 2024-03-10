@@ -2,6 +2,15 @@
 # SPDX-FileCopyrightText: 2017-2021 Bartosz Golaszewski <bartekgola@gmail.com>
 # SPDX-FileCopyrightText: 2023 Bartosz Golaszewski <bartosz.golaszewski@linaro.org>
 
+libgpiod v2.1.1
+===============
+
+Bug fixes:
+- remove buggy and unnecessary flags sanitization from line-config
+- fix python bindings installation with Makefile build
+- sanitize the return values of GPIO ioctl()s which in some cases may be
+  erroneously positive
+
 libgpiod v2.1
 =============
 
