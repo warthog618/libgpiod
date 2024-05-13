@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 
-AC_INIT([libgpiod], [2.1.1])
+AC_INIT([libgpiod], [2.1.2])
 AC_SUBST(EXTRA_VERSION, [])
 
 AC_DEFINE_UNQUOTED([GPIOD_VERSION_STR],
