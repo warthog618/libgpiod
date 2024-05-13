@@ -2,6 +2,16 @@
 # SPDX-FileCopyrightText: 2017-2021 Bartosz Golaszewski <bartekgola@gmail.com>
 # SPDX-FileCopyrightText: 2023 Bartosz Golaszewski <bartosz.golaszewski@linaro.org>
 
+libgpiod v2.1.2
+===============
+
+Bug fixes:
+- fix C++ bindings build using slibtool
+- accept the new style automatic GPIO chip labels from gpio-sim in bash tests
+
+Misc:
+- relicense C++ bindings under LGPL-2.1-or-later
+
 libgpiod v2.1.1
 ===============
 
