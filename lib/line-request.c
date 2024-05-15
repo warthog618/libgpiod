@@ -305,3 +305,204 @@ gpiod_line_request_read_edge_events(struct gpiod_line_request *request,
 
 	return gpiod_edge_event_buffer_read_fd(request->fd, buffer, max_events);
 }
+
+#ifdef GPIOD_EXTENSIONS
+
+static struct gpiod_line_request *
+ext_request(const char  *path, unsigned int offset,
+	    enum gpiod_line_direction direction,
+	    enum gpiod_line_value value)
+{
+	struct gpiod_line_request *request = NULL;
+	struct gpiod_line_settings *settings;
+	struct gpiod_line_config *line_cfg;
+	struct gpiod_chip *chip;
+	int ret;
+
+	chip = gpiod_chip_open(path);
+	if (!chip)
+		return NULL;
+
+	settings = gpiod_line_settings_new();
+	if (!settings)
+		goto close_chip;
+
+	gpiod_line_settings_set_direction(settings, direction);
+	if (direction == GPIOD_LINE_DIRECTION_OUTPUT)
+		gpiod_line_settings_set_output_value(settings, value);
+
+	line_cfg = gpiod_line_config_new();
+	if (!line_cfg)
+		goto free_settings;
+
+	ret = gpiod_line_config_add_line_settings(line_cfg, &offset, 1,
+						  settings);
+	if (ret)
+		goto free_line_cfg;
+
+	request = gpiod_chip_request_lines(chip, NULL, line_cfg);
+
+free_line_cfg:
+	gpiod_line_config_free(line_cfg);
+
+free_settings:
+	gpiod_line_settings_free(settings);
+
+close_chip:
+	gpiod_chip_close(chip);
+
+	return request;
+}
+
+GPIOD_API struct gpiod_line_request *
+gpiod_ext_request_input(const char  *path, unsigned int offset)
+{
+	return ext_request(path, offset, GPIOD_LINE_DIRECTION_INPUT, 0);
+}
+
+GPIOD_API struct gpiod_line_request *
+gpiod_ext_request_output(const char  *path, unsigned int offset,
+			 enum gpiod_line_value value)
+{
+	return ext_request(path, offset, GPIOD_LINE_DIRECTION_OUTPUT, value);
+}
+
+static struct gpiod_line_settings *
+ext_line_settings(struct gpiod_line_request * req)
+{
+	struct gpiod_line_settings *settings = NULL;
+	struct gpiod_line_info *line_info;
+	struct gpiod_chip *chip;
+	char path[32];
+
+	assert(req);
+
+	if (req->num_lines != 1) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/*
+	 * This is all decidedly non-optimal, as generally the user has the
+	 * config available from when they made the request, but here we need to
+	 * rebuild it from the line info...
+	 */
+	memcpy(path, "/dev/", 5);
+	strncpy(&path[5], req->chip_name, 26);
+	chip = gpiod_chip_open(path);
+	if (!chip)
+		return NULL;
+
+	// get info
+	line_info = gpiod_chip_get_line_info(chip, req->offsets[0]);
+	gpiod_chip_close(chip);
+	if (!line_info)
+		return NULL;
+
+	if (gpiod_line_info_get_direction(line_info) != GPIOD_LINE_DIRECTION_INPUT) {
+		errno = EINVAL;
+		goto free_info;
+	}
+
+	settings = gpiod_line_settings_new();
+	if (!settings)
+		goto free_info;
+
+	gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
+	gpiod_line_settings_set_bias(settings,
+		gpiod_line_info_get_bias(line_info));
+	gpiod_line_settings_set_edge_detection(settings,
+		gpiod_line_info_get_edge_detection(line_info));
+	gpiod_line_settings_set_debounce_period_us(settings,
+		gpiod_line_info_get_debounce_period_us(line_info));
+
+free_info:
+	gpiod_line_info_free(line_info);
+
+	return settings;
+}
+
+static int
+ext_reconfigure(struct gpiod_line_request *request, struct gpiod_line_settings *settings)
+{
+	struct gpiod_line_config *line_cfg;
+	int ret;
+
+	line_cfg = gpiod_line_config_new();
+	if (!line_cfg)
+		return -1;
+
+	ret = gpiod_line_config_add_line_settings(line_cfg, request->offsets, 1,
+						  settings);
+	if (ret)
+		goto free_line_cfg;
+
+	ret = gpiod_line_request_reconfigure_lines(request, line_cfg);
+
+free_line_cfg:
+	gpiod_line_config_free(line_cfg);
+
+	return ret;
+}
+
+GPIOD_API int
+gpiod_ext_set_bias(struct gpiod_line_request * req,
+		   enum gpiod_line_bias bias)
+{
+	int ret;
+
+	struct gpiod_line_settings *settings;
+
+	settings = ext_line_settings(req);
+	if (!settings)
+		return -1;
+
+	ret = gpiod_line_settings_set_bias(settings, bias);
+	if (!ret)
+		ret = ext_reconfigure(req, settings);
+
+	gpiod_line_settings_free(settings);
+
+	return ret;
+}
+
+GPIOD_API int
+gpiod_ext_set_debounce_period_us(struct gpiod_line_request * req,
+				 unsigned long period)
+{
+	struct gpiod_line_settings *settings;
+	int ret;
+
+	settings = ext_line_settings(req);
+	if (!settings)
+		return -1;
+
+	gpiod_line_settings_set_debounce_period_us(settings, period);
+	ret = ext_reconfigure(req, settings);
+
+	gpiod_line_settings_free(settings);
+
+	return ret;
+}
+
+GPIOD_API int
+gpiod_ext_set_edge_detection(struct gpiod_line_request * req,
+			     enum gpiod_line_edge edge)
+{
+	struct gpiod_line_settings *settings;
+	int ret;
+
+	settings = ext_line_settings(req);
+	if (!settings)
+		return -1;
+
+	ret = gpiod_line_settings_set_edge_detection(settings, edge);
+	if (!ret)
+		ret = ext_reconfigure(req, settings);
+
+	gpiod_line_settings_free(settings);
+
+	return ret;
+}
+
+#endif

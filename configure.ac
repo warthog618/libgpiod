@@ -192,6 +192,17 @@ AC_ARG_ENABLE([examples],
 	[with_examples=false])
 AM_CONDITIONAL([WITH_EXAMPLES], [test "x$with_examples" = xtrue])
 
+AC_ARG_ENABLE([extensions],
+	[AS_HELP_STRING([--enable-extensions], [enable building extensions[default=no]])],
+	[if test "x$enableval" = xyes; then with_extensions=true; fi],
+	[with_extensions=false])
+AM_CONDITIONAL([WITH_EXTENSIONS], [test "x$with_extensions" = xtrue])
+
+if test "x$with_extensions" = xtrue
+then
+	AC_DEFINE(GPIOD_EXTENSIONS, [], ["build libgpiod extensions"])
+fi
+
 AC_ARG_ENABLE([bindings-cxx],
 	[AS_HELP_STRING([--enable-bindings-cxx],[enable C++ bindings [default=no]])],
 	[if test "x$enableval" = xyes; then with_bindings_cxx=true; fi],
