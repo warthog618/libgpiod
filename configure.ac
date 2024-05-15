@@ -282,6 +282,7 @@ AC_CONFIG_FILES([Makefile
 		 lib/libgpiod.pc
 		 contrib/Makefile
 		 examples/Makefile
+		 examples/ext/Makefile
 		 tools/Makefile
 		 tests/Makefile
 		 tests/gpiosim/Makefile

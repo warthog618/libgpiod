@@ -1,6 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: 2023 Kent Gibson <warthog618@gmail.com>
 
+SUBDIRS = .
+
+if WITH_EXTENSIONS
+
+SUBDIRS += ext
+
+endif
+
 AM_CFLAGS = -I$(top_srcdir)/include/ -include $(top_builddir)/config.h
 AM_CFLAGS += -Wall -Wextra -g -std=gnu89
 
@@ -20,3 +28,4 @@ noinst_PROGRAMS = \
 	watch_line_rising \
 	watch_line_value \
 	watch_multiple_line_values
+
