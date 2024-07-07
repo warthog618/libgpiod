@@ -11,7 +11,12 @@
 
 import subprocess
 
-subprocess.run(["doxygen", "Doxyfile"])
+# build python for version and docs
+subprocess.run("cd ../../.. ; ./autogen.sh --enable-bindings-python; make", shell=True)
+# remove shared libs to trigger static linking to libgpiod
+subprocess.run("rm ../../../lib/.libs/libgpiod.so*", shell=True)
+# build gpiod._ext to allow importing of local gpiod module
+subprocess.run("cd .. ; python build_ext.py gpiod", shell=True)
 
 # -- Path setup --------------------------------------------------------------
 
@@ -19,18 +24,22 @@ subprocess.run(["doxygen", "Doxyfile"])
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-#import os
-#import sys
-#sys.path.insert(0, os.path.abspath('../bindings/python'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-import os
+import gpiod
+
 project = "libgpiod"
 copyright = "2022, Bartosz Golaszewski"
 author = "Bartosz Golaszewski"
 language = os.environ['READTHEDOCS_LANGUAGE']
 version = os.environ['READTHEDOCS_VERSION']
+if version != 'latest':
+    import gpiod
+    version = gpiod.__version__
 release = version
 
 # -- General configuration ---------------------------------------------------
@@ -38,7 +47,7 @@ release = version
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['breathe', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx' ]
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -62,17 +71,3 @@ html_static_path = []
 
 html_extra_path = []
 
-breathe_projects = {
-    "c": "_doxygen/xml/",
-}
-
-breathe_domain_by_extension = {
-    "h" : "c",
-}
-
-intersphinx_mapping = {
-    "cxx": ("https://libgpiod-docv2.readthedocs.io/projects/cxx/en/latest/", None),
-    "python": ("https://libgpiod-docv2.readthedocs.io/projects/python/en/latest/", None),
-}
-
-intersphinx_disabled_reftypes = ["*"]

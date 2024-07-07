@@ -10,7 +10,7 @@ if WITH_TESTS
 python-tests:
 	TOP_SRCDIR=$(abs_top_builddir) \
 	TOP_BUILDDIR=$(abs_top_builddir) \
-	$(PYTHON) build_tests.py
+	$(PYTHON) build_ext.py
 
 python-tests-run:
 	PYTHONPATH=$(abs_top_srcdir)/bindings/python \

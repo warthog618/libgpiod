@@ -10,6 +10,7 @@ polluted with artefacts in build/
 
 Builds:
 
+    gpiod/_ext.<target>.so
     tests/gpiosim/_ext.<target>.so
     tests/procname/_ext.<target>.so
 
@@ -17,6 +18,7 @@ Builds:
 
 import glob
 import tempfile
+import sys
 from os import getenv, path
 
 from setuptools import Distribution, Extension
@@ -68,28 +70,37 @@ procname_ext = Extension(
     extra_compile_args=["-Wall", "-Wextra"],
 )
 
-dist = Distribution(
-    {
-        "name": "gpiod",
-        "ext_modules": [gpiosim_ext, procname_ext, gpiod_ext],
-        "version": __version__,
-        "platforms": ["linux"],
-    }
-)
+def build(exts):
+    dist = Distribution(
+        {
+            "name": "gpiod",
+            "ext_modules": exts,
+            "version": __version__,
+            "platforms": ["linux"],
+        }
+    )
 
-try:
-    from setuptools.logging import configure
+    try:
+        from setuptools.logging import configure
 
-    configure()
-except ImportError:
-    from distutils.log import DEBUG, set_verbosity
+        configure()
+    except ImportError:
+        from distutils.log import DEBUG, set_verbosity
 
-    set_verbosity(DEBUG)
+        set_verbosity(DEBUG)
 
-with tempfile.TemporaryDirectory(prefix="libgpiod-") as temp_dir:
-    command = build_ext(dist)
-    command.inplace = True
-    command.build_temp = temp_dir
-    command.build_lib = temp_dir
-    command.finalize_options()
-    command.run()
+    with tempfile.TemporaryDirectory(prefix="libgpiod-") as temp_dir:
+        command = build_ext(dist)
+        command.inplace = True
+        command.build_temp = temp_dir
+        command.build_lib = temp_dir
+        command.finalize_options()
+        command.run()
+
+if __name__ == '__main__':
+    mods = {"gpiod": gpiod_ext,
+            "gpiosim": gpiosim_ext,
+            "procname": procname_ext, }
+    names = sys.argv[1:] or mods.keys()
+    exts = [ mods[m] for m in names]
+    build(exts)

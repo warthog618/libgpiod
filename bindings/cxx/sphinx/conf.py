@@ -63,16 +63,10 @@ html_static_path = []
 html_extra_path = []
 
 breathe_projects = {
-    "c": "_doxygen/xml/",
+    "cxx": "_doxygen/xml/",
 }
 
 breathe_domain_by_extension = {
-    "h" : "c",
+    "hpp" : "cpp",
 }
 
-intersphinx_mapping = {
-    "cxx": ("https://libgpiod-docv2.readthedocs.io/projects/cxx/en/latest/", None),
-    "python": ("https://libgpiod-docv2.readthedocs.io/projects/python/en/latest/", None),
-}
-
-intersphinx_disabled_reftypes = ["*"]

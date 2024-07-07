@@ -19,5 +19,5 @@ python:
     - requirements: sphinx/requirements.txt
 
 sphinx:
-  configuration: sphinx/conf.py
+  configuration: bindings/cxx/sphinx/conf.py
 

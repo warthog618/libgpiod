@@ -46,9 +46,8 @@ def request_lines(path: str, *args, **kwargs) -> LineRequest:
     Args:
       path
         Path to the GPIO character device file.
-      *args
-      **kwargs
-        See Chip.request_lines() for configuration arguments.
+
+    See :py:meth:`.Chip.request_lines` for configuration arguments.
 
     Returns:
       Returns a new LineRequest object.

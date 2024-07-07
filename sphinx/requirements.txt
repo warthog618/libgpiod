@@ -1,0 +1,4 @@
+breathe
+readthedocs-sphinx-ext
+sphinx
+sphinx-rtd-theme
