@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from gpiod.line import Direction, Bias, Drive, Edge, Clock, Value
 
-__all__ = "LineSettings"
+__all__ = ["LineSettings"]
 
 
 @dataclass(repr=False)

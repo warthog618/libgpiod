@@ -5,7 +5,7 @@ from . import _ext
 from dataclasses import dataclass
 from enum import Enum
 
-__all__ = "EdgeEvent"
+__all__ = ["EdgeEvent"]
 
 
 @dataclass(frozen=True, init=False, repr=False)

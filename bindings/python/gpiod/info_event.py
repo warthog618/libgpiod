@@ -6,7 +6,7 @@ from .line_info import LineInfo
 from dataclasses import dataclass
 from enum import Enum
 
-__all__ = "InfoEvent"
+__all__ = ["InfoEvent"]
 
 
 @dataclass(frozen=True, init=False, repr=False)
