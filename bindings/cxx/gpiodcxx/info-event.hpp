@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: 2021-2022 Bartosz Golaszewski <brgl@bgdev.pl> */
 
 /**
- * @file gpiod.h
+ * @file info-event.hpp
  */
 
 #ifndef __LIBGPIOD_CXX_INFO_EVENT_HPP__

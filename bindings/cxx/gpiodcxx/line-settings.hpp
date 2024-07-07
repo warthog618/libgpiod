@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: 2022 Bartosz Golaszewski <brgl@bgdev.pl> */
 
 /**
- * @file request-config.hpp
+ * @file line-settings.hpp
  */
 
 #ifndef __LIBGPIOD_CXX_LINE_SETTINGS_HPP__
