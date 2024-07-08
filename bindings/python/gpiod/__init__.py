@@ -14,12 +14,15 @@ from .chip_info import ChipInfo
 from .edge_event import EdgeEvent
 from .exception import ChipClosedError, RequestReleasedError
 from .info_event import InfoEvent
+from .line_info import LineInfo
 from .line_request import LineRequest
 from .line_settings import LineSettings
 from .version import __version__
 
 api_version = _ext.api_version
 
+__all__ = ["Chip", "ChipInfo", "ChipClosedError", "EdgeEvent", "InfoEvent",
+           "LineInfo", "LineRequest", "LineSettings", "RequestReleasedError"]
 
 def is_gpiochip_device(path: str) -> bool:
     """
