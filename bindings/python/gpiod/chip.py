@@ -24,7 +24,7 @@ class Chip:
     """
     Represents a GPIO chip.
 
-    Chip object manages all resources associated with the GPIO chip it represents.
+    A Chip object manages all resources associated with the GPIO chip it represents.
 
     The gpiochip device file is opened during the object's construction. The Chip
     object's constructor takes the path to the GPIO chip device file
@@ -39,7 +39,7 @@ class Chip:
         do_something(chip)
         chip.close()
 
-    The gpiod.Chip class also supports controlled execution ('with' statement).
+    The Chip also supports controlled execution ('with' statement).
 
     Example:
 
