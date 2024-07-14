@@ -1,6 +1,6 @@
 ..
    SPDX-License-Identifier: LGPL-2.1-or-later
-   SPDX-FileCopyrightText: 2022 Kent Gibson <warthog618@gmail.com>
+   SPDX-FileCopyrightText: 2024 Kent Gibson <warthog618@gmail.com>
 
 ..
    This file is part of libgpiod.
@@ -14,20 +14,21 @@ Overview
 --------
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Language bindings
+   :maxdepth: 2
    :hidden:
+   :caption: Getting started
 
-   C <c>
-   C++ <cxx>
-   Python <python>
-   Rust <rust>
+   overview
+   installation
+   faq
 
-Bindings
---------
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Language bindings
 
- - :doc:`C <c>`
- - :doc:`C++ <cxx:index>`
- - :doc:`Python <python:index>`
- - :doc:`Rust <rust>`
+   C <lib/contents>
+   C++ <cxx/contents>
+   Python <https://libgpiod-docv2.readthedocs.io/projects/python/en/latest>
+   Rust <rust/contents>
 

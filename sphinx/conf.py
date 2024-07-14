@@ -11,7 +11,8 @@
 
 import subprocess
 
-subprocess.run(["doxygen", "Doxyfile"])
+subprocess.run(["doxygen", "lib/Doxyfile"])
+subprocess.run(["doxygen", "cxx/Doxyfile"])
 
 # -- Path setup --------------------------------------------------------------
 
@@ -38,10 +39,10 @@ release = version
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['breathe', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx' ]
+extensions = ['breathe', 'sphinx.ext.autodoc' ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []
+templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -58,21 +59,23 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ['_static']
 
 html_extra_path = []
 
+html_baseurl = 'https://libgpiod-docv2.readthedocs.io/'
+
+html_css_files = [
+    'css/custom.css',
+]
+
 breathe_projects = {
-    "c": "_doxygen/xml/",
+    "c": "_doxygen/lib/",
+    "cxx": "_doxygen/cxx/",
 }
 
 breathe_domain_by_extension = {
     "h" : "c",
+    "hpp" : "cpp",
 }
 
-intersphinx_mapping = {
-    "cxx": ("https://libgpiod-docv2.readthedocs.io/projects/cxx/en/latest/", None),
-    "python": ("https://libgpiod-docv2.readthedocs.io/projects/python/en/latest/", None),
-}
-
-intersphinx_disabled_reftypes = ["*"]

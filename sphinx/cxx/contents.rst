@@ -1,6 +1,5 @@
-C++
-===
-
+C++ Bindings
+============
 
 .. toctree::
    :maxdepth: 2

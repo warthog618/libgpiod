@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: 2024 Kent Gibson <warthog618@gmail.com>
 
-# libgpiod doxygen configuration for core library
+# libgpiod doxygen configuration for C++ bindings
 
 # General configuration
 PROJECT_NAME           = libgpiod
@@ -11,9 +11,11 @@ EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = YES
 EXTRACT_STATIC         = YES
 WARN_IF_UNDOCUMENTED   = NO
-INPUT                  = ../include/gpiod.h
+INPUT                  = ../bindings/cxx/gpiod.hpp \
+                         ../bindings/cxx/gpiodcxx/
 RECURSIVE              = YES
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO
 GENERATE_XML           = YES
-XML_OUTPUT             = xml
+XML_OUTPUT             = cxx
+

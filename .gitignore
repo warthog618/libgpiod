@@ -36,3 +36,6 @@ stamp-h1
 *.gcda
 *.gcno
 *.gcov
+
+# rtd
+_readthedocs
